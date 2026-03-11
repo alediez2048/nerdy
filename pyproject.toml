@@ -1,0 +1,14 @@
+[project]
+name = "adops-autopilot"
+version = "0.1.0"
+description = "Autonomous ad copy generation system for Facebook and Instagram"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

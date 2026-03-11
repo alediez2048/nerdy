@@ -7,11 +7,39 @@
 
 ---
 
+## P0-01: Project Scaffolding ✅
+
+### Plain-English Summary
+- Created project skeleton: directory structure (generate/, evaluate/, iterate/, output/, data/, tests/), requirements.txt with pinned versions, data/config.yaml with tunable parameters, .env.example, .gitignore, README.md
+- One-command setup: `pip install -r requirements.txt` runs without errors
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 11, 2026
+- **Ticket:** P0-01
+- **Branch:** `feature/P0-01-project-scaffolding`
+
+### Files Created
+- `generate/__init__.py`, `evaluate/__init__.py`, `iterate/__init__.py`, `output/__init__.py`
+- `tests/test_evaluation/__init__.py`, `tests/test_generation/__init__.py`, `tests/test_pipeline/__init__.py`, `tests/conftest.py`
+- `requirements.txt`, `data/config.yaml`, `.env.example`, `.gitignore`, `README.md`
+
+### Acceptance Criteria
+- [x] All directories created with appropriate `__init__.py` files
+- [x] `requirements.txt` with pinned versions installs cleanly
+- [x] `data/config.yaml` contains all tunable parameters
+- [x] `.env.example` documents required API keys
+- [x] `.gitignore` covers secrets, caches, and OS files
+- [x] `README.md` has setup instructions
+- [x] DEVLOG updated with P0-01 entry
+
+---
+
 ## Timeline
 
 | Phase | Name | Tickets | Status |
 |-------|------|---------|--------|
-| P0 | Foundation & Calibration | P0-01 – P0-08 | ⏳ Not Started |
+| P0 | Foundation & Calibration | P0-01 – P0-08 | 🔄 In Progress |
 | P1 | Core Pipeline (v1) | P1-01 – P1-14 | ⏳ Not Started |
 | P2 | Testing & Validation | P2-01 – P2-07 | ⏳ Not Started |
 | P3 | Multi-Modal Ads (v2) | P3-01 – P3-06 | ⏳ Not Started |
@@ -23,7 +51,7 @@
 ### Phase 0: Foundation & Calibration
 | Ticket | Title | Status |
 |--------|-------|--------|
-| P0-01 | Project scaffolding | ⏳ |
+| P0-01 | Project scaffolding | ✅ |
 | P0-02 | Append-only decision ledger | ⏳ |
 | P0-03 | Per-ad seed chain + snapshots | ⏳ |
 | P0-04 | Brand knowledge base | ⏳ |

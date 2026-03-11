@@ -1,0 +1,33 @@
+# Ad-Ops-Autopilot — Tunable parameters
+# Override via environment variables where supported
+
+# Quality
+quality_threshold: 7.0
+clarity_floor: 6.0
+brand_voice_floor: 5.0
+
+# Batch processing
+batch_size: 10
+
+# Regeneration
+max_regeneration_cycles: 3
+pareto_variants: 5
+
+# Quality ratchet (R1-Q9)
+ratchet_window: 5
+ratchet_buffer: 0.5
+
+# Tiered model routing (R1-Q4) — improvable range escalates to Pro
+improvable_range: [5.5, 7.0]
+
+# Explore-exploit (R2-Q9)
+exploration_plateau_threshold: 0.1
+exploration_plateau_batches: 3
+
+# Paths
+ledger_path: data/ledger.jsonl
+cache_path: data/cache/
+
+# API
+api_delay_seconds: 1.5  # Between calls to respect rate limits
+retry_max_attempts: 3
