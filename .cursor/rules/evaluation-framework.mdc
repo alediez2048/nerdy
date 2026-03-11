@@ -1,0 +1,74 @@
+---
+description: Quality evaluation framework — dimensions, weighting, ratchet, and evaluation prompt design
+alwaysApply: true
+---
+
+# Evaluation Framework
+
+The evaluator is the single most important component. If it scores inconsistently, the feedback loop amplifies noise. Every design choice here must maximize discriminative power and actionable feedback.
+
+## Five Quality Dimensions
+
+| Dimension | Measures | Score 1 | Score 10 |
+|-----------|----------|---------|----------|
+| Clarity | Message understandable in <3s? | Confusing, competing messages | Crystal clear single takeaway |
+| Value Proposition | Specific, compelling benefit? | Generic ("we have tutors") | Differentiated ("raise SAT 200+ pts") |
+| Call to Action | Next step clear and low-friction? | No CTA or vague | Specific, urgent ("Start free practice test") |
+| Brand Voice | Sounds like Varsity Tutors? | Generic, could be anyone | Distinctly empowering, knowledgeable |
+| Emotional Resonance | Connects emotionally? | Flat, purely rational | Taps parent worry, student ambition |
+
+## Campaign-Goal-Adaptive Weighting (R1-Q3)
+
+| Dimension | Awareness | Conversion | Floor |
+|-----------|-----------|------------|-------|
+| Clarity | 25% | 25% | 6.0 (hard) |
+| Value Proposition | 20% | 25% | — |
+| CTA | 10% | 30% | — |
+| Brand Voice | 20% | 10% | 5.0 (hard) |
+| Emotional Resonance | 25% | 10% | — |
+
+Floor violations → automatic rejection regardless of aggregate score.
+
+## Quality Threshold
+
+- Minimum publishable: **7.0/10** weighted average
+- Quality ratchet: `effective_threshold = max(7.0, rolling_5batch_average − 0.5)`
+- The threshold only goes UP — never down
+
+## Chain-of-Thought Evaluation Prompt (R3-Q6)
+
+Every evaluation MUST follow this 5-step sequence in a single API call:
+
+1. **Read** the ad
+2. **Decompose** — identify the hook, value proposition, CTA, and emotional angle in your own words BEFORE scoring
+3. **Compare** each dimension against rubric calibration examples (1-score and 10-score reference ads)
+4. **Score** with contrastive rationale: "This ad scores X because [reason]. A version scoring X+2 would [specific change]. The gap is [specific element]."
+5. **Flag confidence** — rate evaluator confidence per dimension (1–10). Below 7 triggers flagging.
+
+## Evaluation Output Schema
+
+```json
+{
+  "ad_id": "string",
+  "scores": {
+    "clarity": {"score": 0, "rationale": "", "contrastive": "", "confidence": 0},
+    "value_proposition": {"score": 0, "rationale": "", "contrastive": "", "confidence": 0},
+    "cta": {"score": 0, "rationale": "", "contrastive": "", "confidence": 0},
+    "brand_voice": {"score": 0, "rationale": "", "contrastive": "", "confidence": 0},
+    "emotional_resonance": {"score": 0, "rationale": "", "contrastive": "", "confidence": 0}
+  },
+  "aggregate_score": 0,
+  "campaign_goal": "awareness|conversion",
+  "meets_threshold": false,
+  "weakest_dimension": "string",
+  "flags": []
+}
+```
+
+## Do NOT
+
+- Use single-pass holistic scoring — it causes halo effects across dimensions
+- Use dimension-isolated sequential evaluation (5 separate API calls) — too expensive
+- Provide free-text rationales without contrastive targets — "clarity could be improved" is useless
+- Allow the evaluator to score without first decomposing the ad's structural elements
+- Skip calibration examples in the evaluation prompt

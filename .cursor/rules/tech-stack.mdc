@@ -1,0 +1,28 @@
+---
+description: Enforce project tech stack and dependency versions
+alwaysApply: true
+---
+
+# Tech Stack — Version Pinning
+
+- Language: Python 3.10+ (strict typing with type hints on every function)
+- LLM (Generation + Evaluation): Google Gemini API (`google-genai` SDK)
+  - Gemini Flash — first-draft generation, initial scoring, brief expansion, context distillation
+  - Gemini Pro — regeneration for improvable-range ads (5.5–7.0), complex evaluation
+- Image Generation (v2): Imagen via Gemini API, or Flux / Nano Banana
+- Data & Visualization: pandas + matplotlib
+- Tokenizer: tiktoken (cl100k_base) for token counting and budget tracking
+- Logging: Python standard `logging` module
+- Config: python-dotenv for env vars, `config.yaml` for tunable parameters
+- Testing: pytest
+- Linting: ruff
+- Data Format: JSONL (append-only decision ledger), JSON (config, schemas)
+- Determinism: hashlib for per-ad seed chains
+
+## Do NOT
+
+- Use LangChain, LlamaIndex, or any orchestration framework — this is a custom pipeline
+- Use OpenAI API — all LLM calls go through Gemini
+- Add dependencies without explicit need tied to a ticket
+- Use databases (SQLite, Postgres) — the append-only JSONL ledger is the data store
+- Hardcode API keys — use `.env` with python-dotenv

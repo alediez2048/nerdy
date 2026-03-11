@@ -1,0 +1,86 @@
+---
+description: Pipeline execution patterns — batch processing, checkpoint-resume, token tracking, caching, and resilience
+alwaysApply: true
+---
+
+# Pipeline Execution Patterns
+
+## Batch-Sequential Processing (R3-Q9)
+
+The pipeline processes ads in fixed-size batches (default: 10). Within each batch:
+1. All generation happens in parallel
+2. All evaluation happens in parallel
+3. Regeneration decisions made for the batch
+4. All regeneration + re-evaluation in parallel
+5. **Shared state updates happen BETWEEN batches, not within them**
+
+Shared state updated at batch boundaries:
+- Pattern library (new winning patterns promoted)
+- Quality ratchet (threshold recalculated)
+- Token budget reconciliation
+- SPC control charts updated
+
+## Checkpoint-and-Resume (R3-Q2)
+
+- After every successful API call, write result + `checkpoint_id` to the append-only ledger
+- On crash or interruption: `python run_pipeline.py --resume` picks up from last checkpoint
+- No work is ever lost. No ad is ever double-processed.
+- Combined with retry logic: exponential backoff on 429/500/503 (2^n seconds, max 60s, 3 retries)
+- Fixed 1–2 second delay between API calls to respect rate limits
+
+## Append-Only Decision Ledger (R2-Q8)
+
+Single JSONL file. Every event has this schema:
+```json
+{
+  "timestamp": "ISO-8601",
+  "event_type": "AdGenerated|AdEvaluated|AdRegenerated|AdPublished|AdDiscarded|BatchCompleted|ThresholdAdjusted",
+  "ad_id": "string",
+  "brief_id": "string",
+  "cycle_number": 0,
+  "action": "string",
+  "inputs": {},
+  "outputs": {},
+  "scores": {},
+  "tokens_consumed": 0,
+  "model_used": "string",
+  "seed": "string",
+  "checkpoint_id": "string"
+}
+```
+
+## Token Attribution (R1-Q7)
+
+Tag every API call with its purpose:
+- `generation`, `evaluation`, `regeneration-attempt-N`, `triage`, `brief-expansion`, `context-distillation`
+- Track: cost per publishable ad, marginal quality gain per regeneration attempt
+- When 3rd regeneration attempt yields <0.2 improvement, cap at 2 for that dimension
+
+## Result-Level Caching (R3-Q7)
+
+- Cache key: `hash(ad_text + dimension + evaluator_prompt_version)`
+- On evaluator recalibration → all cached scores for old prompt version invalidated
+- TTL is version-based, not time-based
+
+## Regeneration Strategy
+
+1. Generate 3–5 variants (Pareto-optimal selection, R1-Q5)
+2. Select variant where no other variant dominates on ALL dimensions
+3. If no improvement after 2 cycles → mutate the brief (R1-Q2)
+4. If mutation fails (1 more cycle) → escalate to human review with diagnostics
+5. Contrastive rationales from evaluator feed directly into regeneration prompts
+
+## Compliance Filter (R3-Q3)
+
+Three layers, all must pass:
+1. **Generation prompts** — hard constraints (no guarantees, no fear-based deficiency, no competitor disparagement)
+2. **Evaluator** — binary compliance check (overrides quality score on failure)
+3. **Regex filter** — catches literal violations (dollar amounts without disclaimers, competitor trademarks, absolute promises like "guaranteed")
+
+## Do NOT
+
+- Process ads individually in sequence — use batch-parallel
+- Update shared state mid-batch — wait for batch boundaries
+- Skip checkpoint writes to "save time"
+- Make API calls without tagging purpose for token attribution
+- Retry infinitely — 3 retries max, then skip with logged failure

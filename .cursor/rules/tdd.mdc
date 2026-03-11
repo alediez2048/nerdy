@@ -1,0 +1,84 @@
+---
+description: Test-driven development methodology tailored to the ad generation pipeline
+alwaysApply: true
+---
+
+# Test-Driven Development
+
+## TDD Cycle
+
+Before implementing any feature:
+
+1. Write the test file first (pytest)
+2. Confirm the test fails as expected
+3. Implement the minimum code to pass the test
+4. Refactor only after tests pass
+
+## Test Categories (Target: 15+ total)
+
+### Golden Set Regression Tests (R2-Q3, Option A)
+- Maintain 15–20 "golden" ads with human-assigned scores across all 5 dimensions
+- Run evaluator against golden set as regression test
+- Pass condition: evaluator scores within ±1.0 of human-assigned scores on 80%+ of ads
+- These tests run before every evaluation batch
+
+### Inversion Tests (R2-Q3, Option C)
+- Take high-scoring ads, systematically degrade ONE dimension at a time
+- Verify ONLY the degraded dimension's score drops (≥1.5 points)
+- Verify other dimensions remain stable (±0.5)
+- Minimum: 10 inversion test cases
+
+### Adversarial Boundary Tests (R2-Q3, Option B)
+- Perfect Clarity + zero Brand Voice → Clarity high, Brand Voice low
+- Wrong brand voice entirely (fast food chain tone) → Brand Voice near 1
+- Pure emotional manipulation with no substance → Emotional Resonance high, others low
+- CTA that links to nothing → CTA low
+- Minimum: 8 adversarial test cases
+
+### Correlation Analysis (R2-Q3, Option C)
+- Compute pairwise Pearson correlation across all 5 dimension scores
+- Flag any pair with r > 0.7 — this indicates halo effect
+- If flagged: the evaluator is not measuring dimensions independently — fix the evaluation prompt
+- Run on every batch of 20+ evaluated ads
+
+### Pipeline Integration Tests
+- Checkpoint-resume: start pipeline, kill mid-batch, resume — verify identical output
+- Compliance filter: known-bad ads caught by all 3 layers
+- Token attribution: verify every API call is tagged with purpose
+- Seed reproducibility: same inputs → same seed → same outputs
+- Brief expansion: verify no hallucinated product claims (output only contains facts from knowledge base)
+
+### Evaluator Drift Tests (R1-Q1)
+- Simulate drift by modifying evaluator prompt slightly
+- Verify SPC control charts flag the deviation
+- Verify canary injection triggers on breach
+
+## Test File Organization
+
+```
+tests/
+├── test_evaluation/
+│   ├── test_golden_set.py       — Regression tests
+│   ├── test_inversion.py        — Dimension independence
+│   ├── test_adversarial.py      — Boundary cases
+│   └── test_correlation.py      — Halo effect detection
+├── test_generation/
+│   ├── test_brief_expansion.py  — Grounding, no hallucination
+│   ├── test_ad_generator.py     — Output format, brand voice selection
+│   └── test_compliance.py       — 3-layer compliance filter
+├── test_pipeline/
+│   ├── test_checkpoint.py       — Resume from crash
+│   ├── test_batch_processor.py  — Batch-sequential execution
+│   └── test_token_tracking.py   — Attribution correctness
+└── test_data/
+    ├── golden_ads.json          — Human-scored reference ads
+    ├── adversarial_ads.json     — Edge case ads
+    └── degraded_ads.json        — Inversion test cases
+```
+
+## Do NOT
+
+- Skip writing tests before implementation
+- Delete or modify golden set test data without justification
+- Use mocks for the evaluator in inversion/adversarial tests — these must test real LLM behavior
+- Treat correlation analysis as optional — if dimensions aren't independent, the entire evaluation framework is decorative

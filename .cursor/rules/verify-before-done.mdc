@@ -1,0 +1,63 @@
+---
+description: Mandatory verification checks before committing or marking a ticket done
+alwaysApply: true
+---
+
+# Verify Before Done (MANDATORY)
+
+## Before EVERY Commit
+
+Run these checks and confirm they pass. Do NOT commit if any check fails.
+
+1. **Tests pass:**
+   ```
+   python -m pytest tests/ -v
+   ```
+   - ALL tests must pass, not just the ones you wrote
+   - If a pre-existing test fails, investigate — do not skip or delete it
+
+2. **Lint is clean:**
+   ```
+   ruff check . --fix
+   ```
+   - Zero warnings, zero errors
+   - Do not add `# noqa` to suppress without justification
+
+3. **No unintended files staged:**
+   - Run `git status` before committing
+   - Do not stage `.env`, credentials, `__pycache__/`, `.venv/`, or `.DS_Store`
+   - Only stage files related to the current ticket
+
+4. **Decision ledger integrity:**
+   - If the ticket involves pipeline execution, verify the ledger JSONL is valid
+   - Run: `python -c "import json; [json.loads(l) for l in open('data/ledger.jsonl')]"`
+
+5. **Seed reproducibility (if applicable):**
+   - Same `global_seed + brief_id + cycle_number` produces same output
+   - Verify with: generate same ad twice, compare outputs
+
+## Before Marking a Ticket Complete
+
+- Verify ALL items in the primer's Definition of Done checklist are satisfied
+- Cross-check acceptance criteria from `prd.md`
+- Verify `docs/DEVLOG.md` has been updated with the full ticket entry (all sections filled)
+- Verify the DEVLOG Ticket Index table shows ✅ for this ticket
+- Verify the decision log has been updated with choices made during the ticket
+- Verify no other tests broke as a result of your changes
+- Verify the feature branch has been pushed to remote
+- If the ticket produces ads: verify quality scores are logged to the ledger
+
+## Quality Gate Checks (Pipeline Tickets)
+
+- Published ads meet the current quality threshold (≥7.0 or ratcheted value)
+- Evaluation scores include contrastive rationales for all 5 dimensions
+- Token consumption is logged per API call with purpose tags
+- Compliance filter ran (no guarantees, no competitor trademarks, no absolute promises)
+
+## If Tests Fail
+
+- Do NOT commit with failing tests
+- Do NOT delete or skip failing tests
+- Do NOT mark the ticket as complete
+- Fix the issue, then re-run the full test suite
+- If the failure is pre-existing, note it in the commit message but do not introduce new failures

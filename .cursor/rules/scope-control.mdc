@@ -1,0 +1,53 @@
+---
+description: Strict scope control — phased delivery, ticket boundaries, and unauthorized change prevention
+alwaysApply: true
+---
+
+# Scope Control (MANDATORY)
+
+## Phased Delivery
+
+This project has 6 phases. Phases are sequential. Do NOT implement Phase N+1 work during Phase N.
+
+| Phase | Name | Tickets | Focus |
+|-------|------|---------|-------|
+| P0 | Foundation & Calibration | P0-01 – P0-08 | Infra, ledger, seeds, calibration |
+| P1 | Core Pipeline (v1) | P1-01 – P1-14 | End-to-end text pipeline, 50+ ads |
+| P2 | Testing & Validation | P2-01 – P2-07 | Prove evaluation has substance |
+| P3 | Multi-Modal (v2) | P3-01 – P3-06 | Image generation + evaluation |
+| P4 | Autonomous Engine (v3) | P4-01 – P4-07 | Self-healing, agents, competitive intel |
+| P5 | Documentation & Submission | P5-01 – P5-06 | Decision log, writeup, demo |
+
+## Only Do What the Ticket Asks
+
+- Read the ticket's primer (`docs/tickets/<TICKET-ID>-primer.md`) BEFORE writing any code
+- Cross-reference acceptance criteria in `prd.md`
+- Implement ONLY the deliverables listed in the primer's checklist
+- If the ticket says "implement evaluator," do not also build the regeneration loop
+- If the ticket says "add tests for X," only add tests for X
+
+## Do NOT
+
+- Refactor code that isn't part of the current ticket
+- Add features, utilities, or helpers not specified in the ticket
+- Import modules from tickets that haven't been implemented yet
+- Modify config unless the ticket explicitly requires it
+- Add packages to requirements.txt unless the ticket explicitly requires it
+- Jump ahead to a later phase's work
+- Build v2/v3 features during v1 implementation
+- "Pre-wire" infrastructure for future phases unless the current ticket calls for it
+
+## When You Find Issues Outside Your Scope
+
+- Do NOT fix bugs in other modules
+- Do NOT refactor code that "could be better"
+- Note the issue in the decision log or commit message
+- Address it in the correct ticket/phase
+
+## Module Boundaries
+
+- `generate/` code does NOT evaluate ads
+- `evaluate/` code does NOT regenerate ads
+- `iterate/` code orchestrates the feedback loop but delegates to generate/ and evaluate/
+- `output/` code reads from the ledger — it does NOT modify pipeline behavior
+- `data/` contains static assets and config — it is NOT a code module

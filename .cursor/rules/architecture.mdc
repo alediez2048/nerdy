@@ -1,0 +1,83 @@
+---
+description: Seven architectural pillars and system structure governing all implementation decisions
+alwaysApply: true
+---
+
+# Architecture — Seven Pillars
+
+Every implementation decision must align with these pillars. If a design choice conflicts with a pillar, the pillar wins.
+
+## 1. Decomposition Is the Architecture
+- Quality → 5 independent dimensions (Clarity, Value Prop, CTA, Brand Voice, Emotional Resonance)
+- Brand voice → audience-specific profiles (parent-facing, student-facing)
+- Ad structure → combinable atoms (hook type, body pattern, CTA style, tone register)
+- Evaluation → forced chain-of-thought decomposition before scoring
+- Visual consistency (v2) → attribute checklists, not holistic judgment
+
+## 2. Prevention Over Detection Over Correction
+- Grounded brief expansion prevents hallucinated product claims
+- Shared semantic briefs prevent multi-modal incoherence (v2)
+- Tiered compliance (prompt + evaluator + regex) prevents policy violations
+- Pareto-optimal selection prevents dimension collapse
+- Every dollar spent on prevention saves ten on detection
+
+## 3. Every Token Is an Investment, Not an Expense
+- Tiered model routing: Flash for drafts, Pro only for improvable-range ads (5.5–7.0)
+- Full token attribution with marginal analysis per pipeline stage
+- Result-level caching with version-based TTL
+- Contrastive rationales reduce regeneration cycles
+- Performance-decay-triggered exploration — explore only when exploit is exhausted
+
+## 4. The System Knows What It Doesn't Know
+- Confidence scores on every evaluation (feeds human escalation)
+- Statistical process control for evaluator drift detection
+- Inversion tests + correlation analysis prove dimension independence
+- Confidence-gated autonomy: >7 autonomous, 5–7 flagged, <5 human required
+
+## 5. State Is Sacred
+- Checkpoint-and-resume: every successful API call writes a checkpoint
+- Append-only decision ledger (JSONL): no data ever lost or modified
+- Per-ad deterministic seed chains: `seed = hash(global_seed + brief_id + cycle_number)`
+- Full input-output snapshots for forensic reproducibility
+
+## 6. Learning Is Structural
+- Reference-decompose-recombine: proven ad patterns → structural atoms → recombination
+- Single-variable isolation for A/B variants (change one element, measure impact)
+- Shared structural patterns across campaigns; content stays campaign-specific
+
+## 7. Visible Reasoning Is a First-Class Output
+- Narrated pipeline replay: chronological walkthrough with reasoning and failures
+- Contrastive evaluation rationales: "what this ad is" vs "what +2 would look like"
+- Decision log documents OPTIONS CONSIDERED, choice, and WHY — not just what was done
+
+## Directory Structure
+
+```
+generate/       — Ad copy generation from expanded briefs
+evaluate/       — Chain-of-thought dimension scoring, LLM-as-Judge, aggregation
+iterate/        — Feedback loop, brief mutation, Pareto selection, quality ratchet
+output/         — Formatting, export, quality trends, narrated replay
+data/           — Brand knowledge base, reference ads, pattern database, config
+tests/          — Golden set, adversarial, inversion, correlation tests
+docs/           — Decision log, limitations, technical writeup
+```
+
+## Pipeline Flow
+
+```
+Brief → Expand (grounded) → Generate (reference-decompose-recombine)
+  → Evaluate (CoT 5-step) → Above threshold?
+  ├─ Yes → Published library
+  └─ No  → Weakest dimension → Contrastive rationale
+           → Pareto regeneration (3–5 variants) → Re-evaluate
+           → After 2 failures: mutate brief → After 3: escalate
+```
+
+## Model Routing
+
+| Task | Model | Rationale |
+|------|-------|-----------|
+| First-draft generation + initial scoring | Gemini Flash | 80% of work at lowest cost |
+| Regeneration for improvable ads (5.5–7.0) | Gemini Pro | Quality tokens on borderline ads |
+| Brief expansion + context distillation | Gemini Flash | Cheap LLM call, high ROI |
+| Image generation (v2) | Imagen / Flux | Brand-consistent visuals |

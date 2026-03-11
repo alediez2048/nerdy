@@ -1,0 +1,100 @@
+---
+description: Code patterns, conventions, and module ownership rules
+alwaysApply: true
+---
+
+# Code Patterns & Conventions
+
+## Module Ownership
+
+| Directory | Responsibility | Does NOT |
+|-----------|---------------|----------|
+| `generate/` | Brief expansion, ad copy generation, reference-decompose-recombine | Evaluate or regenerate |
+| `evaluate/` | Chain-of-thought scoring, dimension aggregation, confidence flagging | Generate or modify ads |
+| `iterate/` | Feedback loop orchestration, Pareto selection, brief mutation, quality ratchet | Directly call LLM — delegates to generate/ and evaluate/ |
+| `output/` | Formatting, export, narrated replay, quality trend visualization | Modify pipeline state |
+| `data/` | Brand knowledge base, config, reference ads, pattern database | Contain executable code |
+| `tests/` | All test files organized by category | Contain production logic |
+| `docs/` | Decision log, technical writeup, limitations | Contain code |
+
+## Coding Standards
+
+- Every function must have Python type hints and return types
+- No `Any` types — use explicit typing everywhere
+- Error handling: always use try/except with typed exceptions
+- Environment variables via python-dotenv, never hardcoded
+- All LLM API calls must include:
+  - Token counting (input + output)
+  - Purpose tag for attribution
+  - Seed parameter derived from `hash(global_seed + brief_id + cycle_number)`
+  - Checkpoint write on success
+
+## Seed Management (R3-Q4)
+
+```python
+import hashlib
+
+def get_ad_seed(global_seed: str, brief_id: str, cycle_number: int) -> int:
+    raw = f"{global_seed}:{brief_id}:{cycle_number}"
+    return int(hashlib.sha256(raw.encode()).hexdigest()[:8], 16)
+```
+
+- Per-ad seeds are identity-derived, NOT position-derived
+- If ad_005 fails and is skipped, ad_006's seed is unchanged
+- Log every seed in the decision ledger for exact replay
+
+## Ledger Write Pattern
+
+Every API call result must be logged:
+```python
+def log_event(ledger_path: str, event: dict) -> None:
+    event["timestamp"] = datetime.utcnow().isoformat()
+    event["checkpoint_id"] = str(uuid4())
+    with open(ledger_path, "a") as f:
+        f.write(json.dumps(event) + "\n")
+```
+
+## Ad Output Schema
+
+Every generated ad must contain:
+```json
+{
+  "ad_id": "string",
+  "brief_id": "string",
+  "primary_text": "string",
+  "headline": "string",
+  "description": "string",
+  "cta_button": "Learn More|Sign Up|Get Started|Book Now",
+  "audience": "parent|student",
+  "campaign_goal": "awareness|conversion",
+  "seed": "int",
+  "cycle_number": 0,
+  "model_used": "string",
+  "tokens_consumed": 0
+}
+```
+
+## Config Pattern
+
+Tunable parameters go in `data/config.yaml`, not in code:
+```yaml
+quality_threshold: 7.0
+batch_size: 10
+max_regeneration_cycles: 3
+pareto_variants: 5
+ratchet_window: 5
+ratchet_buffer: 0.5
+clarity_floor: 6.0
+brand_voice_floor: 5.0
+improvable_range: [5.5, 7.0]
+exploration_plateau_threshold: 0.1
+exploration_plateau_batches: 3
+```
+
+## Do NOT
+
+- Put business logic in `data/` — it's for static assets and config only
+- Hardcode thresholds, weights, or model names — use config
+- Make LLM calls without logging to the ledger
+- Create ad IDs that depend on generation order (use brief_id + cycle_number)
+- Import from a module that belongs to a later phase

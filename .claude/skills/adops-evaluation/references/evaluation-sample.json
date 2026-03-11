@@ -1,0 +1,61 @@
+{
+  "description": "Sample evaluation output format for reference",
+  "sample_evaluation": {
+    "ad_id": "ad_001_cycle_1",
+    "ad_text": {
+      "primary_text": "Your child's SAT score doesn't have to be a source of stress. Our expert tutors have helped 10,000+ students raise their scores by an average of 200 points. Start with a free practice test today.",
+      "headline": "Expert SAT Prep That Works",
+      "description": "1-on-1 tutoring tailored to your student's needs",
+      "cta_button": "Start Free Practice Test"
+    },
+    "scores": {
+      "clarity": {
+        "score": 8.0,
+        "rationale": "Single clear message: expert tutoring raises SAT scores. The 200-point stat anchors the value immediately.",
+        "contrastive": "A 10.0 version would frontload the 200-point stat as the first 5 words rather than burying it after the empathy opener.",
+        "confidence": 9
+      },
+      "value_proposition": {
+        "score": 8.5,
+        "rationale": "Specific and differentiated: 200-point average improvement with 10,000+ social proof.",
+        "contrastive": "A 10.0 version would add a time dimension ('in just 8 weeks') to make the benefit more concrete.",
+        "confidence": 8
+      },
+      "cta": {
+        "score": 9.0,
+        "rationale": "'Start Free Practice Test' is specific, low-friction (free), and action-oriented. Matches conversion funnel.",
+        "contrastive": "A 10.0 version might add micro-urgency ('Takes 15 Minutes') to reduce perceived commitment further.",
+        "confidence": 9
+      },
+      "brand_voice": {
+        "score": 7.5,
+        "rationale": "Empowering and results-focused. Slightly generic — could be any tutoring company.",
+        "contrastive": "A 9.5 version would include a distinctly Varsity Tutors element like 1-on-1 expert matching.",
+        "confidence": 7
+      },
+      "emotional_resonance": {
+        "score": 7.0,
+        "rationale": "Addresses parent anxiety ('source of stress') and offers relief through social proof. Functional but not deeply emotional.",
+        "contrastive": "A 9.0 version would paint a transformation picture: 'Imagine your student walking into test day confident.'",
+        "confidence": 7
+      }
+    },
+    "aggregate_score": 8.1,
+    "campaign_goal": "conversion",
+    "weights_used": {
+      "clarity": 0.25,
+      "value_proposition": 0.25,
+      "cta": 0.30,
+      "brand_voice": 0.10,
+      "emotional_resonance": 0.10
+    },
+    "meets_threshold": true,
+    "effective_threshold": 7.0,
+    "weakest_dimension": "emotional_resonance",
+    "flags": [],
+    "compliance": {
+      "passes": true,
+      "violations": []
+    }
+  }
+}
