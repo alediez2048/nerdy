@@ -7,6 +7,53 @@
 
 ---
 
+## P0-02: Append-Only Decision Ledger ✅
+
+### Plain-English Summary
+- Implemented zero-dependency JSONL event logger in `iterate/ledger.py` with `log_event`, `read_events`, `read_events_filtered`, `get_ad_lifecycle`
+- Every event gets auto-injected `timestamp` (ISO-8601 UTC) and `checkpoint_id` (UUID); schema validation enforces 8 required fields
+- File locking via `fcntl` for concurrent write safety; append-only guarantees (no modify/delete)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 13, 2026
+- **Ticket:** P0-02
+- **Branch:** `feature/P0-02-decision-ledger`
+- **Architectural Decisions:** R2-Q8 (append-only JSONL), R3-Q2 (checkpoint_id for resume)
+
+### Key Achievements
+- Ledger module with full API: write, read, filter, lifecycle
+- Schema validation with `LedgerValidationError` — missing fields reported by name
+- Append-only writes with `fcntl.flock` exclusive locking
+- Creates parent directories on first write
+- Dict copy prevents caller mutation
+
+### Files Changed
+- **Created:** `iterate/ledger.py` — ledger module with 4 public functions + validation
+- **Created:** `tests/test_pipeline/test_ledger.py` — 15 unit tests
+- **Updated:** `docs/DEVLOG.md` — this entry
+
+### Testing
+- 15 tests: roundtrip, append-only, auto-injected fields, schema validation, filtering (3 fields), lifecycle, edge cases (missing file, None values, JSONL validity, no caller mutation)
+- Full suite: 16 passed (15 ledger + 1 scaffold)
+
+### Acceptance Criteria
+- [x] Ledger module with `log_event`, `read_events`, `read_events_filtered`, `get_ad_lifecycle`
+- [x] Auto-injected timestamp (ISO-8601) and checkpoint_id (UUID)
+- [x] Schema validation catches missing required fields
+- [x] Concurrent write safety (fcntl file locking)
+- [x] Append-only: never modify or delete existing entries
+- [x] Tests pass (`15/15`)
+- [x] Lint clean
+- [x] DEVLOG updated
+
+### Next Steps
+- P0-03 (Per-ad seed chain) — will use ledger to log seeds
+- P0-08 (Checkpoint-resume) — depends on checkpoint_id
+- Every pipeline ticket writes to this ledger
+
+---
+
 ## P0-01: Project Scaffolding ✅
 
 ### Plain-English Summary
@@ -52,7 +99,7 @@
 | Ticket | Title | Status |
 |--------|-------|--------|
 | P0-01 | Project scaffolding | ✅ |
-| P0-02 | Append-only decision ledger | ⏳ |
+| P0-02 | Append-only decision ledger | ✅ |
 | P0-03 | Per-ad seed chain + snapshots | ⏳ |
 | P0-04 | Brand knowledge base | ⏳ |
 | P0-05 | Reference ad collection | ⏳ |
