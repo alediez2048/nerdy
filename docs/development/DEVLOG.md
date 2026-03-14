@@ -7,6 +7,56 @@
 
 ---
 
+## P1-02: Ad Copy Generator ✅
+
+### Plain-English Summary
+- Created `generate/ad_generator.py` — reference-decompose-recombine ad copy generator
+- `generate_ad(expanded_brief) -> GeneratedAd` selects structural atoms from pattern database, builds recombination prompt, calls Gemini Flash, produces Meta ad (primary_text, headline, description, cta_button)
+- Added 15 tests in `tests/test_generation/test_ad_generator.py`
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P1-02
+- **Branch:** `develop`
+- **Architectural Decisions:** R2-Q1 (reference-decompose-recombine), Section 4.8.6 (competitive structural atoms), R3-Q4 (per-ad seed chains)
+
+### Key Achievements
+- GeneratedAd dataclass: ad_id, primary_text, headline, description, cta_button, structural_atoms_used, expanded_brief_id, generation_metadata
+- _select_structural_atoms() queries query_patterns by audience; fallback to audience-only when campaign_goal not in pattern tags
+- ad_id format: `ad_{brief_id}_c{cycle}_{seed}` for determinism
+- to_evaluator_input() for P1-04 compatibility (primary_text, headline, description, cta_button, ad_id)
+- Logs AdGenerated events to ledger with structural_atoms_count
+- CTA validated against VALID_CTAS (Learn More, Get Started, Sign Up, Start Free Practice Test, Book Now)
+
+### Files Changed
+- **Created:** `generate/ad_generator.py` — ad copy generator
+- **Created:** `tests/test_generation/test_ad_generator.py` — 15 tests
+- **Updated:** `docs/DEVLOG.md` — this entry
+
+### Testing
+- 15 tests: schema, 4 components, structural atoms, seed determinism, malformed response, CTA validation, metadata, parse helper, prompt, evaluator compatibility
+- 98 tests pass (full suite minus golden set)
+
+### Acceptance Criteria
+- [x] generate_ad() produces complete GeneratedAd with all 4 Meta components
+- [x] Structural atoms from pattern database selected and recorded
+- [x] Seed-based determinism (same seed = same ad_id)
+- [x] Generation events logged to decision ledger
+- [x] Malformed API responses handled gracefully
+- [x] Tests pass, lint clean
+- [x] DEVLOG updated
+
+### Learnings
+- Pattern database tags don't include "awareness"/"conversion" — fallback to audience-only query works
+- GeneratedAd.to_evaluator_input() provides clean handoff to P1-04
+
+### Next Steps
+- **P1-03** (Brand voice profiles) — generator can include voice profile in prompt
+- **P1-04** (Chain-of-thought evaluator) — consumes GeneratedAd.to_evaluator_input()
+
+---
+
 ## P1-01: Brief Expansion Engine ✅
 
 ### Plain-English Summary
@@ -493,7 +543,7 @@
 | Ticket | Title | Status |
 |--------|-------|--------|
 | P1-01 | Brief expansion engine | ✅ |
-| P1-02 | Ad copy generator | ⏳ |
+| P1-02 | Ad copy generator | ✅ |
 | P1-03 | Audience-specific brand voice profiles | ⏳ |
 | P1-04 | Chain-of-thought evaluator | ⏳ |
 | P1-05 | Campaign-goal-adaptive weighting | ⏳ |
