@@ -23,7 +23,7 @@ P0-04 creates the **verified brand knowledge base** — a structured JSON file c
 ## What Was Already Done
 
 - P0-01: `data/` directory exists
-- Brand context defined in `requirements.md` and `prd.md` (brand voice, audience, competitors)
+- Brand context defined in `prd.md` (brand voice, audience, competitors)
 - `.claude/skills/adops-generation/SKILL.md` specifies grounding constraint pattern
 - `.cursor/rules/brand-context.mdc` defines audience profiles and compliance guardrails
 
@@ -42,8 +42,9 @@ Build a structured, verified-facts-only JSON file that the brief expansion engin
 - [ ] **Brand identity:** Name, parent company, brand voice descriptors, positioning
 - [ ] **Products:** SAT prep tutoring (verified offerings only — 1-on-1 tutoring, online platform)
 - [ ] **Audience segments:** Parent profile, student profile (from assignment spec)
-- [ ] **Proof points:** Only statistics/claims that appear in the assignment spec or reference ads
-  - Example: "10,000+ students" (if from reference ads)
+- [ ] **Proof points:** Only statistics/claims that appear in the assignment spec or `prd.md`
+  - Example: "200+ average point improvement" (if verifiable from prd.md or reference ads)
+  - Proof points will be minimal now — enriched after P0-05 (reference ad collection)
   - Do NOT invent: pricing, specific score guarantees, testimonials
 - [ ] **Competitors:** Princeton Review, Kaplan, Khan Academy, Chegg (names only — no claims about them)
 - [ ] **CTAs by funnel stage:** Awareness CTAs, conversion CTAs (from assignment spec)
@@ -109,9 +110,10 @@ Build a structured, verified-facts-only JSON file that the brief expansion engin
 
 ## Branch & Merge Workflow
 
+All work is done directly on `develop`. No feature branches.
+
 ```bash
-git switch main && git pull
-git switch -c feature/P0-04-brand-knowledge-base
+git switch develop && git pull
 ```
 
 ---
@@ -135,8 +137,7 @@ git switch -c feature/P0-04-brand-knowledge-base
 
 | File | Why |
 |------|-----|
-| `requirements.md` (lines 103–117) | Brand context from assignment |
-| `prd.md` (lines 41–43) | Brand voice and audience |
+| `docs/reference/prd.md` (lines 46–48) | Brand voice and audience |
 | `.cursor/rules/brand-context.mdc` | Audience profiles and compliance guardrails |
 | `.claude/skills/adops-generation/SKILL.md` | Grounding constraint pattern |
 
@@ -149,7 +150,7 @@ git switch -c feature/P0-04-brand-knowledge-base
 - [ ] Covers: brand identity, products, audiences, proof points, competitors, CTAs, compliance
 - [ ] No invented statistics, pricing, or testimonials
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
+- [ ] Committed on `develop`
 
 ---
 
