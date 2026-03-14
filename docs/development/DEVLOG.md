@@ -7,6 +7,43 @@
 
 ---
 
+## P0-10: Competitive Pattern Query Interface ✅
+
+### Plain-English Summary
+- Created `generate/competitive.py` — query interface for competitive pattern database
+- `load_patterns()`, `query_patterns()`, `get_competitor_summary()`, `get_all_competitors()`, `get_landscape_context()`
+- Added 12 tests in `tests/test_generation/test_competitive.py`
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P0-10
+- **Branch:** `develop`
+- **Architectural Decisions:** R2-Q2 (structured pattern extraction), R3-Q5 (competitive context in brief expansion)
+
+### Key Achievements
+- Filter by audience, campaign_goal, hook_type, competitor, tags (all optional)
+- Results ranked by relevance (matching criteria count)
+- get_landscape_context() produces formatted string for P1-01 brief expansion
+- Module importable: `from generate.competitive import query_patterns`
+
+### Files Changed
+- **Created:** `generate/competitive.py` — pattern query module
+- **Created:** `tests/test_generation/test_competitive.py` — 12 tests
+- **Updated:** `docs/DEVLOG.md` — this entry
+
+### Acceptance Criteria
+- [x] query_patterns() returns correct filtered results
+- [x] query_patterns(audience="parents", tags=["tutoring"]) returns ranked results
+- [x] get_landscape_context() produces formatted competitive context
+- [x] 10+ tests pass (12 total)
+- [x] Lint clean, DEVLOG updated
+
+### Next Steps
+- **P0 complete.** Phase 1 begins: P1-01 (Brief expansion engine) uses get_landscape_context()
+
+---
+
 ## P0-07: Golden Set Regression Tests ✅
 
 ### Plain-English Summary
@@ -358,7 +395,7 @@
 | P0-07 | Golden set regression tests | ✅ |
 | P0-08 | Checkpoint-resume infrastructure | ✅ |
 | P0-09 | Competitive pattern database — initial scan | ⏳ |
-| P0-10 | Competitive pattern query interface | ⏳ |
+| P0-10 | Competitive pattern query interface | ✅ |
 
 ### Phase 1: Full-Ad Pipeline — v1 Copy + Image (20 tickets)
 | Ticket | Title | Status |
