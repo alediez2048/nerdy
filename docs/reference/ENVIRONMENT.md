@@ -7,26 +7,36 @@ Quick reference for running, testing, and troubleshooting the Ad-Ops-Autopilot p
 ## Architecture Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│  LOCAL (Development)                                                 │
-│                                                                      │
-│  Python venv                                                         │
-│    └─ Pipeline (generate → evaluate → iterate)                       │
-│         ↕                                                             │
-│  Gemini API (Flash + Pro)                                            │
-│    └─ Generation, evaluation, brief expansion, context distillation  │
-│         ↕                                                             │
-│  Append-only JSONL ledger (data/ledger.jsonl)                        │
-│    └─ Decision log, checkpoints, token attribution                   │
-│         ↕                                                             │
-│  Local data: brand_knowledge.json, reference_ads.json, config.yaml   │
-│                                                                      │
-│  v2: Imagen / Flux (image generation)                                │
-│  v3: Meta Ad Library (competitive intelligence — manual/semi-auto)   │
-└──────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│  PIPELINE (CLI — runs locally)                                           │
+│                                                                          │
+│  Python venv                                                             │
+│    └─ Pipeline (generate → evaluate → iterate → output)                  │
+│         ↕                                                                │
+│  Gemini API                                                              │
+│    ├─ Flash — generation, evaluation, brief expansion, distillation      │
+│    ├─ Pro — improvable-range regeneration (5.5–7.0 score)                │
+│    └─ Nano Banana Pro (Gemini 3 Pro Image) — ad image generation (P1)    │
+│         ↕                                                                │
+│  Append-only JSONL ledger (data/ledger.jsonl)                            │
+│    └─ Decision log, checkpoints, token attribution, snapshots            │
+│         ↕                                                                │
+│  Local data files                                                        │
+│    ├─ brand_knowledge.json, reference_ads.json, config.yaml              │
+│    └─ competitive/patterns.json (Meta Ad Library extraction, P0-09)      │
+│                                                                          │
+│  v2 (P3): Veo 3.1 Fast (UGC video), Nano Banana 2 (cheap image tier)    │
+├──────────────────────────────────────────────────────────────────────────┤
+│  APPLICATION LAYER (P1B — optional web wrapper)                          │
+│                                                                          │
+│  FastAPI + Celery + Redis (background pipeline execution)                │
+│  PostgreSQL (users, sessions, curation state)                            │
+│  React (brief config, session list, progress view, dashboard)            │
+│  Docker Compose (local dev + production deployment)                      │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**The pipeline runs entirely locally. No database, no deployed API. All state lives in the append-only ledger and data files.**
+**The pipeline runs entirely locally via CLI.** The application layer (P1B) is an optional web wrapper — the pipeline is always CLI-testable regardless.
 
 ---
 
@@ -36,22 +46,25 @@ Quick reference for running, testing, and troubleshooting the Ad-Ops-Autopilot p
 
 | Service | Sign Up URL | What You Get | Cost |
 |---|---|---|---|
-| Google AI (Gemini) | https://ai.google.dev/ | `GEMINI_API_KEY` — generation + evaluation | Free tier: 15 RPM (Flash), 2 RPM (Pro) |
-| Meta Ad Library | https://facebook.com/ads/library | Competitor ad research | Free (no API — manual collection) |
+| Google AI (Gemini) | https://ai.google.dev/ | `GEMINI_API_KEY` — text generation, evaluation, image generation (Nano Banana Pro uses same key) | Free tier: 15 RPM (Flash), 2 RPM (Pro) |
+| Meta Ad Library | https://facebook.com/ads/library | Competitor ad research (P0-09) | Free (no API — manual/semi-auto via Claude in Chrome) |
 
-### Optional (v2+)
+### Additional Services (by phase)
 
-| Service | Sign Up URL | What You Get | Cost |
+| Service | Phase | What You Get | Cost |
 |---|---|---|---|
-| Imagen / Flux / Nano Banana | Varies | Image generation for v2 | Pay-per-use |
+| Nano Banana Pro (Gemini 3 Pro Image) | P1 | Ad image generation — same `GEMINI_API_KEY` | ~$0.13/image |
+| Nano Banana 2 (Gemini 3.1 Flash Image) | P3 | Cheap image tier for A/B variant volume | ~$0.02–0.05/image |
+| Veo 3.1 Fast | P3 | UGC video for Stories/Reels — same `GEMINI_API_KEY` | ~$0.15/sec (~$0.90/6-sec video) |
+| PostgreSQL + Redis | P1B | Application layer state | Local (Docker) |
 
 ### Verifying API Keys
 
 ```bash
 # Gemini API — should return a response
-curl -sS "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+curl -sS "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"contents":[{"parts":[{"text":"Say hello"}]}]}' | python3 -c "import sys,json; d=json.load(sys.stdin); print('OK' if 'candidates' in d else f'ERROR: {d.get(\"error\", d)}")"
+  -d '{"contents":[{"parts":[{"text":"Say hello"}]}]}' | python3 -c "import sys,json; d=json.load(sys.stdin); print('OK' if 'candidates' in d else f'ERROR: {d.get(\"error\", d)}')"
 ```
 
 ---
@@ -93,7 +106,28 @@ python run_pipeline.py --resume
 python run_pipeline.py --max-ads 10
 ```
 
-### 1.3 Verify Setup
+### 1.3 Run the Dashboard (after P5)
+
+```bash
+# Export dashboard data from ledger
+python export_dashboard.py
+
+# Open the dashboard
+open output/dashboard.html   # macOS
+# or: xdg-open output/dashboard.html   # Linux
+```
+
+### 1.4 Run the Application Layer (P1B — optional)
+
+```bash
+# Start all services (FastAPI, PostgreSQL, Redis, Celery)
+docker compose up
+
+# Production deployment
+docker compose -f docker-compose.prod.yml up
+```
+
+### 1.5 Verify Setup
 
 ```bash
 # Config loads correctly
@@ -116,7 +150,7 @@ except FileNotFoundError:
 "
 ```
 
-### 1.4 Run Tests
+### 1.6 Run Tests
 
 ```bash
 # All tests
@@ -130,18 +164,10 @@ python -m pytest tests/test_pipeline/ -v
 python -m pytest tests/ -v --tb=short
 ```
 
-### 1.5 Lint
+### 1.7 Lint
 
 ```bash
 ruff check . --fix
-```
-
-### 1.6 Generate Quality Report
-
-```bash
-# After pipeline run — visualize quality trends
-python -m output.visualize  # or equivalent script
-# Output: quality trend charts, cost per ad, correlation matrix
 ```
 
 ---
@@ -150,8 +176,8 @@ python -m output.visualize  # or equivalent script
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `GEMINI_API_KEY` | Yes | — | Google AI API key for Gemini (Flash + Pro) |
-| `GLOBAL_SEED` | No | From config | Reproducibility seed; overrides config if set |
+| `GEMINI_API_KEY` | Yes | — | Google AI API key for Gemini Flash, Pro, Nano Banana Pro, and Veo |
+| `GLOBAL_SEED` | No | From config | Reproducibility seed; overrides config.yaml if set |
 | `LEDGER_PATH` | No | `data/ledger.jsonl` | Path to append-only decision ledger |
 | `LOG_LEVEL` | No | `INFO` | Logging verbosity (DEBUG, INFO, WARNING, ERROR) |
 
@@ -162,14 +188,21 @@ python -m output.visualize  # or equivalent script
 | Key | Default | Description |
 |---|---|---|
 | `quality_threshold` | 7.0 | Minimum weighted average to publish |
+| `clarity_floor` | 6.0 | Hard minimum — violation = reject regardless of aggregate |
+| `brand_voice_floor` | 5.0 | Hard minimum — violation = reject regardless of aggregate |
 | `batch_size` | 10 | Ads per batch (parallel within stage) |
 | `max_regeneration_cycles` | 3 | Max attempts before brief mutation / escalation |
 | `pareto_variants` | 5 | Variants per regeneration cycle |
 | `ratchet_window` | 5 | Batches for rolling high-water mark |
 | `ratchet_buffer` | 0.5 | Buffer below rolling avg for effective threshold |
-| `clarity_floor` | 6.0 | Hard minimum — violation = reject |
-| `brand_voice_floor` | 5.0 | Hard minimum — violation = reject |
 | `improvable_range` | [5.5, 7.0] | Ads in this range escalate to Gemini Pro |
+| `exploration_plateau_threshold` | 0.1 | Score improvement below which = plateau |
+| `exploration_plateau_batches` | 3 | Consecutive plateau batches before exploring |
+| `global_seed` | "nerdy-p0-default" | Root seed for deterministic reproducibility |
+| `api_delay_seconds` | 1.5 | Delay between API calls (rate limiting) |
+| `retry_max_attempts` | 3 | API call retry ceiling before raising |
+| `ledger_path` | data/ledger.jsonl | Path to append-only event ledger |
+| `cache_path` | data/cache/ | Path to result-level cache directory |
 
 ---
 
@@ -181,17 +214,23 @@ python -m output.visualize  # or equivalent script
 | `.env.example` | Template for `.env` — copy and fill in |
 | `data/config.yaml` | Tunable pipeline parameters |
 | `data/brand_knowledge.json` | Verified Varsity Tutors facts (P0-04) |
-| `data/reference_ads.json` | Labeled reference ads (P0-05) |
-| `data/pattern_database.json` | Structural atoms for generation (P0-05) |
+| `data/reference_ads.json` | Labeled reference ads for calibration (P0-05) |
+| `data/competitive/patterns.json` | Competitive pattern database from Meta Ad Library (P0-09) |
 | `data/ledger.jsonl` | Append-only decision log (created on first run) |
+| `data/cache/` | Result-level cache with version TTL (P1-12) |
 | `requirements.txt` | Python dependencies |
-| `prd.md` | Product requirements document |
-| `interviews.md` | 50 architectural pressure-test Q&As (R1–R5) |
-| `docs/development/DEVLOG.md` | Development log — updated after every ticket |
-| `docs/development/tickets/<TICKET-ID>-primer.md` | Ticket primers (80 tickets, P0-01–P5-11) |
-| `docs/deliverables/decisionlog.md` | Decision log — design rationale and trade-offs |
-| `docs/deliverables/systemsdesign.md` | Systems design — architecture documentation |
+| `docs/reference/prd.md` | Product requirements document (80 tickets, 9 pillars, 50 Q&As) |
+| `docs/reference/interviews.md` | 30 architectural Q&As (R1–R3, 10 each) |
+| `docs/reference/requirements.md` | Assignment spec (scoring rubric, deliverables) |
 | `docs/reference/ENVIRONMENT.md` | This file |
+| `docs/development/DEVLOG.md` | Development log — updated after every ticket |
+| `docs/development/tickets/*-primer.md` | Ticket primers (80 tickets across 7 phases) |
+| `docs/deliverables/decisionlog.md` | Decision log — design rationale, trade-offs, failures |
+| `docs/deliverables/systemsdesign.md` | Systems design — architecture documentation |
+| `docs/deliverables/writeup.md` | Technical writeup (1–2 pages) |
+| `docs/deliverables/ai-tools.md` | AI tools and prompts used in development |
+| `output/dashboard.html` | 8-panel quality dashboard (P5-01–P5-06) |
+| `output/ad_library.json` | Generated ad library with scores and rationales (P5-10) |
 
 ---
 
@@ -205,9 +244,21 @@ python -m output.visualize  # or equivalent script
 
 **Fix:**
 - Pipeline uses checkpoint-resume: interrupt, wait, run `python run_pipeline.py --resume`
-- Configurable delay between API calls in config
+- Configurable delay between API calls (`api_delay_seconds` in config)
 - Reduce `batch_size` to 5 if needed
 - Tiered routing (P1-06) reduces Pro calls by concentrating on improvable-range ads only
+
+### Nano Banana Pro Rate Limits
+
+**Symptom:** Image generation stalls or returns 429.
+
+**Cause:** Image generation shares Gemini API quota. Generating 3 variants per ad at 50 ads = 150+ image requests.
+
+**Fix:**
+- Images generate only for ads scoring ≥5.5 (post-text-triage, not all ads)
+- Cache generated images by visual spec hash
+- Batch image requests with `api_delay_seconds` between calls
+- `--resume` recovers from mid-batch image failures
 
 ### "Module not found" Errors
 
@@ -267,18 +318,31 @@ python run_pipeline.py
 - Review contrastive rationales — are they actionable?
 - Ensure reference-decompose-recombine uses proven structural atoms from pattern database
 
+### AI Image Artifacts
+
+**Symptom:** Generated images have distorted faces, extra fingers, warped text.
+
+**Cause:** Known limitation of current image generation models.
+
+**Fix:**
+- Multi-variant generation (3 per ad) means artifacts in one variant don't block the ad — Pareto selection picks a clean sibling
+- Attribute checklist (P1-15) catches artifacts automatically
+- Targeted regen (P1-17) appends "no distortions" diagnostic
+- Max 5 images per ad before flagging as "image-blocked"
+
 ---
 
 ## 6. Quick Reference Card
 
 ```
-SETUP:     python3.10 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-CONFIG:    cp .env.example .env  (then add GEMINI_API_KEY)
-RUN:       python run_pipeline.py
-RESUME:    python run_pipeline.py --resume
-TEST:      python -m pytest tests/ -v
-LINT:      ruff check . --fix
-REPORT:    python -m output.visualize  (or equivalent)
+SETUP:      python3.10 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+CONFIG:     cp .env.example .env  (then add GEMINI_API_KEY)
+RUN:        python run_pipeline.py
+RESUME:     python run_pipeline.py --resume
+TEST:       python -m pytest tests/ -v
+LINT:       ruff check . --fix
+DASHBOARD:  python export_dashboard.py && open output/dashboard.html
+APP (P1B):  docker compose up
 ```
 
 ---
@@ -291,7 +355,7 @@ Before any demo or submission, run these checks:
 
 ```bash
 python run_pipeline.py
-# Should complete without crash; 50+ ads with evaluation scores
+# Should complete without crash; 50+ full ads (copy + image) with evaluation scores
 ```
 
 ### 7.2 Quality Threshold Met
@@ -310,13 +374,22 @@ if scores:
 "
 ```
 
-### 7.3 Tests Pass
+### 7.3 Dashboard Renders
+
+```bash
+python export_dashboard.py
+open output/dashboard.html
+# All 8 panels should render with data
+```
+
+### 7.4 Tests Pass
 
 ```bash
 python -m pytest tests/ -v
+# Target: 15+ tests, all green
 ```
 
-### 7.4 One-Command Setup Works
+### 7.5 One-Command Setup Works
 
 ```bash
 # Fresh clone, new venv
@@ -324,13 +397,17 @@ pip install -r requirements.txt
 # Should complete without errors
 ```
 
-### 7.5 Summary
+### 7.6 Submission Deliverables
 
-| Check | Blocking for Demo? |
-|---|---|
-| Pipeline runs end-to-end | Yes |
-| 50+ ads generated and evaluated | Yes |
-| Quality trend shows improvement | Yes |
-| Tests pass | Yes |
-| Decision log complete | Yes |
-| Narrated replay generated | Recommended |
+| Deliverable | File | Blocking? |
+|---|---|---|
+| Pipeline runs end-to-end | `run_pipeline.py` | Yes |
+| 50+ full ads (copy + image) with scores | `output/ad_library.json` | Yes |
+| Quality trend shows improvement | `output/dashboard.html` (Panel 3) | Yes |
+| Tests pass (≥10) | `tests/` | Yes |
+| Decision log | `docs/deliverables/decisionlog.md` | Yes |
+| Technical writeup (1-2 pages) | `docs/deliverables/writeup.md` | Yes |
+| AI tools and prompts documented | `docs/deliverables/ai-tools.md` | Yes |
+| Demo video (≤7 min) | Recorded separately | Yes |
+| 8-panel dashboard | `output/dashboard.html` | Recommended |
+| README with one-command setup | `README.md` | Yes |

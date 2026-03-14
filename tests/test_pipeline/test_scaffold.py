@@ -1,7 +1,5 @@
 """Placeholder test to verify test structure works."""
 
-import pytest
-
 
 def test_scaffold_imports() -> None:
     """Verify package structure is importable."""
