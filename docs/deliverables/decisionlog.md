@@ -289,8 +289,8 @@ The generator doesn't need to know the journey — it needs the destination. Thi
 
 ## 15. What Doesn't Work Yet (Honest Limitations)
 
-### The Evaluator Is Untested Against Real Data
-I've designed the evaluation framework and calibration strategy, but haven't run it against the Slack reference ads yet (P0-06). There's a real risk that my evaluator doesn't distinguish a 6.0 from an 8.0 on real ads. If the evaluator can't reliably discriminate, every downstream decision is compromised.
+### ~~The Evaluator Is Untested Against Real Data~~ (Resolved — P0-06)
+~~I've designed the evaluation framework and calibration strategy, but haven't run it against the Slack reference ads yet (P0-06).~~ **Update:** Calibrated against 42 real Meta Ad Library ads. Evaluator scores within ±1.0 of reference labels on 89.5% of dimension scores. Excellent ads average 7.16 (≥7.0 threshold), poor ads average 4.35 (≤5.0 threshold). See Decision #21 for the full prompt tuning journey.
 
 ### No Token Cost Data
 Token tracking (P1-11) is deferred. I've been building infrastructure without measuring its cost. My "performance per token" claims are theoretical. I need actual numbers before I can validate whether tiered model routing saves as much as I project.
@@ -301,8 +301,8 @@ The quality ratchet, SPC drift detection, and Pareto selection all depend on his
 ### Dimension Independence Is an Assumption
 I claim the five quality dimensions are independently measurable. This is testable (correlation analysis, P2-02) but untested. If Clarity and Value Proposition are highly correlated, my 5-dimension framework is overselling its granularity.
 
-### The 7.0 Threshold Is Arbitrary
-Why 7.0 and not 6.5 or 7.5? The assignment specifies 7.0, so I'm using it. But the "right" threshold depends on the evaluator's calibration — 7.0 from a generous evaluator is different from 7.0 from a strict one. This is circular unless the evaluator is calibrated against human judgment first.
+### ~~The 7.0 Threshold Is Arbitrary~~ (Partially Resolved — P0-06)
+Why 7.0 and not 6.5 or 7.5? The assignment specifies 7.0, so I'm using it. **Update:** After calibration (Decision #21), the evaluator is anchored against real ads. Excellent ads (human-labeled) average 7.16 — just above the 7.0 threshold, confirming it's a meaningful discriminator rather than arbitrary. The threshold still depends on evaluator consistency across future batches (to be validated in P2-04 SPC drift detection).
 
 ### Brand Voice Assessment Will Be Approximate
 I don't have extensive approved Varsity Tutors copy to calibrate brand voice evaluation. I'm working from the brand guidelines ("empowering, knowledgeable, approachable, results-focused") and the reference ads from Slack. A real production system would have 100+ approved copy samples and brand team feedback. Mine has ~10-20 reference points.
@@ -382,9 +382,9 @@ I've committed to shared semantic brief expansion (R1-Q10) for text-image cohere
 
 **Prompt iterations:** Single prompt with 5-step forced sequence. Output schema specified inline (no response_schema — parsing handles markdown code blocks). Rubric examples embedded in prompt (1 vs 10 scale descriptions per dimension).
 
-**Calibration run:** Initial run hit 429 RESOURCE_EXHAUSTED (free tier quota). Added exponential backoff (2^n seconds, max 60s, 3 retries) and 1.5s delay between calibration calls. User can re-run `scripts/run_calibration.py` when quota resets.
+**Calibration run:** Initial run hit 429 RESOURCE_EXHAUSTED (free tier quota). Added exponential backoff (2^n seconds, max 60s, 3 retries) and 1.5s delay between calibration calls. **Update:** Calibration completed after API key was regenerated via Google AI Studio. Final results: 89.5% within ±1.0, excellent avg 7.16, poor avg 4.35. See Decision #21 for the full prompt tuning journey from v2→v3.
 
-**What I would do differently:** Run calibration earlier in the day when quota is fresh, or use a paid tier for development. The evaluator is ready; calibration validation is blocked on API access.
+**What I learned:** API key management matters — the initial key was leaked and flagged by GitHub, requiring regeneration. Keys created in GCP Console don't auto-enable the Generative Language API; keys from AI Studio do. For development, always create API keys through AI Studio directly.
 
 ---
 
