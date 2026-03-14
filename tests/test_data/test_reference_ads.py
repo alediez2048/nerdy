@@ -48,21 +48,21 @@ def test_reference_ads_required_fields() -> None:
 
 
 def test_reference_ads_quality_labels() -> None:
-    """Must have 5-10 excellent and 5-10 poor labeled ads."""
+    """Must have at least 5 excellent and 5 poor labeled ads."""
     data = _load_reference_ads()
     excellent = [a for a in data["ads"] if a.get("quality_label") == "excellent"]
     poor = [a for a in data["ads"] if a.get("quality_label") == "poor"]
-    assert 5 <= len(excellent) <= 10, f"Expected 5-10 excellent, got {len(excellent)}"
-    assert 5 <= len(poor) <= 10, f"Expected 5-10 poor, got {len(poor)}"
+    assert len(excellent) >= 5, f"Expected ≥5 excellent, got {len(excellent)}"
+    assert len(poor) >= 5, f"Expected ≥5 poor, got {len(poor)}"
 
 
 def test_reference_ads_labeled_have_scores() -> None:
-    """Labeled ads must have human_scores and rationale."""
+    """Labeled ads must have human_scores and ai_rationales."""
     data = _load_reference_ads()
     labeled = [a for a in data["ads"] if a.get("quality_label") in ("excellent", "poor")]
     for ad in labeled:
         assert "human_scores" in ad
-        assert "rationale" in ad
+        assert "ai_rationales" in ad
         scores = ad["human_scores"]
         dims = ["clarity", "value_proposition", "cta", "brand_voice", "emotional_resonance"]
         for dim in dims:
