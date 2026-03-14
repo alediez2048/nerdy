@@ -28,6 +28,9 @@ exploration_plateau_batches: 3
 ledger_path: data/ledger.jsonl
 cache_path: data/cache/
 
+# Reproducibility (R3-Q4)
+global_seed: "nerdy-p0-default"
+
 # API
 api_delay_seconds: 1.5  # Between calls to respect rate limits
 retry_max_attempts: 3
