@@ -94,7 +94,8 @@ def test_evaluator_returns_valid_schema(mock_call: MagicMock) -> None:
     result = evaluate_ad(ad, campaign_goal="conversion")
     assert isinstance(result, EvaluationResult)
     assert result.ad_id == "test_001"
-    assert result.aggregate_score == 7.9
+    # P1-05: conversion weights — 8.0*0.25 + 8.0*0.25 + 9.0*0.30 + 7.5*0.10 + 7.0*0.10 = 8.15
+    assert result.aggregate_score == 8.15
     assert result.campaign_goal == "conversion"
     assert result.meets_threshold is True
     assert result.weakest_dimension == "emotional_resonance"
@@ -137,14 +138,16 @@ def test_confidence_flag_present(mock_call: MagicMock) -> None:
 
 
 @patch("evaluate.evaluator._call_gemini")
-def test_aggregate_uses_equal_weights(mock_call: MagicMock) -> None:
-    """P0-06: Default equal weighting (0.2 per dimension)."""
+def test_aggregate_uses_goal_adaptive_weights(mock_call: MagicMock) -> None:
+    """P1-05: Aggregate uses campaign-goal-adaptive weighting (not equal weights)."""
     mock_call.return_value = _mock_evaluation_response()
     result = evaluate_ad(_sample_ad())
-    # With equal weights, aggregate should be mean of 5 dimension scores
-    scores = [result.scores[d]["score"] for d in result.scores]
-    expected = sum(scores) / 5
-    assert abs(result.aggregate_score - expected) < 0.1
+    # Default campaign_goal is "conversion" — weights: clarity=0.25, vp=0.25, cta=0.30, bv=0.10, er=0.10
+    from evaluate.dimensions import compute_weighted_score, get_weight_profile
+    profile = get_weight_profile(result.campaign_goal)
+    flat = {d: result.scores[d]["score"] for d in result.scores}
+    expected = compute_weighted_score(flat, profile)
+    assert abs(result.aggregate_score - expected) < 0.01
 
 
 @patch("evaluate.evaluator._call_gemini")

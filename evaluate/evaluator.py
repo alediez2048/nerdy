@@ -30,7 +30,12 @@ DIMENSIONS = (
     "emotional_resonance",
 )
 
-# P0-06: Equal weighting. Full campaign-goal-adaptive is P1-05.
+# P1-05: Campaign-goal-adaptive weighting (replaces P0-06 equal weights)
+from evaluate.dimensions import (
+    evaluate_with_weights,
+    get_weight_profile,
+)
+# Backward compat: equal weights still used by _compute_aggregate fallback
 EQUAL_WEIGHTS = {d: 0.2 for d in DIMENSIONS}
 
 CLARITY_FLOOR = 6.0
@@ -348,10 +353,13 @@ def evaluate_ad(
     raw = _call_gemini(prompt, ad_id)
 
     scores = raw["scores"]
-    aggregate = _compute_aggregate(scores)
-    meets, floor_violations = _apply_floor_awareness(scores, aggregate)
+    # P1-05: Use campaign-goal-adaptive weighting instead of equal weights
+    flat_scores = {d: scores.get(d, {}).get("score", 5.0) for d in DIMENSIONS}
+    weighted = evaluate_with_weights(flat_scores, campaign_goal)
+    aggregate = weighted.weighted_average
+    meets = weighted.passes_threshold
     flags = list(raw.get("flags", []))
-    flags.extend([f"floor_violation:{v}" for v in floor_violations])
+    flags.extend([f"floor_violation:{v.dimension}" for v in weighted.floor_violations])
 
     rationales = _scores_to_rationales(scores)
     structural_elements = raw.get("structural_elements") or {}
