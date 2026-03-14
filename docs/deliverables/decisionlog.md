@@ -370,4 +370,18 @@ I've committed to shared semantic brief expansion (R1-Q10) for text-image cohere
 
 ---
 
+---
+
+## 18. P0-06 Evaluator Calibration — Prompt Design and Quota Handling
+
+**Decision:** Implemented chain-of-thought evaluation prompt (R3-Q6) with JSON output, equal weighting for P0-06, and retry logic for 429/500/503.
+
+**Prompt iterations:** Single prompt with 5-step forced sequence. Output schema specified inline (no response_schema — parsing handles markdown code blocks). Rubric examples embedded in prompt (1 vs 10 scale descriptions per dimension).
+
+**Calibration run:** Initial run hit 429 RESOURCE_EXHAUSTED (free tier quota). Added exponential backoff (2^n seconds, max 60s, 3 retries) and 1.5s delay between calibration calls. User can re-run `scripts/run_calibration.py` when quota resets.
+
+**What I would do differently:** Run calibration earlier in the day when quota is fresh, or use a paid tier for development. The evaluator is ready; calibration validation is blocked on API access.
+
+---
+
 *This is a living document. Entries will be added as the project progresses through P0-P5.*
