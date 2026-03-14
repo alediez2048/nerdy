@@ -7,6 +7,52 @@
 
 ---
 
+## P0-07: Golden Set Regression Tests ✅
+
+### Plain-English Summary
+- Created `tests/test_data/golden_ads.json` — 18 ads with human-assigned scores (6 excellent, 6 good, 6 poor)
+- Extended `tests/test_evaluation/test_golden_set.py` with 6 regression tests
+- Regression tests run real evaluator when GEMINI_API_KEY is set; skipped otherwise
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P0-07
+- **Branch:** `develop`
+- **Architectural Decisions:** R2-Q3 (Option A golden set), R1-Q1 (evaluator drift detection)
+
+### Golden Set Composition
+- **Source:** Selected from `data/reference_ads.json` (Meta Ad Library)
+- **Mix:** 6 excellent (8+), 6 good (6–8), 6 poor (<6)
+- **Brands:** Varsity Tutors and competitor (Chegg)
+- **Scores:** FINAL — human_scores per dimension, quality_label
+- **Methodology:** reference_ads v2.0 labels; neutral → good for middle tier
+
+### Regression Tests
+- `test_golden_ads_file_exists` — schema validation (15–20 ads)
+- `test_evaluator_calibration` — ±1.0 of human on 80%+ (requires API)
+- `test_excellent_ads_score_high` — excellent avg ≥7.0 (requires API)
+- `test_poor_ads_score_low` — poor avg ≤5.5 (requires API)
+- `test_dimension_ordering` — weakest human in bottom 2 eval (requires API)
+- `test_floor_constraints` — clarity <6 or brand_voice <5 → rejected (requires API)
+
+### Files Changed
+- **Created:** `tests/test_data/golden_ads.json` — 18 ads with human scores
+- **Modified:** `tests/test_evaluation/test_golden_set.py` — 6 regression tests
+- **Updated:** `docs/DEVLOG.md` — this entry
+
+### Acceptance Criteria
+- [x] golden_ads.json with 15–20 human-scored ads
+- [x] 5+ regression tests (6 total)
+- [x] Tests automated and runnable (9 pass without API, 5 skipped)
+- [x] DEVLOG updated
+
+### Next Steps
+- P2-01 (Inversion tests) — dimension-degraded variants
+- P2-04 (SPC drift detection) — golden set baselines
+
+---
+
 ## P0-08: Checkpoint-Resume Infrastructure ✅
 
 ### Plain-English Summary
@@ -309,7 +355,7 @@
 | P0-04 | Brand knowledge base | ✅ |
 | P0-05 | Reference ad collection | ✅ |
 | P0-06 | Evaluator cold-start calibration | ✅ |
-| P0-07 | Golden set regression tests | ⏳ |
+| P0-07 | Golden set regression tests | ✅ |
 | P0-08 | Checkpoint-resume infrastructure | ✅ |
 | P0-09 | Competitive pattern database — initial scan | ⏳ |
 | P0-10 | Competitive pattern query interface | ⏳ |

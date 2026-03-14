@@ -1,0 +1,298 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-03-14",
+    "methodology": "Selected from reference_ads.json for P0-07. 18 ads spanning excellent (8+), good (6-8), poor (<6). Scores are FINAL.",
+    "source": "reference_ads.json"
+  },
+  "ads": [
+    {
+      "ad_id": "ref_vt_01",
+      "primary_text": "Her SAT Score Jumped 360 Points! 📈 From 1010 to 1370 in Just 2 Months 🎓 📈 \"My daughter's SAT score jumped from 1010 to 1370 in just 2 months with Varsity Tutors' 1:1 tutoring.\" \"She uses her sessions for SAT prep --- and sometimes even for her AP classes when she needs extra help. I love that we can schedule each week around her busy school schedule.\" If your child is aiming for a great college, this program is a game changer. 👉 Fill out the quick form, and an SAT-prep expert will call right away to match your child with the right tutor. Learn More",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.4,
+        "cta": 7.0,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.4
+      },
+      "quality_label": "excellent"
+    },
+    {
+      "ad_id": "ref_vt_05",
+      "primary_text": "🔥 When honors students suddenly crash in AP Calculus, parents panic.But here's what most don't know: It's not about intelligence. It's about the massive jump from Algebra to limits and derivatives.✅ AP Calculus specialists (not general tutors)✅ Same-week start available✅ Typical improvement: 2 letter grades in 6 weeks✅ Cancel anytimeVarsity Tutors: 15+ years helping families through exactly this crisis. We've seen the calculus wall before -- and know exactly how to break through it.Get matched with an expert today.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.0,
+        "cta": 7.0,
+        "brand_voice": 8.4,
+        "emotional_resonance": 7.4
+      },
+      "quality_label": "excellent"
+    },
+    {
+      "ad_id": "ref_vt_07",
+      "primary_text": "Picture this: Your child walks into their May SAT confident, prepared, and ready to show colleges who they really are. ✨Not because they crammed with Khan Academy or sat through generic group classes.Because they had 16 focused sessions with a real human tutor who knew exactly what they needed to work on.**2 sessions per week. Digital practice that mirrors test day. 200-point improvements in 8 weeks.**While other parents stress about whether their child is \"ready,\" you'll have data showing steady progress: 1200→1250→1300→1400.Your child gets:🎯 A tutor matched specifically to how they learn📊 Weekly progress tracking (no guessing if it's working)💻 Training on the actual digital SAT interface🚫 Cancel anytime - no long commitmentsFor what Princeton Review charges for group courses ($1,500-2,000), you get 1:1 attention focused entirely on your child's gaps.Because your smart child shouldn't be held back by a test score that doesn't reflect their true ability.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.4,
+        "cta": 6.0,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.4
+      },
+      "quality_label": "excellent"
+    },
+    {
+      "ad_id": "ref_vt_08",
+      "primary_text": "Your child's March SAT is weeks away. 📅**BEFORE**: Stuck at the same score despite Khan Academy, prep books, and hours of studying. The gap between their GPA and SAT score keeps growing.**AFTER**: 150+ point improvement in 6 weeks. Jennifer's daughter went from failing AP Calc to getting into UGA. \"It was a game changer for her life.\"**THE BRIDGE**: 1-on-1 SAT tutoring that works on a laptop - the same way your child will take the actual test.While other kids practice on paper, yours trains on the real digital interface with built-in tools and calculators. 💻Most parents try Khan Academy first. When that doesn't work, they call us.Why wait? March registration closes soon.✓ Perfect tutor match guarantee✓ Cancel anytime - no commitment fear✓ 2.6x better results than group courses✓ Start this week",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.0,
+        "value_proposition": 8.0,
+        "cta": 7.0,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.0
+      },
+      "quality_label": "excellent"
+    },
+    {
+      "ad_id": "ref_vt_11",
+      "primary_text": "Your child crushes AP classes but struggles on the SAT? 🤔This disconnect isn't about intelligence - it's about test-specific training.The digital SAT has built-in formulas and calculator tools that can solve 60% of math problems instantly. But students trained on paper try to work everything by hand and run out of time.With 8 weeks until May 2nd, we can close this gap.Our SAT tutoring focuses on digital test strategy, not content review. Your child already knows the material - they just need to learn how to use it efficiently under pressure.✅ Train on real digital SAT interface✅ Perfect tutor match guarantee✅ 2.6x better results than in-person centers✅ Cancel anytime - zero commitment riskStop fighting about homework. Start celebrating progress.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.0,
+        "cta": 5.8,
+        "brand_voice": 7.8,
+        "emotional_resonance": 7.4
+      },
+      "quality_label": "excellent"
+    },
+    {
+      "ad_id": "ref_vt_13",
+      "primary_text": "Most smart kids with good grades are stuck in the mid-1200s on the SAT. 📚It's not because they don't know the material. It's because they're practicing on paper for a test taken on a laptop.The SAT is fully digital now. Your child needs 10s of hours of practice in the same digital environment they'll be tested in. Up to 60% of the math section can be solved with built-in formulas and calculator --- but students who aren't trained on it try to do all the math by hand and run out of time.That's where 1:1 SAT tutoring makes the difference. 📈We deliver 10x the score improvement of self-study and 2.6x the improvement of in-person learning centers. Our students typically gain 100 points per month with 2 sessions per week plus daily practice.✅ Real human tutor matched to your child✅ Training on actual Digital SAT interface✅ Weekly progress tracking✅ Perfect tutor match guarantee✅ Cancel anytime --- no long-term commitmentFor what Princeton Review charges $1,500-$2,000 for group courses, we provide true 1:1 attention starting at $349/month.Your child is smarter than their current SAT score shows. Let's prove it by May 2nd.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.4,
+        "cta": 5.8,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.4
+      },
+      "quality_label": "excellent"
+    },
+    {
+      "ad_id": "ref_vt_02",
+      "primary_text": "📊 Your child isn't struggling with the material---they're struggling with the test.The digital SAT rewards strategy, not just knowledge. That's why high-achieving students often score below their potential.✓ Diagnostic pinpoints exact timing gaps✓ Digital interface training✓ 1-on-1 strategy coaching✓ Flexible scheduling around your timelineSmart students need smart test strategy.Ready to see scores that match their ability?",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 7.8,
+        "value_proposition": 7.4,
+        "cta": 5.4,
+        "brand_voice": 6.8,
+        "emotional_resonance": 6.4
+      },
+      "quality_label": "good"
+    },
+    {
+      "ad_id": "ref_vt_06",
+      "primary_text": "You wouldn't practice football on a baseball field. 🏈So why is your child preparing for a digital SAT with paper practice tests?The May SAT happens on a laptop. Built-in calculator. Digital tools. Adaptive sections that change based on performance.Most tutors still use whiteboards and worksheets. That puts your child at a real disadvantage.Your child needs 8 weeks of practice in the same digital environment they'll be tested in. 💻Our tutors train your child on the actual SAT interface. They learn to use built-in formulas and tools that 60% of test-takers ignore - then run out of time doing math by hand.Average improvement: 200+ points in 8 weeks with 2 sessions per week.We deliver 2.6x the score improvement of traditional in-person tutoring.Perfect tutor match guaranteed. Cancel anytime.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.4,
+        "cta": 5.4,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.0
+      },
+      "quality_label": "good"
+    },
+    {
+      "ad_id": "ref_vt_10",
+      "primary_text": "3.8 GPA. 1260 SAT. Something's off.The SAT isn't anything like a classroom test. It's taken on a laptop with built in tools they're expected to master in order to not run out of time. We help smart students score a 1400+ on the SAT. At Varsity Tutors, we diagnose exactly where your child is struggling, whether it's pacing, using the built in Digital SAT tools to their advantage, test anxiety, or knowledge gaps. We can help you see what score is realistic for their timeline with a free SAT Strategy Call.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 7.4,
+        "value_proposition": 7.4,
+        "cta": 6.6,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.0
+      },
+      "quality_label": "good"
+    },
+    {
+      "ad_id": "ref_vt_12",
+      "primary_text": "🔍 You've tried Khan Academy, local tutors, even expensive group classes.Nothing worked because they treat AP Calculus like regular math tutoring.It's not. The sequential concepts, the pace, the exam format - everything is different.That's why \"math help\" keeps failing. Your child needs AP Calculus specialists who understand exactly what trips students up.✅ Subject-specific expertise (not general math)✅ Built for students who've struggled elsewhere✅ 2.6x the score improvement vs other approaches✅ Cancel anytimeFinally, someone who gets why other methods didn't work.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.0,
+        "cta": 4.4,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.0
+      },
+      "quality_label": "good"
+    },
+    {
+      "ad_id": "ref_vt_14",
+      "primary_text": "Your child will take the SAT on a laptop. So why are they practicing on paper? 📱The SAT is fully digital now --- taken on the Bluebook interface with built-in tools, on-screen reading, and adaptive sections.Yet most prep still happens the old way: paper books, in-person classes, and generic content review.That's like practicing football on a baseball field.Your child needs:• Training in the actual digital environment• Practice with built-in calculators and formulas• Personalized focus on their specific gapsOur 1-on-1 SAT tutoring delivers 10x the score improvement of self-study and 2.6x better results than in-person learning centers.Real human tutors. Real digital practice. Typical gains of 100+ points per month with 2 sessions weekly.Cancel anytime --- no long-term commitments. 🎯",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.0,
+        "cta": 6.0,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.0
+      },
+      "quality_label": "good"
+    },
+    {
+      "ad_id": "ref_vt_15",
+      "primary_text": "May 2nd SAT is 8 weeks away. If your child's score doesn't match their grades, here's what's still possible. 📚Most students scoring in the 1200s can hit 1400+ with the right approach. Not generic SAT content review---targeted fixes for the specific question patterns your child gets wrong.Our 1:1 SAT tutoring finds those gaps in the first session. Then we focus there. No wasted time on what they already know.Your child trains on the same digital interface they'll see test day. In-person classes still use paper---that puts students at a disadvantage when 60% of math problems can be solved with built-in tools they've never practiced with.Perfect tutor match guarantee. Cancel anytime. 📈",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.0,
+        "cta": 5.0,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.0
+      },
+      "quality_label": "good"
+    },
+    {
+      "ad_id": "ref_vt_03",
+      "primary_text": "A higher SAT score doesn't just open one more door --- it changes the entire set of options on the table",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 7.4,
+        "value_proposition": 6.4,
+        "cta": 2.4,
+        "brand_voice": 6.2,
+        "emotional_resonance": 6.4
+      },
+      "quality_label": "poor"
+    },
+    {
+      "ad_id": "ref_vt_04",
+      "primary_text": "Tutors who help your child reach their target SAT score",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 5.8,
+        "value_proposition": 4.8,
+        "cta": 1.0,
+        "brand_voice": 5.2,
+        "emotional_resonance": 3.4
+      },
+      "quality_label": "poor"
+    },
+    {
+      "ad_id": "ref_vt_09",
+      "primary_text": "Match your child with an SAT tutor who scored 1500+ on the SAT",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 6.8,
+        "value_proposition": 5.8,
+        "cta": 2.4,
+        "brand_voice": 5.8,
+        "emotional_resonance": 4.4
+      },
+      "quality_label": "poor"
+    },
+    {
+      "ad_id": "ref_chg_01",
+      "primary_text": "You deserve learning built around you. Chegg gives you the support and tools to help study your way.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 5.6,
+        "value_proposition": 5.0,
+        "cta": 3.2,
+        "brand_voice": 5.6,
+        "emotional_resonance": 4.4
+      },
+      "quality_label": "poor"
+    },
+    {
+      "ad_id": "ref_chg_04",
+      "primary_text": "When you're stuck on homework, Chegg finds the missing piece so it all makes sense.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 7.4,
+        "value_proposition": 6.4,
+        "cta": 1.6,
+        "brand_voice": 5.4,
+        "emotional_resonance": 6.0
+      },
+      "quality_label": "poor"
+    },
+    {
+      "ad_id": "ref_chg_05",
+      "primary_text": "Searching for homework help or prepping for exams can feel like you're lost on a deserted island. Find support with Chegg.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 6.8,
+        "value_proposition": 5.2,
+        "cta": 1.6,
+        "brand_voice": 4.2,
+        "emotional_resonance": 5.4
+      },
+      "quality_label": "poor"
+    }
+  ]
+}
