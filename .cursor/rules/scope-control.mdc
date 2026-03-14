@@ -13,13 +13,13 @@ This project has 7 phases. Phases are sequential. Do NOT implement Phase N+1 wor
 |-------|------|---------|-------|
 | P0 | Foundation & Calibration | P0-01 – P0-10 (10) | Infra, ledger, seeds, calibration, competitive pattern DB |
 | P1 | Full-Ad Pipeline (v1: Copy + Image) | P1-01 – P1-20 (20) | Text + image via Nano Banana Pro, 50+ full ads |
-| P1B | Application Layer | PA-01 – PA-12 (12) | Sessions, auth, brief config, progress, curation |
+| P1B | Application Layer | PA-01 – PA-13 (13) | Sessions, auth, brief config, progress, curation |
 | P2 | Testing & Validation | P2-01 – P2-07 (7) | Prove evaluation has substance |
 | P3 | A/B Variant Engine + UGC Video (v2) | P3-01 – P3-13 (13) | Nano Banana 2, A/B variants, Veo video |
 | P4 | Autonomous Engine (v3) | P4-01 – P4-07 (7) | Self-healing, agents, competitive intel |
 | P5 | Dashboard, Docs & Submission | P5-01 – P5-11 (11) | 8-panel dashboard, decision log, demo, README |
 
-**Total: 80 tickets | 14 days (per prd.md Section 10)**
+**Total: 81 tickets | 14 days (per prd.md Section 10)**
 
 ## Before You Start Any Ticket
 

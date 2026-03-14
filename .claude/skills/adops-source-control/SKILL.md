@@ -121,7 +121,7 @@ This project has 7 phases (P0–P5 + P1B). Phases are sequential.
 |-------|---------|-------|
 | P0 | P0-01 – P0-10 (10) | Foundation, infra, calibration, competitive pattern DB |
 | P1 | P1-01 – P1-20 (20) | Full-ad pipeline (copy + image via Nano Banana Pro), 50+ ads |
-| P1B | PA-01 – PA-12 (12) | Application layer (sessions, auth, brief config, curation) |
+| P1B | PA-01 – PA-13 (13) | Application layer (sessions, auth, brief config, curation) |
 | P2 | P2-01 – P2-07 (7) | Testing & validation |
 | P3 | P3-01 – P3-13 (13) | A/B variant engine, Veo UGC video |
 | P4 | P4-01 – P4-07 (7) | Autonomous engine (v3) |

@@ -24,7 +24,7 @@ alwaysApply: true
 - Determinism: hashlib for per-ad seed chains
 - Image Processing: Pillow (`PIL`) for image handling
 
-## Application Layer (P1B: PA-01–PA-12)
+## Application Layer (P1B: PA-01–PA-13)
 
 - Backend: FastAPI + SQLAlchemy + Alembic (migrations)
 - Database: PostgreSQL (user accounts, session metadata, curation state)

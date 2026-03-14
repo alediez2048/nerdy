@@ -219,12 +219,12 @@ ruff check . --fix
 | `data/ledger.jsonl` | Append-only decision log (created on first run) |
 | `data/cache/` | Result-level cache with version TTL (P1-12) |
 | `requirements.txt` | Python dependencies |
-| `docs/reference/prd.md` | Product requirements document (80 tickets, 9 pillars, 50 Q&As) |
+| `docs/reference/prd.md` | Product requirements document (81 tickets, 9 pillars, 50 Q&As) |
 | `docs/reference/interviews.md` | 30 architectural Q&As (R1–R3, 10 each) |
 | `docs/reference/requirements.md` | Assignment spec (scoring rubric, deliverables) |
 | `docs/reference/ENVIRONMENT.md` | This file |
 | `docs/development/DEVLOG.md` | Development log — updated after every ticket |
-| `docs/development/tickets/*-primer.md` | Ticket primers (80 tickets across 7 phases) |
+| `docs/development/tickets/*-primer.md` | Ticket primers (81 tickets across 7 phases) |
 | `docs/deliverables/decisionlog.md` | Decision log — design rationale, trade-offs, failures |
 | `docs/deliverables/systemsdesign.md` | Systems design — architecture documentation |
 | `docs/deliverables/writeup.md` | Technical writeup (1–2 pages) |

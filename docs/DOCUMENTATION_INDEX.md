@@ -1,6 +1,6 @@
 # Ad-Ops-Autopilot — Documentation Index
 
-**Canonical PRD:** 80 tickets | 7 phases | 14 days (per `docs/reference/prd.md` Section 10)
+**Canonical PRD:** 81 tickets | 7 phases | 14 days (per `docs/reference/prd.md` Section 10)
 
 ---
 
@@ -19,7 +19,7 @@
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| PRD | `docs/reference/prd.md` | Product requirements, 80 tickets, acceptance criteria |
+| PRD | `docs/reference/prd.md` | Product requirements, 81 tickets, acceptance criteria |
 | Interviews | `docs/reference/interviews.md` | 50 architectural Q&As (R1–R5) |
 | DEVLOG | `docs/development/DEVLOG.md` | Development history, Ticket Index, status |
 | Systems design | `docs/deliverables/systemsdesign.md` | Architecture, module boundaries, config |
@@ -30,13 +30,13 @@
 
 ---
 
-## Ticket Structure (80 Tickets)
+## Ticket Structure (81 Tickets)
 
 | Phase | Tickets | Count |
 |-------|---------|-------|
 | P0 | P0-01 – P0-10 | 10 |
 | P1 | P1-01 – P1-20 | 20 |
-| P1B | PA-01 – PA-12 | 12 |
+| P1B | PA-01 – PA-13 | 13 |
 | P2 | P2-01 – P2-07 | 7 |
 | P3 | P3-01 – P3-13 | 13 |
 | P4 | P4-01 – P4-07 | 7 |

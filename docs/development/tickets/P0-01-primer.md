@@ -22,7 +22,7 @@ P0-01 creates the project skeleton: directory structure, dependency management, 
 
 ## What Was Already Done
 
-- `prd.md` — Full PRD with 80 tickets across 7 phases
+- `prd.md` — Full PRD with 81 tickets across 7 phases
 - `interviews.md` — 50 architectural pressure-test Q&As (R1–R5)
 - `requirements.md` — Assignment specification
 - `.cursor/rules/` — 12 cursor rules governing implementation

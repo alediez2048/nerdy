@@ -290,13 +290,13 @@
 |-------|------|---------|----------|--------|
 | P0 | Foundation & Calibration | P0-01 – P0-10 (10) | Day 0–1 | 🔄 In Progress |
 | P1 | Full-Ad Pipeline (v1: Copy + Image) | P1-01 – P1-20 (20) | Days 1–4 | ⏳ Not Started |
-| P1B | Application Layer | PA-01 – PA-12 (12) | Days 3–5 | ⏳ Not Started |
+| P1B | Application Layer | PA-01 – PA-13 (13) | Days 3–5 | ⏳ Not Started |
 | P2 | Testing & Validation | P2-01 – P2-07 (7) | Days 3–4 | ⏳ Not Started |
 | P3 | A/B Variant Engine + UGC Video (v2) | P3-01 – P3-13 (13) | Days 4–7 | ⏳ Not Started |
 | P4 | Autonomous Engine (v3) | P4-01 – P4-07 (7) | Days 7–14 | ⏳ Not Started |
 | P5 | Dashboard, Docs & Submission | P5-01 – P5-11 (11) | Days 12–14 | ⏳ Not Started |
 
-**Total:** 80 tickets | 14 days (per prd.md Section 10)
+**Total:** 81 tickets | 14 days (per prd.md Section 10)
 
 ## Ticket Index
 
@@ -338,7 +338,7 @@
 | P1-19 | Image cost tracking | ⏳ |
 | P1-20 | 50+ full ad generation run | ⏳ |
 
-### Phase 1B: Application Layer (12 tickets)
+### Phase 1B: Application Layer (13 tickets)
 | Ticket | Title | Status |
 |--------|-------|--------|
 | PA-01 | FastAPI backend scaffold | ⏳ |
@@ -353,6 +353,7 @@
 | PA-10 | Curation layer + Curated Set tab | ⏳ |
 | PA-11 | Share session link | ⏳ |
 | PA-12 | Docker Compose production deployment | ⏳ |
+| PA-13 | Frontend component build — mockup-to-production | ⏳ |
 
 ### Phase 2: Testing & Validation (7 tickets)
 | Ticket | Title | Status |
@@ -410,7 +411,7 @@
 
 ## PRD Alignment Notes
 
-- **Source of truth:** `docs/reference/prd.md` (80 tickets, 7 phases)
+- **Source of truth:** `docs/reference/prd.md` (81 tickets, 7 phases)
 - **Recommended Build Order:** See prd.md Section 10 (Pipeline track + Application track)
 - **Load-bearing components:** Evaluation prompt (R3-Q6), decision ledger (R2-Q8), visual spec extraction (Section 4.6.2), session model (Section 4.7.2), competitive pattern database (Section 4.8.3)
 

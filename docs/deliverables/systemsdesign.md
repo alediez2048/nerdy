@@ -854,7 +854,7 @@ PHASE 1 — Full-Ad Pipeline v1 (P1-01 → P1-20)
 ├── Full ad assembly, image cost tracking (P1-18–P1-19)
 └── 50+ full ad generation run (P1-20)
 
-PHASE 1B — Application Layer (PA-01 → PA-12)
+PHASE 1B — Application Layer (PA-01 → PA-13)
 ├── FastAPI backend, PostgreSQL, Celery + Redis
 ├── Google SSO, session CRUD, brief config form
 ├── Session list UI, progress reporting, "Watch Live" SSE

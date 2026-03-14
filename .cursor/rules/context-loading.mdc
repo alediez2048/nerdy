@@ -17,7 +17,7 @@ Read these files in order before making any changes:
    - If no primer exists for the ticket, read the PRD's ticket description instead
 
 2. **PRD** — `docs/reference/prd.md`
-   - Cross-reference the ticket acceptance criteria (80 tickets, 7 phases)
+   - Cross-reference the ticket acceptance criteria (81 tickets, 7 phases)
    - Check which architectural decisions (R1-Q1 through R5-Q10) apply
    - Note the directory structure and which modules the ticket touches
 
