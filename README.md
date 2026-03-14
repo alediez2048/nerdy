@@ -42,14 +42,21 @@ iterate/      — Feedback loop, Pareto selection, quality ratchet
 output/       — Export, visualization, narrated replay
 data/         — Config, brand knowledge, reference ads, ledger
 tests/        — Golden set, inversion, adversarial, pipeline tests
-docs/         — DEVLOG, tickets, reference
+docs/         — deliverables/, development/, reference/
 ```
 
 ## Documentation
 
-- **[DEVLOG](docs/DEVLOG.md)** — Development history, ticket status
+**Deliverables** (submission-ready):
+- **[Decision Log](docs/deliverables/decisionlog.md)** — Design choices, trade-offs, failed approaches
+- **[Systems Design](docs/deliverables/systemsdesign.md)** — Architecture, data flow, failure handling
+
+**Development** (internal):
+- **[DEVLOG](docs/development/DEVLOG.md)** — Development history, ticket status
+
+**Reference** (upstream specs):
 - **[ENVIRONMENT](docs/reference/ENVIRONMENT.md)** — Setup, config, troubleshooting
-- **[PRD](prd.md)** — Product requirements, 48 tickets across 6 phases
+- **[PRD](docs/reference/prd.md)** — Product requirements, 48 tickets across 6 phases
 
 ## Requirements
 

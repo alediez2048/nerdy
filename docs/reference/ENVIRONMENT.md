@@ -187,8 +187,10 @@ python -m output.visualize  # or equivalent script
 | `requirements.txt` | Python dependencies |
 | `prd.md` | Product requirements document |
 | `interviews.md` | 30 architectural pressure-test Q&As |
-| `docs/DEVLOG.md` | Development log — updated after every ticket |
-| `docs/tickets/*-primer.md` | Ticket primers |
+| `docs/development/DEVLOG.md` | Development log — updated after every ticket |
+| `docs/development/tickets/*-primer.md` | Ticket primers |
+| `docs/deliverables/decisionlog.md` | Decision log — design rationale and trade-offs |
+| `docs/deliverables/systemsdesign.md` | Systems design — architecture documentation |
 | `docs/reference/ENVIRONMENT.md` | This file |
 
 ---
