@@ -7,6 +7,47 @@
 
 ---
 
+## P0-08: Checkpoint-Resume Infrastructure ✅
+
+### Plain-English Summary
+- Implemented `iterate/checkpoint.py` — get_pipeline_state, get_last_checkpoint, should_skip_ad
+- Implemented `iterate/retry.py` — retry_with_backoff (exponential backoff for 429/500/503)
+- Pipeline state reconstructed from ledger: generated, evaluated, regenerated, published, discarded
+- Added 10 tests in `tests/test_pipeline/test_checkpoint.py`
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 13, 2026
+- **Ticket:** P0-08
+- **Branch:** `develop`
+- **Architectural Decisions:** R3-Q2 (checkpoint-resume), R3-Q2 (API resilience)
+
+### Key Achievements
+- PipelineState: generated_ids, evaluated_pairs (ad_id, cycle), regenerated_pairs, published_ids, discarded_ids, started_brief_ids
+- should_skip_ad(state, ad_id, stage, cycle_number) prevents double-processing
+- retry_with_backoff: 2^n seconds, max 60s, 3 retries; passes through non-retryable errors
+- --resume flag concept testable: start, stop, resume = same output (no duplicate ad_ids)
+
+### Files Changed
+- **Created:** `iterate/checkpoint.py` — pipeline state detection
+- **Created:** `iterate/retry.py` — retry with exponential backoff
+- **Created:** `tests/test_pipeline/test_checkpoint.py` — 10 tests
+- **Updated:** `docs/DEVLOG.md` — this entry
+
+### Acceptance Criteria
+- [x] get_pipeline_state() correctly reconstructs state from ledger
+- [x] should_skip_ad() prevents double-processing
+- [x] Retry with exponential backoff handles 429/500/503
+- [x] --resume flag concept testable
+- [x] Tests pass, lint clean
+- [x] DEVLOG updated
+
+### Next Steps
+- P0-09 (Competitive pattern database — initial scan)
+- P1-01 (Brief expansion engine) — Phase 1 begins
+
+---
+
 ## P0-06: Evaluator Cold-Start Calibration ✅
 
 ### Plain-English Summary
@@ -269,7 +310,7 @@
 | P0-05 | Reference ad collection | ✅ |
 | P0-06 | Evaluator cold-start calibration | ✅ |
 | P0-07 | Golden set regression tests | ⏳ |
-| P0-08 | Checkpoint-resume infrastructure | ⏳ |
+| P0-08 | Checkpoint-resume infrastructure | ✅ |
 | P0-09 | Competitive pattern database — initial scan | ⏳ |
 | P0-10 | Competitive pattern query interface | ⏳ |
 
