@@ -7,6 +7,53 @@
 
 ---
 
+## P0-05: Reference Ad Collection ✅
+
+### Plain-English Summary
+- Created `data/reference_ads.json` — 40 ads (20 Varsity Tutors, 20 competitors) with quality labels
+- 5 ads labeled "excellent" and 5 "poor" with human-assigned dimension scores and rationales
+- Created `data/pattern_database.json` — 15 structural atoms decomposed from top reference ads
+- Added 12 validation tests in `tests/test_data/test_reference_ads.py`
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 13, 2026
+- **Ticket:** P0-05
+- **Branch:** `develop`
+- **Architectural Decisions:** R1-Q8 (cold-start calibration), R2-Q1 (reference-decompose-recombine), R2-Q2 (structured pattern extraction)
+
+### Collection Methodology
+- **Varsity Tutors ads:** Synthetic examples based on brand-context patterns (Slack reference material not available)
+- **Competitor ads:** Synthetic examples modeled on Meta Ad Library patterns for Princeton Review, Kaplan, Khan Academy, Chegg
+- **Sources:** `synthetic`, `meta_ad_patterns_reference`
+- **Labels:** Human-assigned scores (1–10) for clarity, value_proposition, cta, brand_voice, emotional_resonance with rationale per dimension
+
+### Key Achievements
+- 40 reference ads with required fields: primary_text, headline, description, cta_button, source, brand, audience_guess
+- 15 pattern records with hook_type, body_pattern, cta_style, tone_register, audience, campaign_goal
+- Hook types: question, stat, story, fear, aspiration, differentiation, direct-address, pain_point
+- Body patterns: problem-agitate-solution-proof, testimonial-benefit-cta, stat-context-offer
+
+### Files Changed
+- **Created:** `data/reference_ads.json` — reference ad collection with labels
+- **Created:** `data/pattern_database.json` — structural atoms for generator
+- **Created:** `tests/test_data/test_reference_ads.py` — 12 validation tests
+- **Updated:** `docs/DEVLOG.md` — this entry
+
+### Acceptance Criteria
+- [x] 40–60 reference ads collected (20 VT + 20 competitors)
+- [x] 5–10 labeled excellent, 5–10 labeled poor with per-dimension human scores
+- [x] Top ads decomposed into structural atoms in pattern database
+- [x] DEVLOG updated
+- [x] Committed on `develop`
+
+### Next Steps
+- P0-06 (Evaluator cold-start calibration) — uses labeled ads to calibrate the evaluator
+- P0-07 (Golden set regression tests) — uses labeled ads as test data
+- P1-02 (Ad copy generator) — queries pattern database for structural atoms
+
+---
+
 ## P0-04: Brand Knowledge Base ✅
 
 ### Plain-English Summary
@@ -173,7 +220,7 @@
 | P0-02 | Append-only decision ledger | ✅ |
 | P0-03 | Per-ad seed chain + snapshots | ✅ |
 | P0-04 | Brand knowledge base | ✅ |
-| P0-05 | Reference ad collection | ⏳ |
+| P0-05 | Reference ad collection | ✅ |
 | P0-06 | Evaluator cold-start calibration | ⏳ |
 | P0-07 | Golden set regression tests | ⏳ |
 | P0-08 | Checkpoint-resume infrastructure | ⏳ |

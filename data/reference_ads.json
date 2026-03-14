@@ -1,0 +1,581 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-03-13",
+    "collection_methodology": "Curated reference set for evaluator calibration (P0-06) and pattern extraction (R2-Q1). Varsity Tutors ads: synthetic examples matching brand voice and Meta ad patterns (Slack reference material not available for assignment). Competitor ads: synthetic examples based on Meta Ad Library patterns documented in meta-ad-patterns.md. All ads designed to span quality spectrum for calibration.",
+    "sources": ["synthetic", "meta_ad_patterns_reference"],
+    "total_count": 40
+  },
+  "ads": [
+    {
+      "ad_id": "ref_vt_001",
+      "primary_text": "Is your child's SAT score holding them back from their dream school? College admissions are more competitive than ever. Varsity Tutors pairs your student with expert 1-on-1 tutors who adapt to how they learn. See the difference personalized prep can make.",
+      "headline": "Expert 1-on-1 SAT Prep",
+      "description": "Personalized tutoring that adapts to your student",
+      "cta_button": "Start Free Practice Test",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent",
+      "quality_label": "excellent",
+      "human_scores": {
+        "clarity": 9,
+        "value_proposition": 9,
+        "cta": 9,
+        "brand_voice": 9,
+        "emotional_resonance": 9
+      },
+      "rationale": {
+        "clarity": "Single clear message: SAT score matters for college, we help.",
+        "value_proposition": "Specific benefit: 1-on-1, expert, adaptive. Differentiated.",
+        "cta": "Low-friction, specific, free trial.",
+        "brand_voice": "Empowering, authoritative, outcome-focused.",
+        "emotional_resonance": "Taps parent worry about college admissions."
+      }
+    },
+    {
+      "ad_id": "ref_vt_002",
+      "primary_text": "The SAT doesn't have to be scary. With a tutor who actually gets it, you can walk in on test day feeling ready. Varsity Tutors matches you with experts who've helped thousands of students. Your score, your pace.",
+      "headline": "Feel Ready on Test Day",
+      "description": "1-on-1 tutoring that gets you",
+      "cta_button": "Get Started",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "student",
+      "quality_label": "excellent",
+      "human_scores": {
+        "clarity": 9,
+        "value_proposition": 8,
+        "cta": 8,
+        "brand_voice": 9,
+        "emotional_resonance": 9
+      },
+      "rationale": {
+        "clarity": "Immediate takeaway: tutoring reduces test anxiety.",
+        "value_proposition": "Social proof + personalized pace.",
+        "cta": "Soft but clear.",
+        "brand_voice": "Relatable, peer-like, motivating.",
+        "emotional_resonance": "Directly addresses student test anxiety."
+      }
+    },
+    {
+      "ad_id": "ref_vt_003",
+      "primary_text": "Students who prep with expert tutors score higher. It's that simple. Varsity Tutors offers 1-on-1 SAT prep that adapts to how your teen learns. Online, flexible, and built around their schedule.",
+      "headline": "Higher Scores Start Here",
+      "description": "Expert 1-on-1 SAT prep, online",
+      "cta_button": "Start Free Practice Test",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent",
+      "quality_label": "excellent",
+      "human_scores": {
+        "clarity": 9,
+        "value_proposition": 9,
+        "cta": 9,
+        "brand_voice": 8,
+        "emotional_resonance": 7
+      },
+      "rationale": {
+        "clarity": "Stat hook, crystal clear.",
+        "value_proposition": "Specific: 1-on-1, adaptive, online, flexible.",
+        "cta": "Free, low-friction.",
+        "brand_voice": "Confident, outcome-focused.",
+        "emotional_resonance": "More rational than emotional; still effective for conversion."
+      }
+    },
+    {
+      "ad_id": "ref_vt_004",
+      "primary_text": "Your child deserves expert guidance — not generic test prep. Our tutors have helped thousands of students improve their SAT scores. 1-on-1 sessions, online, built around your schedule.",
+      "headline": "Expert SAT Prep That Works",
+      "description": "Personalized 1-on-1 tutoring",
+      "cta_button": "Book Your Free Session",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent",
+      "quality_label": "excellent",
+      "human_scores": {
+        "clarity": 8,
+        "value_proposition": 8,
+        "cta": 9,
+        "brand_voice": 9,
+        "emotional_resonance": 8
+      },
+      "rationale": {
+        "clarity": "Differentiation clear in first line.",
+        "value_proposition": "Social proof + format.",
+        "cta": "Free session, action-oriented.",
+        "brand_voice": "Authoritative, reassuring.",
+        "emotional_resonance": "Taps 'deserves the best' parent emotion."
+      }
+    },
+    {
+      "ad_id": "ref_vt_005",
+      "primary_text": "Test day is coming. Are you ready? Varsity Tutors gives you 1-on-1 support from tutors who know the SAT inside out. Practice tests, personalized plans, and confidence that carries into the exam room.",
+      "headline": "Get SAT-Ready",
+      "description": "1-on-1 prep with expert tutors",
+      "cta_button": "Start Free Practice Test",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "student",
+      "quality_label": "excellent",
+      "human_scores": {
+        "clarity": 8,
+        "value_proposition": 8,
+        "cta": 9,
+        "brand_voice": 8,
+        "emotional_resonance": 9
+      },
+      "rationale": {
+        "clarity": "Question hook, clear offer.",
+        "value_proposition": "Concrete: practice tests, personalized plans.",
+        "cta": "Free, specific.",
+        "brand_voice": "Motivating, supportive.",
+        "emotional_resonance": "Urgency + confidence angle."
+      }
+    },
+    {
+      "ad_id": "ref_vt_006",
+      "primary_text": "We have tutors. They help with the SAT. Sign up today.",
+      "headline": "SAT Tutoring",
+      "description": "Get help with the SAT",
+      "cta_button": "Learn More",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent",
+      "quality_label": "poor",
+      "human_scores": {
+        "clarity": 5,
+        "value_proposition": 2,
+        "cta": 4,
+        "brand_voice": 3,
+        "emotional_resonance": 2
+      },
+      "rationale": {
+        "clarity": "Vague, no single takeaway.",
+        "value_proposition": "Generic 'we have tutors' — no differentiation.",
+        "cta": "Weak, non-specific.",
+        "brand_voice": "Could be anyone; no brand personality.",
+        "emotional_resonance": "Flat, purely transactional."
+      }
+    },
+    {
+      "ad_id": "ref_vt_007",
+      "primary_text": "Guaranteed 1500+ or your money back. We're the best SAT prep. Nobody else comes close. Sign up now before it's too late.",
+      "headline": "Best SAT Prep Guaranteed",
+      "description": "Score 1500+ or refund",
+      "cta_button": "Sign Up",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent",
+      "quality_label": "poor",
+      "human_scores": {
+        "clarity": 6,
+        "value_proposition": 4,
+        "cta": 5,
+        "brand_voice": 2,
+        "emotional_resonance": 3
+      },
+      "rationale": {
+        "clarity": "Clear but compliance-violating.",
+        "value_proposition": "Overclaimed; violates Meta policy.",
+        "cta": "Generic.",
+        "brand_voice": "Arrogant, off-brand; compliance failure.",
+        "emotional_resonance": "Fear-based, deficient framing."
+      }
+    },
+    {
+      "ad_id": "ref_vt_008",
+      "primary_text": "SAT prep. We do it. Online. With tutors. Sometimes it works. Try us.",
+      "headline": "SAT Prep Online",
+      "description": "Tutoring available",
+      "cta_button": "Learn More",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "student",
+      "quality_label": "poor",
+      "human_scores": {
+        "clarity": 4,
+        "value_proposition": 2,
+        "cta": 3,
+        "brand_voice": 2,
+        "emotional_resonance": 1
+      },
+      "rationale": {
+        "clarity": "Chopped, competing messages.",
+        "value_proposition": "'Sometimes it works' undermines credibility.",
+        "cta": "Vague.",
+        "brand_voice": "Unconfident, generic.",
+        "emotional_resonance": "None."
+      }
+    },
+    {
+      "ad_id": "ref_vt_009",
+      "primary_text": "Stressed about the SAT? You're not alone. Varsity Tutors offers personalized 1-on-1 prep with tutors who specialize in the test. Flexible scheduling, online sessions, and a free practice test to get started.",
+      "headline": "Personalized SAT Prep",
+      "description": "1-on-1 tutoring, online",
+      "cta_button": "Start Free Practice Test",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "student",
+      "quality_label": "poor",
+      "human_scores": {
+        "clarity": 6,
+        "value_proposition": 5,
+        "cta": 7,
+        "brand_voice": 4,
+        "emotional_resonance": 5
+      },
+      "rationale": {
+        "clarity": "Reasonable but not scroll-stopping.",
+        "value_proposition": "Generic 'personalized' — no specific outcome.",
+        "cta": "Good CTA.",
+        "brand_voice": "Slightly empathetic but bland.",
+        "emotional_resonance": "Mild stress acknowledgment."
+      }
+    },
+    {
+      "ad_id": "ref_vt_010",
+      "primary_text": "Princeton Review and Kaplan are expensive. We're better. Varsity Tutors gives you real 1-on-1 attention without the corporate feel. Your kid will thank you.",
+      "headline": "Better Than the Big Names",
+      "description": "Real tutoring, real results",
+      "cta_button": "Get Started",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent",
+      "quality_label": "poor",
+      "human_scores": {
+        "clarity": 6,
+        "value_proposition": 5,
+        "cta": 6,
+        "brand_voice": 2,
+        "emotional_resonance": 4
+      },
+      "rationale": {
+        "clarity": "Message clear but problematic.",
+        "value_proposition": "Competitor disparagement.",
+        "cta": "Acceptable.",
+        "brand_voice": "Compliance violation: competitor disparagement.",
+        "emotional_resonance": "Appeals to comparison but wrong way."
+      }
+    },
+    {
+      "ad_id": "ref_vt_011",
+      "primary_text": "The SAT is 3 months away. Is your student ready? Varsity Tutors offers expert 1-on-1 prep that adapts to their strengths and gaps. Free practice test to see where they stand.",
+      "headline": "Get Ready for Test Day",
+      "description": "Expert 1-on-1 SAT prep",
+      "cta_button": "Start Free Practice Test",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_vt_012",
+      "primary_text": "Stop guessing. Start improving. Varsity Tutors matches you with SAT experts who build a plan around your goals. 1-on-1, online, on your schedule.",
+      "headline": "Expert SAT Prep, Your Way",
+      "description": "Personalized 1-on-1 tutoring",
+      "cta_button": "Book Your Free Session",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_vt_013",
+      "primary_text": "College applications are around the corner. Give your student an edge with expert SAT prep. Varsity Tutors — 1-on-1 tutoring that meets them where they are.",
+      "headline": "SAT Prep That Adapts",
+      "description": "Expert tutors, flexible scheduling",
+      "cta_button": "Learn More",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_vt_014",
+      "primary_text": "My daughter went from overwhelmed to confident in 6 weeks. Varsity Tutors matched her with a tutor who actually understood how she learns. The SAT felt manageable for the first time.",
+      "headline": "From Overwhelmed to Confident",
+      "description": "1-on-1 SAT prep that works",
+      "cta_button": "Start Free Practice Test",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_vt_015",
+      "primary_text": "Better scores start with the right support. Varsity Tutors offers 1-on-1 SAT prep with tutors who specialize in the test. See the difference personalized attention makes.",
+      "headline": "1-on-1 SAT Prep",
+      "description": "Expert tutors, personalized plans",
+      "cta_button": "Get Your Score Report",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_vt_016",
+      "primary_text": "The SAT doesn't define you — but it does open doors. Get the support you need with 1-on-1 tutoring from Varsity Tutors. Expert help, your pace.",
+      "headline": "Open Doors With a Better Score",
+      "description": "1-on-1 SAT prep",
+      "cta_button": "Get Started",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_vt_017",
+      "primary_text": "Worried about the SAT? You're not alone. Varsity Tutors pairs you with expert tutors who've helped thousands of students. 1-on-1, online, built around your schedule.",
+      "headline": "Expert SAT Support",
+      "description": "Personalized tutoring",
+      "cta_button": "Start Free Practice Test",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_vt_018",
+      "primary_text": "Students who prep with expert tutors perform better. Varsity Tutors offers 1-on-1 SAT prep that adapts to how your teen learns. Free practice test to get started.",
+      "headline": "Perform Better on the SAT",
+      "description": "Expert 1-on-1 prep",
+      "cta_button": "Start Free Practice Test",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_vt_019",
+      "primary_text": "Your child's future starts with the right preparation. Varsity Tutors provides expert 1-on-1 SAT prep with tutors who know the test. Flexible, online, effective.",
+      "headline": "Expert SAT Prep",
+      "description": "1-on-1 tutoring, online",
+      "cta_button": "Book Your Free Session",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_vt_020",
+      "primary_text": "Ready to take the SAT seriously? Varsity Tutors matches you with tutors who specialize in the test. 1-on-1 sessions, personalized plans, and a free practice test to see where you stand.",
+      "headline": "Take the SAT Seriously",
+      "description": "Expert 1-on-1 prep",
+      "cta_button": "Start Free Practice Test",
+      "source": "synthetic",
+      "brand": "Varsity Tutors",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_pr_001",
+      "primary_text": "Score higher on the SAT. The Princeton Review's proven methods have helped millions of students. Expert instructors, comprehensive materials, and strategies that work.",
+      "headline": "Proven SAT Prep Methods",
+      "description": "Expert instruction, proven results",
+      "cta_button": "Enroll Now",
+      "source": "synthetic",
+      "brand": "Princeton Review",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_pr_002",
+      "primary_text": "Is your SAT score where it needs to be? The Princeton Review offers live instruction, practice tests, and strategies used by top scorers. Get the edge you need.",
+      "headline": "Get the SAT Edge",
+      "description": "Live instruction, proven strategies",
+      "cta_button": "Enroll Now",
+      "source": "synthetic",
+      "brand": "Princeton Review",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_pr_003",
+      "primary_text": "The Princeton Review. SAT prep. We've been doing it for decades. Sign up.",
+      "headline": "SAT Prep Since 1981",
+      "description": "Trusted test prep",
+      "cta_button": "Learn More",
+      "source": "synthetic",
+      "brand": "Princeton Review",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_kaplan_001",
+      "primary_text": "Are you ready for the SAT? Kaplan's test prep gets you there. Practice tests, expert strategies, and the confidence to perform when it matters.",
+      "headline": "Get SAT-Ready With Kaplan",
+      "description": "Practice tests, expert strategies",
+      "cta_button": "Start Prep",
+      "source": "synthetic",
+      "brand": "Kaplan",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_kaplan_002",
+      "primary_text": "Test day is coming. Kaplan prepares your student with proven methods, realistic practice, and strategies that reduce anxiety. Because being ready matters.",
+      "headline": "Be Ready for Test Day",
+      "description": "Proven methods, realistic practice",
+      "cta_button": "Start Prep",
+      "source": "synthetic",
+      "brand": "Kaplan",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_kaplan_003",
+      "primary_text": "Kaplan SAT prep. We help students score higher. Online and in-person options. Sign up today.",
+      "headline": "Kaplan SAT Prep",
+      "description": "Score higher",
+      "cta_button": "Learn More",
+      "source": "synthetic",
+      "brand": "Kaplan",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_khan_001",
+      "primary_text": "SAT prep shouldn't cost a fortune. Khan Academy offers free, personalized practice aligned with the real test. Used by millions. Backed by College Board.",
+      "headline": "Free SAT Prep for Everyone",
+      "description": "Personalized, official practice",
+      "cta_button": "Start Learning",
+      "source": "synthetic",
+      "brand": "Khan Academy",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_khan_002",
+      "primary_text": "Your child can prep for the SAT without breaking the bank. Khan Academy's free program is official, personalized, and used by millions of students worldwide.",
+      "headline": "Free Official SAT Practice",
+      "description": "Personalized, free, official",
+      "cta_button": "Start Learning",
+      "source": "synthetic",
+      "brand": "Khan Academy",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_khan_003",
+      "primary_text": "Free SAT prep. Khan Academy. It works. Millions use it. Start today.",
+      "headline": "Free SAT Prep",
+      "description": "Used by millions",
+      "cta_button": "Start Learning",
+      "source": "synthetic",
+      "brand": "Khan Academy",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_chegg_001",
+      "primary_text": "SAT prep that doesn't feel like a chore. Chegg connects you with tutors who get it — affordable, flexible, and built for students who learn differently.",
+      "headline": "SAT Prep That Fits You",
+      "description": "Affordable tutoring, flexible scheduling",
+      "cta_button": "Try It Free",
+      "source": "synthetic",
+      "brand": "Chegg",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_chegg_002",
+      "primary_text": "Your student doesn't have to go it alone. Chegg offers affordable SAT prep with tutors who understand the pressure. Try free and see the difference.",
+      "headline": "Affordable SAT Support",
+      "description": "Tutors who get it",
+      "cta_button": "Try It Free",
+      "source": "synthetic",
+      "brand": "Chegg",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_chegg_003",
+      "primary_text": "Chegg SAT prep. Affordable. Flexible. Try it free. We help students score better.",
+      "headline": "Try Chegg SAT Prep Free",
+      "description": "Affordable, flexible",
+      "cta_button": "Try It Free",
+      "source": "synthetic",
+      "brand": "Chegg",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_pr_004",
+      "primary_text": "Top colleges want top scores. The Princeton Review's SAT prep has helped students reach their goals for over 40 years. Expert instruction, proven results.",
+      "headline": "Proven SAT Results",
+      "description": "Expert instruction since 1981",
+      "cta_button": "Enroll Now",
+      "source": "synthetic",
+      "brand": "Princeton Review",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_pr_005",
+      "primary_text": "Don't leave your SAT score to chance. The Princeton Review offers comprehensive prep with strategies that work. Live classes, practice tests, and expert support.",
+      "headline": "Comprehensive SAT Prep",
+      "description": "Strategies that work",
+      "cta_button": "Enroll Now",
+      "source": "synthetic",
+      "brand": "Princeton Review",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_kaplan_004",
+      "primary_text": "Higher SAT scores start with the right prep. Kaplan's proven methods, realistic practice tests, and expert instructors get your student ready for test day.",
+      "headline": "Higher Scores Start Here",
+      "description": "Proven methods, expert instructors",
+      "cta_button": "Start Prep",
+      "source": "synthetic",
+      "brand": "Kaplan",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_kaplan_005",
+      "primary_text": "Nervous about the SAT? Kaplan's prep reduces anxiety by building real skills. Practice that mirrors the real test. Strategies that stick.",
+      "headline": "Build Confidence for the SAT",
+      "description": "Real practice, real skills",
+      "cta_button": "Start Prep",
+      "source": "synthetic",
+      "brand": "Kaplan",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_khan_004",
+      "primary_text": "Official SAT practice. Completely free. Khan Academy's program is created with College Board — the same people who make the test. Personalized to your strengths.",
+      "headline": "Official Free SAT Practice",
+      "description": "From College Board + Khan Academy",
+      "cta_button": "Start Learning",
+      "source": "synthetic",
+      "brand": "Khan Academy",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_khan_005",
+      "primary_text": "Why pay for SAT prep when the best practice is free? Khan Academy offers official, personalized prep used by millions. Start today.",
+      "headline": "Best SAT Prep Is Free",
+      "description": "Official, personalized",
+      "cta_button": "Start Learning",
+      "source": "synthetic",
+      "brand": "Khan Academy",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_chegg_004",
+      "primary_text": "SAT stress is real. Chegg's tutors get it. Affordable 1-on-1 help, flexible scheduling, and a free trial so you can see if it's the right fit.",
+      "headline": "SAT Help That Gets It",
+      "description": "Affordable, 1-on-1",
+      "cta_button": "Try It Free",
+      "source": "synthetic",
+      "brand": "Chegg",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_chegg_005",
+      "primary_text": "Budget-friendly SAT prep that actually works. Chegg connects your student with tutors who specialize in the test. Try free before you commit.",
+      "headline": "Budget-Friendly SAT Prep",
+      "description": "Try free, no commitment",
+      "cta_button": "Try It Free",
+      "source": "synthetic",
+      "brand": "Chegg",
+      "audience_guess": "parent"
+    },
+    {
+      "ad_id": "ref_pr_006",
+      "primary_text": "The SAT is your ticket to college. The Princeton Review helps you ace it. Live instruction, full-length practice tests, and strategies used by high scorers.",
+      "headline": "Ace the SAT",
+      "description": "Live instruction, full practice",
+      "cta_button": "Enroll Now",
+      "source": "synthetic",
+      "brand": "Princeton Review",
+      "audience_guess": "student"
+    },
+    {
+      "ad_id": "ref_kaplan_006",
+      "primary_text": "Real practice. Real strategies. Real results. Kaplan's SAT prep mirrors the actual test so you're ready when it counts.",
+      "headline": "Real SAT Practice",
+      "description": "Strategies that work",
+      "cta_button": "Start Prep",
+      "source": "synthetic",
+      "brand": "Kaplan",
+      "audience_guess": "student"
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-03-13",
+    "source": "Decomposed from data/reference_ads.json (P0-05)",
+    "purpose": "Structural atoms for reference-decompose-recombine generator (R2-Q1)",
+    "pattern_count": 15
+  },
+  "patterns": [
+    {
+      "pattern_id": "pat_001",
+      "ad_id": "ref_vt_001",
+      "hook_type": "question",
+      "hook_text": "Is your child's SAT score holding them back from their dream school?",
+      "body_pattern": "problem-agitate-solution-proof",
+      "cta_style": "free-trial",
+      "cta_text": "Start Free Practice Test",
+      "tone_register": "authoritative-reassuring",
+      "audience": "parent",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_002",
+      "ad_id": "ref_vt_002",
+      "hook_type": "aspiration",
+      "hook_text": "The SAT doesn't have to be scary.",
+      "body_pattern": "testimonial-benefit-cta",
+      "cta_style": "sign-up",
+      "cta_text": "Get Started",
+      "tone_register": "relatable-motivating",
+      "audience": "student",
+      "campaign_goal": "awareness"
+    },
+    {
+      "pattern_id": "pat_003",
+      "ad_id": "ref_vt_003",
+      "hook_type": "stat",
+      "hook_text": "Students who prep with expert tutors score higher.",
+      "body_pattern": "stat-context-offer",
+      "cta_style": "free-trial",
+      "cta_text": "Start Free Practice Test",
+      "tone_register": "authoritative-reassuring",
+      "audience": "parent",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_004",
+      "ad_id": "ref_vt_004",
+      "hook_type": "differentiation",
+      "hook_text": "Your child deserves expert guidance — not generic test prep.",
+      "body_pattern": "problem-agitate-solution-proof",
+      "cta_style": "free-trial",
+      "cta_text": "Book Your Free Session",
+      "tone_register": "authoritative-reassuring",
+      "audience": "parent",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_005",
+      "ad_id": "ref_vt_005",
+      "hook_type": "fear",
+      "hook_text": "Test day is coming. Are you ready?",
+      "body_pattern": "problem-agitate-solution-proof",
+      "cta_style": "free-trial",
+      "cta_text": "Start Free Practice Test",
+      "tone_register": "relatable-motivating",
+      "audience": "student",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_006",
+      "ad_id": "ref_vt_011",
+      "hook_type": "fear",
+      "hook_text": "The SAT is 3 months away. Is your student ready?",
+      "body_pattern": "problem-agitate-solution-proof",
+      "cta_style": "free-trial",
+      "cta_text": "Start Free Practice Test",
+      "tone_register": "authoritative-reassuring",
+      "audience": "parent",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_007",
+      "ad_id": "ref_vt_012",
+      "hook_type": "direct-address",
+      "hook_text": "Stop guessing. Start improving.",
+      "body_pattern": "stat-context-offer",
+      "cta_style": "free-trial",
+      "cta_text": "Book Your Free Session",
+      "tone_register": "relatable-motivating",
+      "audience": "student",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_008",
+      "ad_id": "ref_vt_014",
+      "hook_type": "story",
+      "hook_text": "My daughter went from overwhelmed to confident in 6 weeks.",
+      "body_pattern": "testimonial-benefit-cta",
+      "cta_style": "free-trial",
+      "cta_text": "Start Free Practice Test",
+      "tone_register": "authoritative-reassuring",
+      "audience": "parent",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_009",
+      "ad_id": "ref_vt_015",
+      "hook_type": "stat",
+      "hook_text": "Better scores start with the right support.",
+      "body_pattern": "stat-context-offer",
+      "cta_style": "lead-capture",
+      "cta_text": "Get Your Score Report",
+      "tone_register": "authoritative-reassuring",
+      "audience": "parent",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_010",
+      "ad_id": "ref_vt_016",
+      "hook_type": "aspiration",
+      "hook_text": "The SAT doesn't define you — but it does open doors.",
+      "body_pattern": "testimonial-benefit-cta",
+      "cta_style": "sign-up",
+      "cta_text": "Get Started",
+      "tone_register": "relatable-motivating",
+      "audience": "student",
+      "campaign_goal": "awareness"
+    },
+    {
+      "pattern_id": "pat_011",
+      "ad_id": "ref_vt_018",
+      "hook_type": "stat",
+      "hook_text": "Students who prep with expert tutors perform better.",
+      "body_pattern": "stat-context-offer",
+      "cta_style": "free-trial",
+      "cta_text": "Start Free Practice Test",
+      "tone_register": "authoritative-reassuring",
+      "audience": "parent",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_012",
+      "ad_id": "ref_pr_001",
+      "hook_type": "stat",
+      "hook_text": "Score higher on the SAT.",
+      "body_pattern": "stat-context-offer",
+      "cta_style": "sign-up",
+      "cta_text": "Enroll Now",
+      "tone_register": "authoritative-urgency",
+      "audience": "parent",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_013",
+      "ad_id": "ref_khan_001",
+      "hook_type": "pain_point",
+      "hook_text": "SAT prep shouldn't cost a fortune.",
+      "body_pattern": "stat-context-offer",
+      "cta_style": "learn-more",
+      "cta_text": "Start Learning",
+      "tone_register": "empowering-equity",
+      "audience": "student",
+      "campaign_goal": "awareness"
+    },
+    {
+      "pattern_id": "pat_014",
+      "ad_id": "ref_chegg_001",
+      "hook_type": "pain_point",
+      "hook_text": "SAT prep that doesn't feel like a chore.",
+      "body_pattern": "testimonial-benefit-cta",
+      "cta_style": "free-trial",
+      "cta_text": "Try It Free",
+      "tone_register": "relatable-peer",
+      "audience": "student",
+      "campaign_goal": "conversion"
+    },
+    {
+      "pattern_id": "pat_015",
+      "ad_id": "ref_kaplan_001",
+      "hook_type": "question",
+      "hook_text": "Are you ready for the SAT?",
+      "body_pattern": "problem-agitate-solution-proof",
+      "cta_style": "sign-up",
+      "cta_text": "Start Prep",
+      "tone_register": "anxiety-preparedness",
+      "audience": "student",
+      "campaign_goal": "conversion"
+    }
+  ]
+}
