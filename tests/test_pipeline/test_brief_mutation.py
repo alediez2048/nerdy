@@ -8,7 +8,6 @@ import pytest
 
 from iterate.brief_mutation import (
     EscalationReport,
-    MutationDiagnosis,
     diagnose_weakness,
     escalate,
     mutate_brief,

@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 
 from evaluate.dimensions import (
     AWARENESS_WEIGHTS,
     CONVERSION_WEIGHTS,
-    FLOOR_CONSTRAINTS,
-    FloorViolation,
-    WeightProfile,
-    WeightedResult,
     check_floor_violations,
     compute_weighted_score,
     evaluate_with_weights,

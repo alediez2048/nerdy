@@ -7,7 +7,6 @@ import json
 import pytest
 
 from generate.model_router import (
-    RoutingDecision,
     get_model_for_stage,
     get_routing_stats,
     route_ad,

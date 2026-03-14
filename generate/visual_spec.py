@@ -12,7 +12,7 @@ import json
 import logging
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from iterate.retry import retry_with_backoff

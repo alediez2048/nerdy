@@ -10,7 +10,6 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from generate.visual_spec import VisualSpec, build_image_prompt
 from iterate.retry import retry_with_backoff

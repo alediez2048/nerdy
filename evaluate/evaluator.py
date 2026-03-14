@@ -33,7 +33,6 @@ DIMENSIONS = (
 # P1-05: Campaign-goal-adaptive weighting (replaces P0-06 equal weights)
 from evaluate.dimensions import (
     evaluate_with_weights,
-    get_weight_profile,
 )
 # Backward compat: equal weights still used by _compute_aggregate fallback
 EQUAL_WEIGHTS = {d: 0.2 for d in DIMENSIONS}

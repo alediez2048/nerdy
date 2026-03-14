@@ -13,7 +13,7 @@ Cycle budget from config: max_regeneration_cycles (default 3).
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from iterate.ledger import log_event

@@ -19,6 +19,7 @@ from typing import Any
 from dotenv import load_dotenv
 
 from generate.brief_expansion import ExpandedBrief
+from generate.brand_voice import get_voice_for_prompt
 from generate.competitive import query_patterns
 from generate.seeds import get_ad_seed, load_global_seed
 from iterate.ledger import log_event
@@ -142,8 +143,7 @@ def _build_generation_prompt(
 - Description: Often truncated on mobile — keep concise
 - CTA button: One of {cta_hint}
 
-## Brand Voice
-Empowering, knowledgeable, approachable, results-focused. Lead with outcomes, not features.
+{get_voice_for_prompt(audience)}
 
 Output ONLY valid JSON (no markdown, no code fences):
 {{
@@ -299,7 +299,11 @@ def generate_ad(
             "tokens_consumed": tokens_estimate,
             "model_used": "gemini-2.0-flash",
             "seed": str(actual_seed),
-            "inputs": {"expanded_brief_id": brief_id, "structural_atoms_count": len(atoms)},
+            "inputs": {
+                "expanded_brief_id": brief_id,
+                "structural_atoms_count": len(atoms),
+                "voice_profile_audience": audience,
+            },
             "outputs": {
                 "primary_text_len": len(result.primary_text),
                 "headline": result.headline,
