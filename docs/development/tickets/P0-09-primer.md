@@ -83,9 +83,10 @@ Analyze 6 competitors' active Facebook ads via Meta Ad Library. Extract structur
 
 ## Branch & Merge Workflow
 
+All work is done directly on `develop`. No feature branches.
+
 ```bash
-git switch main && git pull
-git switch -c feature/P0-09-competitive-pattern-database
+git switch develop && git pull
 ```
 
 ---
@@ -121,7 +122,7 @@ git switch -c feature/P0-09-competitive-pattern-database
 | `data/reference_ads.json` (P0-05) | Existing reference ad structure for consistency |
 | `data/pattern_database.json` (P0-05) | Structural atom format to align with |
 | `prd.md` (Section 4.8) | Full competitive intelligence architecture spec |
-| `interviews.md` (R2-Q2) | Structured pattern extraction rationale |
+| `docs/reference/prd.md` (R2-Q2) | Structured pattern extraction rationale |
 
 ---
 
@@ -133,7 +134,7 @@ git switch -c feature/P0-09-competitive-pattern-database
 - [ ] Competitor strategy summaries written
 - [ ] Extraction methodology documented
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
+- [ ] Committed on `develop`
 
 ---
 

@@ -88,9 +88,10 @@ Build a utility function that queries the competitive pattern database by audien
 
 ## Branch & Merge Workflow
 
+All work is done directly on `develop`. No feature branches.
+
 ```bash
-git switch main && git pull
-git switch -c feature/P0-10-competitive-query-interface
+git switch develop && git pull
 ```
 
 ---
@@ -126,8 +127,8 @@ git switch -c feature/P0-10-competitive-query-interface
 | `data/competitive/summaries.json` (P0-09) | Competitor strategy summaries |
 | `data/competitive/schema.json` (P0-09) | Schema for pattern records |
 | `prd.md` (Section 4.8) | Full competitive intelligence architecture spec |
-| `interviews.md` (R2-Q2) | Structured pattern extraction rationale |
-| `interviews.md` (R3-Q8) | Cross-campaign shared patterns design |
+| `docs/reference/prd.md` (R2-Q2) | Structured pattern extraction rationale |
+| `docs/reference/prd.md` (R3-Q8) | Cross-campaign shared patterns design |
 
 ---
 
@@ -139,7 +140,7 @@ git switch -c feature/P0-10-competitive-query-interface
 - [ ] All 10+ tests pass
 - [ ] Lint clean
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
+- [ ] Committed on `develop`
 
 ---
 

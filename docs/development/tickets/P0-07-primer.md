@@ -62,9 +62,10 @@ Create a permanent golden set test file and automated regression test suite that
 
 ## Branch & Merge Workflow
 
+All work is done directly on `develop`. No feature branches.
+
 ```bash
-git switch main && git pull
-git switch -c feature/P0-07-golden-set-tests
+git switch develop && git pull
 ```
 
 ---
@@ -107,7 +108,7 @@ git switch -c feature/P0-07-golden-set-tests
 - [ ] Evaluator within ±1.0 of human labels on 80%+
 - [ ] Tests automated and runnable
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
+- [ ] Committed on `develop`
 
 ---
 
@@ -117,6 +118,8 @@ git switch -c feature/P0-07-golden-set-tests
 
 ## After This Ticket: What Comes Next
 
-- **P0-08** (Checkpoint-resume) — last P0 ticket, completes foundation phase
+- **P0-08** (Checkpoint-resume) — completes core infrastructure
+- **P0-09** (Competitive pattern database) — initial scan via Meta Ad Library
+- **P0-10** (Competitive pattern query interface) — query utility for pipeline consumption
 - **P2-01** (Inversion tests) — extends golden set with dimension-degraded variants
 - **P2-04** (SPC drift detection) — uses golden set baselines for control charts

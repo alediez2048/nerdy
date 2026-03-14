@@ -80,9 +80,10 @@ Build the checkpoint-resume layer that reads the ledger to determine pipeline st
 
 ## Branch & Merge Workflow
 
+All work is done directly on `develop`. No feature branches.
+
 ```bash
-git switch main && git pull
-git switch -c feature/P0-08-checkpoint-resume
+git switch develop && git pull
 ```
 
 ---
@@ -110,7 +111,7 @@ git switch -c feature/P0-08-checkpoint-resume
 |------|-----|
 | P0-02 ledger module | How events are stored |
 | `.cursor/rules/pipeline-patterns.mdc` | Checkpoint-resume architecture spec |
-| `interviews.md` (R3-Q2) | Full rationale for checkpoint-resume design |
+| `docs/reference/prd.md` (R3-Q2) | Full rationale for checkpoint-resume design |
 
 ---
 
@@ -123,7 +124,7 @@ git switch -c feature/P0-08-checkpoint-resume
 - [ ] Tests pass
 - [ ] Lint clean
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
+- [ ] Committed on `develop`
 
 ---
 
@@ -133,13 +134,8 @@ git switch -c feature/P0-08-checkpoint-resume
 
 ## After This Ticket: What Comes Next
 
-**P0 is now complete.** The foundation is ready:
-- Decision ledger (P0-02) ✅
-- Deterministic seeds (P0-03) ✅
-- Brand knowledge base (P0-04) ✅
-- Reference ads + patterns (P0-05) ✅
-- Calibrated evaluator (P0-06) ✅
-- Golden set regression tests (P0-07) ✅
-- Checkpoint-resume (P0-08) ✅
+**Remaining P0 tickets:**
+- **P0-09** (Competitive pattern database — initial scan) — human-in-the-loop Meta Ad Library research via Claude in Chrome
+- **P0-10** (Competitive pattern query interface) — query utility for pipeline consumption
 
-**Phase 1 begins:** P1-01 (Brief expansion engine) is the first ticket.
+P0-09 can run in parallel with other work since it's manual research. Once P0-08 is done, the core infrastructure is ready and **Phase 1 can begin** with P1-01 (Brief expansion engine).
