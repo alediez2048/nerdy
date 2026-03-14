@@ -1,0 +1,73 @@
+---
+description: Three-layer compliance filter — regex hard-stops, LLM policy checks, brand safety, no-go list
+globs: ["generate/**", "evaluate/**", "tests/**"]
+---
+
+# Compliance Filter (R3-Q3)
+
+## Three-Layer Architecture
+
+Applied before publishing. Each layer is independently testable.
+
+```
+Layer 1: HARD RULES (regex/keyword) — FREE
+  ↓ pass
+Layer 2: POLICY CHECKS (LLM) — costs eval tokens
+  ↓ pass
+Layer 3: BRAND SAFETY (LLM) — costs eval tokens
+  ↓ pass
+PUBLISHABLE
+```
+
+Layers 2–3 only run on ads that pass Layer 1.
+
+## Layer 1: Regex Hard-Stops
+
+Must catch with zero LLM cost:
+
+| Pattern | Regex | Why |
+|---------|-------|-----|
+| Dollar amounts without disclaimers | `\$\d+` | Unverified pricing |
+| Competitor trademarks (negative context) | `Princeton Review\|Kaplan\|Khan Academy\|Chegg` | Disparagement |
+| Absolute guarantees | `guaranteed\|100%\|always\|never fail` | Misleading claims |
+| PII patterns | Email, phone, SSN regex | Data protection |
+
+## Layer 2: LLM Policy Checks
+
+Gemini Flash evaluates:
+- No misleading claims or unverified statistics
+- CTA matches funnel stage (awareness vs. conversion)
+- Tone appropriate for target audience
+- No fear-based language implying the child is deficient
+
+## Layer 3: LLM Brand Safety
+
+Gemini Flash evaluates:
+- Nothing that could embarrass Varsity Tutors
+- No cultural insensitivity
+- No urgency that crosses into fear-mongering
+- No absolute promises about outcomes
+
+## Hard No-Go List
+
+NEVER generate:
+- "Guaranteed 1500+" or any guaranteed score improvement
+- Fear-based language ("your child is falling behind")
+- Specific competitor disparagement by name
+- Unverified statistics, pricing, or testimonials
+- "100% guaranteed", "always works", "never fail"
+- PII in generated content
+
+## Implementation
+
+- `generate/compliance.py` owns all three layers (P2-06)
+- Returns `ComplianceResult` with `passes: bool`, `violations: list`
+- Every compliance check result logged in ledger
+- Compliance is part of the evaluation pipeline, not a post-processing step
+
+## Do NOT
+
+- Skip Layer 1 because "the LLM will catch it" — regex is free and deterministic
+- Run Layers 2–3 on ads that fail Layer 1 — waste of tokens
+- Weaken compliance rules to increase pass rates
+- Apply compliance after publishing — it's a pre-publish gate

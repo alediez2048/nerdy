@@ -1,0 +1,51 @@
+---
+description: Model selection and routing logic — Flash/Pro tiers, improvable range, cost-aware escalation
+globs: ["generate/**", "evaluate/**", "iterate/**"]
+---
+
+# Model Routing (R1-Q4)
+
+## Tiered Model Strategy
+
+| Task | Model | Cost Tier | When |
+|------|-------|-----------|------|
+| Brief expansion | Gemini Flash | $ | Always — structured output, high ROI |
+| First-draft generation | Gemini Flash | $ | Always — 80% of ads are triaged here |
+| Initial evaluation | Gemini Flash | $ | Always — good enough for triage scoring |
+| Context distillation | Gemini Flash | $ | Always — small prompt, structured summary |
+| Compliance check | Gemini Flash | $ | Always — binary decisions, low complexity |
+| Improvable-range regen | Gemini Pro | $$$ | Only for 5.5–7.0 range ads |
+
+## Score-Based Routing
+
+```
+Score ≥ 7.0  → PUBLISH (no regen needed, no model escalation)
+Score 5.5–7.0 → ESCALATE to Gemini Pro (improvable range)
+Score < 5.5  → DISCARD immediately (cheap exit)
+```
+
+The improvable range (5.5–7.0) is where Pro tokens have the highest marginal ROI. Concentrating expensive tokens here can reduce total spend 40–60% vs. using Pro everywhere.
+
+## Model IDs
+
+| Model | ID | Config Key |
+|-------|-----|-----------|
+| Gemini Flash | `gemini-2.0-flash` | `models.flash` |
+| Gemini Pro | `gemini-2.5-pro` | `models.pro` |
+
+Both via `google-genai` SDK using `GEMINI_API_KEY`.
+
+## Routing Implementation
+
+- `generate/model_router.py` owns routing logic (P1-06)
+- Router receives the ad's current score + cycle number
+- Returns model ID + generation parameters
+- Every routing decision is logged in the ledger with `model_used`
+
+## Do NOT
+
+- Use Pro for first-draft generation — Flash is sufficient for triage
+- Use Pro for ads scoring < 5.5 — they should be discarded, not rescued
+- Hardcode model IDs — use `data/config.yaml`
+- Route without logging the decision to the ledger
+- Use any model outside Flash/Pro (no OpenAI, no Anthropic)

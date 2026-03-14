@@ -7,39 +7,30 @@ description: Source control best practices for Ad-Ops-Autopilot — git branchin
 
 ## Branch Strategy
 
-**NEVER commit directly to `main`.** Every ticket uses a dedicated feature branch.
-
-### Branch Naming
+**NEVER commit directly to `main`.** All work happens on `develop`.
 
 ```
-feature/<ticket-id>-<short-description>
+develop  ←── all ticket work goes here (test locally)
+   │
+   └──▶ main  ←── merge develop when verified (stable)
 ```
 
-Examples:
-- `feature/P0-01-project-scaffolding`
-- `feature/P0-06-evaluator-calibration`
-- `feature/P1-04-cot-evaluator`
-- `feature/P1-07-pareto-regeneration`
-- `feature/P2-01-inversion-tests`
-- `feature/P4-03-competitive-intelligence`
+No feature branches. No PRs. Solo developer workflow.
 
-### Branch Lifecycle
+### Workflow
 
 ```bash
-# 1. Start from up-to-date main
-git switch main && git pull
+# 1. Work on develop
+git switch develop
 
-# 2. Create feature branch
-git switch -c feature/P1-04-cot-evaluator
+# 2. Implement, test, commit (all on develop)
+# ... write tests, write code, verify ...
 
-# 3. Do ALL work on this branch
-# ... implement, test, commit ...
+# 3. When verified, merge to main
+git switch main && git merge develop && git push origin main
 
-# 4. Push when done
-git push -u origin feature/P1-04-cot-evaluator
-
-# 5. Open PR against main (or notify for review)
-# 6. Do NOT merge yourself — wait for review
+# 4. Switch back to develop
+git switch develop
 ```
 
 ## Commit Conventions
@@ -114,27 +105,27 @@ python -c "from generate.seeds import get_ad_seed; assert get_ad_seed('s','b',1)
 
 ## Phase Boundary Discipline
 
-This project has 6 phases (P0–P5). Phases are sequential.
+This project has 7 phases (P0–P5 + P1B). Phases are sequential.
 
 ### Rules
 
-- Do NOT create branches for tickets in future phases
 - Do NOT start Phase N+1 work until Phase N is merged to main
 - When completing the last ticket in a phase, note it:
   ```
-  feat: complete P0 foundation phase — all calibration done (P0-08)
+  feat: complete P0 foundation phase — all calibration done (P0-10)
   ```
 
 ### Phase Overview
 
 | Phase | Tickets | Focus |
 |-------|---------|-------|
-| P0 | P0-01 – P0-08 | Foundation, infra, calibration |
-| P1 | P1-01 – P1-14 | Core text pipeline, 50+ ads |
-| P2 | P2-01 – P2-07 | Testing & validation |
-| P3 | P3-01 – P3-06 | Multi-modal (v2) |
-| P4 | P4-01 – P4-07 | Autonomous engine (v3) |
-| P5 | P5-01 – P5-06 | Documentation & submission |
+| P0 | P0-01 – P0-10 (10) | Foundation, infra, calibration, competitive pattern DB |
+| P1 | P1-01 – P1-20 (20) | Full-ad pipeline (copy + image via Nano Banana Pro), 50+ ads |
+| P1B | PA-01 – PA-12 (12) | Application layer (sessions, auth, brief config, curation) |
+| P2 | P2-01 – P2-07 (7) | Testing & validation |
+| P3 | P3-01 – P3-13 (13) | A/B variant engine, Veo UGC video |
+| P4 | P4-01 – P4-07 (7) | Autonomous engine (v3) |
+| P5 | P5-01 – P5-11 (11) | Dashboard, docs & submission |
 
 ## .gitignore Essentials
 
@@ -164,10 +155,7 @@ data/cache/
 
 ## What NOT to Do
 
-- Do NOT commit to `main` directly
-- Do NOT skip creating a branch "to save time"
+- Do NOT commit to `main` directly — merge via `develop`
+- Do NOT create feature branches — work directly on `develop`
 - Do NOT rebase or force-push without explicit approval
 - Do NOT commit `.env` or API keys
-- Do NOT delete branches after merging (let the reviewer handle cleanup)
-- Do NOT squash commits without approval — the commit history tells the implementation story
-- Do NOT create branches for tickets in future phases

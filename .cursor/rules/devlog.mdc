@@ -5,11 +5,11 @@ alwaysApply: true
 
 # DEVLOG Discipline (MANDATORY)
 
-The DEVLOG at `docs/DEVLOG.md` is the project's living history. It is updated **after every commit**, not at the end of a ticket. Every entry tells the story of what happened, what was decided, and what was learned.
+The DEVLOG at `docs/development/DEVLOG.md` is the project's living history. It is updated **after every commit**, not at the end of a ticket. Every entry tells the story of what happened, what was decided, and what was learned.
 
 ## After EVERY Commit
 
-1. **Add or update the ticket entry** in `docs/DEVLOG.md`
+1. **Add or update the ticket entry** in `docs/development/DEVLOG.md`
    - If this is the first commit for a ticket, create a new entry using the template
    - If this is a subsequent commit, update the existing entry (add to Key Achievements, Files Changed, etc.)
 
@@ -50,7 +50,7 @@ When a ticket implements a specific architectural decision from `interviews.md`,
 - **R3-Q10 (Contrastive Rationales):** Evaluator now provides "+2 version" descriptions
 ```
 
-This creates traceability between the 30 design questions and the actual implementation.
+This creates traceability between the 50 design questions (R1–R5) and the actual implementation.
 
 ## Quality Metrics in Entries
 

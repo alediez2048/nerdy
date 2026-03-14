@@ -115,6 +115,6 @@ Triage logic: ads scoring <5.5 are discarded (no expensive re-evaluation). Ads >
 
 ## Architectural Decision Reference
 
-All 30 architectural decisions are documented in `interviews.md` as R1-Q1 through R3-Q10. When implementing a feature, identify which questions govern the design and follow the "Best Answer" unless you document a deviation in the decision log.
+All 50 architectural decisions are documented in `interviews.md` as R1-Q1 through R5-Q10 (5 rounds). When implementing a feature, identify which questions govern the design and follow the "Best Answer" unless you document a deviation in the decision log.
 
 See [references/decision-map.md](references/decision-map.md) for the complete 30-question decision matrix.

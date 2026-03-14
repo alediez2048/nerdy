@@ -5,27 +5,25 @@ alwaysApply: true
 
 # Git Workflow (MANDATORY)
 
-## Branch-Per-Ticket Rule
+## Branch Strategy
 
-**NEVER commit directly to `main`.** Every ticket must use a dedicated feature branch.
+**NEVER commit directly to `main`.** All work happens on `develop`.
 
-Before writing ANY code for a ticket:
+```
+develop  ←── all ticket work (test locally)
+   │
+   └──▶ main  ←── merge develop when verified (stable)
+```
 
-1. Ensure you are on `main` and up to date:
-   ```
-   git switch main && git pull
-   ```
-2. Create a feature branch named after the ticket:
-   ```
-   git switch -c feature/<ticket-id>-<short-description>
-   ```
-   Examples:
-   - `feature/P0-01-project-scaffolding`
-   - `feature/P0-06-evaluator-calibration`
-   - `feature/P1-04-cot-evaluator`
-   - `feature/P1-07-pareto-regeneration`
+No feature branches. No PRs. Solo developer workflow.
 
-3. Do ALL work on this branch. Never switch back to `main` to commit.
+Before writing ANY code:
+
+1. Ensure you are on `develop`:
+   ```
+   git switch develop
+   ```
+2. Do ALL work on `develop`. Commit directly here.
 
 ## Commit Conventions
 
@@ -41,14 +39,14 @@ Before writing ANY code for a ticket:
   2. Implementation
   3. Documentation / decision log updates
 
-## When Done With a Ticket
+## Merging to Main
 
-1. Push the feature branch:
-   ```
-   git push -u origin feature/<ticket-id>-<short-description>
-   ```
-2. Open a PR against `main` (or inform the user to review)
-3. Do NOT merge to `main` yourself — wait for review
+When work is verified on `develop`:
+
+```bash
+git switch main && git merge develop && git push origin main
+git switch develop
+```
 
 ## Phase Boundaries
 
@@ -56,12 +54,11 @@ Before writing ANY code for a ticket:
   ```
   feat: complete P0 foundation phase — all calibration tickets done (P0-08)
   ```
-- Do NOT start a new phase's branch before the prior phase is merged
+- Do NOT start a new phase's work before the prior phase is merged to main
 
 ## What NOT to Do
 
-- Do NOT commit to `main` directly
-- Do NOT skip creating a branch "to save time"
+- Do NOT commit to `main` directly — merge via `develop`
+- Do NOT create feature branches — work directly on `develop`
 - Do NOT rebase or force-push without explicit user approval
 - Do NOT commit `.env`, API keys, or `__pycache__/`
-- Do NOT create branches for tickets in future phases

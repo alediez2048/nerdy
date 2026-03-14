@@ -22,8 +22,8 @@ P0-01 creates the project skeleton: directory structure, dependency management, 
 
 ## What Was Already Done
 
-- `prd.md` — Full PRD with 48 tickets across 6 phases
-- `interviews.md` — 30 architectural pressure-test Q&As
+- `prd.md` — Full PRD with 80 tickets across 7 phases
+- `interviews.md` — 50 architectural pressure-test Q&As (R1–R5)
 - `requirements.md` — Assignment specification
 - `.cursor/rules/` — 12 cursor rules governing implementation
 - `.claude/skills/` — 6 Claude skills with reference materials

@@ -106,13 +106,13 @@
 |-------|------|---------|----------|--------|
 | P0 | Foundation & Calibration | P0-01 – P0-10 (10) | Day 0–1 | 🔄 In Progress |
 | P1 | Full-Ad Pipeline (v1: Copy + Image) | P1-01 – P1-20 (20) | Days 1–4 | ⏳ Not Started |
-| P1B | Application Layer (Sessions, Auth, UX) | PA-01 – PA-12 (12) | Days 3–5 | ⏳ Not Started |
-| P2 | Testing & Validation | P2-01 – P2-07 (7) | Days 4–5 | ⏳ Not Started |
-| P3 | A/B Variant Engine + UGC Video (v2) | P3-01 – P3-13 (13) | Days 5–7 | ⏳ Not Started |
+| P1B | Application Layer | PA-01 – PA-12 (12) | Days 3–5 | ⏳ Not Started |
+| P2 | Testing & Validation | P2-01 – P2-07 (7) | Days 3–4 | ⏳ Not Started |
+| P3 | A/B Variant Engine + UGC Video (v2) | P3-01 – P3-13 (13) | Days 4–7 | ⏳ Not Started |
 | P4 | Autonomous Engine (v3) | P4-01 – P4-07 (7) | Days 7–14 | ⏳ Not Started |
 | P5 | Dashboard, Docs & Submission | P5-01 – P5-11 (11) | Days 12–14 | ⏳ Not Started |
 
-**Total:** 80 tickets | 14 days (per Systems Design Section 10)
+**Total:** 80 tickets | 14 days (per prd.md Section 10)
 
 ## Ticket Index
 
@@ -194,7 +194,7 @@
 | P3-08 | Video attribute evaluator | ⏳ |
 | P3-09 | Script-video coherence checker | ⏳ |
 | P3-10 | Video Pareto selection + regen loop | ⏳ |
-| P3-11 | Tri-format ad assembly | ⏳ |
+| P3-11 | Three-format ad assembly | ⏳ |
 | P3-12 | Video cost tracking | ⏳ |
 | P3-13 | 10-ad video pilot run | ⏳ |
 
@@ -203,7 +203,7 @@
 |--------|-------|--------|
 | P4-01 | Agentic orchestration layer | ⏳ |
 | P4-02 | Self-healing feedback loop | ⏳ |
-| P4-03 | Competitive intelligence — automated refresh + trends | ⏳ |
+| P4-03 | Competitive intelligence pipeline | ⏳ |
 | P4-04 | Cross-campaign transfer | ⏳ |
 | P4-05 | Performance-decay exploration trigger | ⏳ |
 | P4-06 | Full marginal analysis engine | ⏳ |
@@ -224,11 +224,11 @@
 | P5-10 | Generated ad library export | ⏳ |
 | P5-11 | README with one-command setup | ⏳ |
 
-## Systems Design Alignment Notes
+## PRD Alignment Notes
 
-- **Source of truth:** `docs/systemsdesign.md` (80 tickets, 7 phases)
-- **Recommended Build Order:** P0-03 → P0-02 → R3-Q6 (evaluation prompt) → P0-06 → P1-02 → P1-08 → P1-07 → P1-13 → everything else
-- **Load-bearing components:** Evaluation prompt (R3-Q6) and decision ledger (R2-Q8)
+- **Source of truth:** `docs/reference/prd.md` (80 tickets, 7 phases)
+- **Recommended Build Order:** See prd.md Section 10 (Pipeline track + Application track)
+- **Load-bearing components:** Evaluation prompt (R3-Q6), decision ledger (R2-Q8), visual spec extraction (Section 4.6.2), session model (Section 4.7.2), competitive pattern database (Section 4.8.3)
 
 ---
 

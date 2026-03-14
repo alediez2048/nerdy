@@ -186,9 +186,9 @@ python -m output.visualize  # or equivalent script
 | `data/ledger.jsonl` | Append-only decision log (created on first run) |
 | `requirements.txt` | Python dependencies |
 | `prd.md` | Product requirements document |
-| `interviews.md` | 30 architectural pressure-test Q&As |
+| `interviews.md` | 50 architectural pressure-test Q&As (R1–R5) |
 | `docs/development/DEVLOG.md` | Development log — updated after every ticket |
-| `docs/development/tickets/*-primer.md` | Ticket primers |
+| `docs/development/tickets/<TICKET-ID>-primer.md` | Ticket primers (80 tickets, P0-01–P5-11) |
 | `docs/deliverables/decisionlog.md` | Decision log — design rationale and trade-offs |
 | `docs/deliverables/systemsdesign.md` | Systems design — architecture documentation |
 | `docs/reference/ENVIRONMENT.md` | This file |

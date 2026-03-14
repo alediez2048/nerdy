@@ -9,52 +9,52 @@ alwaysApply: true
 
 Read these files in order before making any changes:
 
-1. **Ticket Primer** — `docs/tickets/<TICKET-ID>-primer.md`
+1. **Ticket Primer** — `docs/development/tickets/<TICKET-ID>-primer.md`
    - Understand the goal, deliverables checklist, and Definition of Done
    - Note the "Files to Create", "Files to Modify", and "Files You Should NOT Modify" sections
    - Note the "Files You Should READ for Context" section
    - Follow the architectural decisions referenced (R#-Q#)
    - If no primer exists for the ticket, read the PRD's ticket description instead
 
-2. **PRD** — `prd.md`
-   - Cross-reference the ticket acceptance criteria
-   - Check which architectural decisions (R1-Q1 through R3-Q10) apply
+2. **PRD** — `docs/reference/prd.md`
+   - Cross-reference the ticket acceptance criteria (80 tickets, 7 phases)
+   - Check which architectural decisions (R1-Q1 through R5-Q10) apply
    - Note the directory structure and which modules the ticket touches
 
-2. **Interviews** — `interviews.md`
-   - Contains the 30 architectural pressure-test Q&As across 3 rounds
+3. **Interviews** — `docs/reference/interviews.md`
+   - Contains the 50 architectural pressure-test Q&As across 5 rounds (R1–R5)
    - Reference specific decisions by their IDs (e.g., R1-Q5 for Pareto-optimal filtering)
    - The "Best Answer" for each question IS the implementation spec
 
-3. **DEVLOG** — `docs/DEVLOG.md`
+4. **DEVLOG** — `docs/development/DEVLOG.md`
    - Understand what was done in prior tickets — check the Ticket Index table
    - Confirm prerequisite tickets are complete before starting yours
    - Read the Learnings sections of related prior tickets
    - Do not repeat failed approaches without a new rationale
 
-4. **Decision log** — `docs/decision_log.md` (once it exists)
+5. **Decision log** — `docs/deliverables/decisionlog.md`
    - Understand architectural choices and their reasoning
    - Check which options were considered and rejected
 
-5. **Brand knowledge base** — `data/brand_knowledge.json` (once it exists)
+6. **Brand knowledge base** — `data/brand_knowledge.json` (once it exists)
    - Contains verified Varsity Tutors facts for grounded brief expansion
    - NEVER invent product claims — if a fact isn't in this file, don't use it
 
-6. **Files you are about to modify** — read them in full before editing
+7. **Files you are about to modify** — read them in full before editing
    - Never edit a file you haven't read first
    - Understand existing code structure before adding to it
 
-7. **Config** — `data/config.yaml` (once it exists)
+8. **Config** — `data/config.yaml`
    - All tunable parameters: thresholds, batch sizes, model selections, weights
    - Do not hardcode values that belong in config
 
 ## Cross-Reference Protocol
 
-When implementing a feature, identify which interview questions (R1-Q1 through R3-Q10) govern the design. Read the full Q&A in `interviews.md` before implementing. The PRD's ticket descriptions reference these with notation like "(R1-Q5)" — follow the chain.
+When implementing a feature, identify which interview questions (R1-Q1 through R5-Q10) govern the design. Read the full Q&A in `interviews.md` before implementing. The PRD's ticket descriptions reference these with notation like "(R1-Q5)" — follow the chain.
 
 ## Do NOT
 
-- Start writing code before reading the ticket's primer (`docs/tickets/<TICKET-ID>-primer.md`)
+- Start writing code before reading the ticket's primer (`docs/development/tickets/<TICKET-ID>-primer.md`)
 - Assume what a file contains without reading it
 - Guess at function signatures, return types, or data schemas
 - Skip reading `interviews.md` for the relevant architectural decisions

@@ -1,0 +1,66 @@
+---
+description: Token economics — attribution tagging, marginal analysis, QWTE, cost budgets per stage
+globs: ["iterate/**", "generate/**", "evaluate/**", "output/**"]
+---
+
+# Token Economics (R1-Q7)
+
+## North Star
+
+**Performance Per Token** — quality improvement per dollar of API spend.
+
+## Attribution Tagging
+
+Every API call must be tagged with its purpose:
+
+| Tag | Stage | Typical Tokens |
+|-----|-------|---------------|
+| `brief-expansion` | generate | ~300 |
+| `generation` | generate | ~850 |
+| `evaluation` | evaluate | ~1,240 |
+| `regeneration-attempt-1` | iterate | ~1,100 |
+| `regeneration-attempt-2` | iterate | ~1,100 |
+| `regeneration-attempt-3` | iterate | ~1,100 |
+| `context-distillation` | iterate | ~200 |
+| `triage` | evaluate | ~500 |
+| `compliance` | generate | ~400 |
+
+- `iterate/token_tracker.py` owns attribution (P1-11)
+- Tags stored in `action` field of every ledger event
+- `tokens_consumed` field on every event — never zero for API calls
+
+## Three Metrics
+
+| Metric | Formula | Use |
+|--------|---------|-----|
+| Cost per publishable ad | total tokens / published ads | Dashboard metric |
+| QWTE | avg quality of published / tokens per published | Cross-batch comparison |
+| Marginal analysis | quality delta / token delta per regen cycle | Optimization engine |
+
+## Token Budget Projection (50 ads)
+
+```
+First pass (all 50): ~119,500 tokens (Flash)
+Regen cycle 1 (15 ads × 5 variants): ~175,500 tokens (Pro)
+Regen cycle 2 (5 ads × 5 variants): ~58,500 tokens (Pro)
+Brief mutation + cycle 3 (2 ads): ~23,400 tokens (Pro)
+Overhead: ~15,000 tokens (Flash)
+TOTAL: ~392,000 tokens
+Published: ~47 ads (94% success rate)
+Cost per publishable ad: ~8,340 tokens
+```
+
+## Marginal Analysis
+
+Track quality gain per regen cycle:
+- If improvement between cycle N and N-1 < 0.3 points → diminishing returns
+- Cycle 3 on Brand Voice issues: usually worth it (high marginal gain)
+- Cycle 3 on Clarity issues: usually not worth it (diminishing returns)
+- This data feeds back into dynamic regen budget decisions
+
+## Do NOT
+
+- Make API calls without `tokens_consumed` and `action` in the ledger event
+- Ignore marginal analysis — it's what makes the system self-tuning
+- Treat all regen cycles as equally valuable — later cycles have diminishing ROI
+- Skip token counting on compliance or distillation calls — every token counts

@@ -22,7 +22,8 @@ Build all pipeline stages from scratch using direct SDK calls:
 |-----------|-----------|-------------------|
 | Language | Python 3.10+ | — |
 | LLM | Google Gemini API (Flash + Pro) | No OpenAI, no Anthropic |
-| Data Store | Append-only JSONL ledger | No SQLite, no Postgres |
+| Pipeline Data Store | Append-only JSONL ledger | No SQLite, no Postgres for pipeline state |
+| App Layer DB (P1B) | PostgreSQL + SQLAlchemy | Application layer only (users, sessions, curation) |
 | Config | python-dotenv + config.yaml | No hardcoded values |
 | Testing | pytest | — |
 | Linting | ruff | — |
@@ -81,7 +82,7 @@ Every event must include ALL fields:
 }
 ```
 
-The ledger is append-only. NEVER modify or delete existing entries. NEVER use a database.
+The ledger is append-only. NEVER modify or delete existing entries. NEVER use a database for pipeline state. PostgreSQL is used only in the application layer (P1B) for user sessions and curation.
 
 ## Compliance Hard Constraints
 
@@ -102,7 +103,7 @@ The ledger is append-only. NEVER modify or delete existing entries. NEVER use a 
 
 Conventional Commits only: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
 
-Reference ticket ID in every commit. Do not commit to `main` directly. Branch-per-ticket.
+Reference ticket ID in every commit. Do not commit to `main` directly. All work on `develop`.
 
 ## Scope Discipline
 

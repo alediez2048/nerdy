@@ -1,0 +1,89 @@
+---
+description: Brief expansion — grounding constraints, context distillation, hallucination prevention, verified-facts policy
+globs: ["generate/**", "data/**"]
+---
+
+# Brief Expansion (R3-Q5, R2-Q4)
+
+## Purpose
+
+Transform a minimal raw brief into a rich, grounded creative brief that both text and image generators can use.
+
+```
+Raw Brief                    Expanded Brief
+┌──────────────────┐        ┌──────────────────────────────────┐
+│ audience: parents │        │ audience: parents (35-55)        │
+│ product: SAT prep │──LLM──▶│ pain: college admissions anxiety  │
+│ goal: conversion  │        │ value: 200+ point improvement     │
+│ tone: empowering  │        │ proof: 10,000+ students served   │
+└──────────────────┘        │ hook_candidates: [question, stat] │
+                             │ cta_candidates: [trial, demo]    │
+                             │ brand_profile: parent-facing      │
+                             └──────────────────────────────────┘
+```
+
+## Grounding Constraints
+
+- **Source of truth:** `data/brand_knowledge.json` (P0-04)
+- Every claim in the expanded brief must trace to a verified fact in the brand KB
+- Demographics, proof points, pricing — all from the KB, never invented
+- If the KB doesn't contain a needed fact, the expansion must omit it (not hallucinate)
+
+## Verified-Facts Policy
+
+| Category | Source | Example |
+|----------|--------|---------|
+| Student outcomes | brand KB | "200+ point average improvement" |
+| Student count | brand KB | "10,000+ students served" |
+| Service details | brand KB | "1-on-1 personalized tutoring" |
+| Pricing | brand KB only | Never state pricing unless KB has it |
+| Testimonials | brand KB only | Never fabricate quotes |
+
+If a fact isn't in `data/brand_knowledge.json`, it does NOT go in the brief.
+
+## Output Schema
+
+The expanded brief must produce structured fields:
+
+```python
+{
+    "audience": str,              # Target segment
+    "audience_demographics": str, # Age range, characteristics
+    "pain_points": list[str],     # 2-3 pain points from KB
+    "value_propositions": list[str],  # 2-3 grounded value props
+    "proof_points": list[str],    # Verified claims from KB
+    "hook_candidates": list[str], # 2-3 hook types to try
+    "cta_candidates": list[str],  # 2-3 CTA approaches
+    "brand_profile": str,         # parent-facing or student-facing
+    "tone": str,                  # From brief input
+    "campaign_goal": str          # awareness or conversion
+}
+```
+
+## Context Distillation (R2-Q4)
+
+After iteration cycles, raw history is distilled into a compact context object:
+
+- Current best attempt and why it scored well
+- Single most impactful improvement needed
+- 2-3 anti-patterns to avoid
+- Replaces all raw cycle history in the generation prompt
+- Constant token cost regardless of iteration depth
+
+Implementation: `iterate/context_distiller.py` (P1-09)
+
+## Audience-Specific Profiles (R1-Q6)
+
+Two brand voice sub-profiles:
+- **Parent-facing:** authoritative, reassuring, outcome-focused
+- **Student-facing:** relatable, motivating, peer-like
+
+Each includes 3-4 few-shot examples. The expander selects the profile based on the audience segment.
+
+## Do NOT
+
+- Invent claims not in `data/brand_knowledge.json`
+- Use unverified statistics, pricing, or testimonials
+- Skip the grounding step — every expansion must reference the brand KB
+- Include raw iteration history in generation prompts — use distilled context
+- Treat brief expansion as optional — it's required for every ad

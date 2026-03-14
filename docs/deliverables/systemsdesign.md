@@ -13,15 +13,15 @@ Ad-Ops-Autopilot is an autonomous ad copy generation system for Facebook and Ins
 **North Star Metric:** Performance Per Token — how much quality improvement per dollar of Gemini API cost.
 
 **Scope Progression:**
-- **v1 (Pipeline):** Text-only ad copy generation, 5-dimension evaluation, feedback loop, 50+ ads
-- **v2 (Multi-Modal):** Image generation, text-image coherence, A/B variants
-- **v3 (Autonomous Engine):** Self-healing loops, agentic orchestration, competitive intelligence
+- **v1 (Full-Ad Pipeline):** Text copy + image via Nano Banana Pro, 5-dimension text eval + visual attribute checklist, text-image coherence, 50+ full ads
+- **v2 (A/B Variant Engine + UGC Video):** Single-variable A/B variants, Nano Banana 2 cost tier, Veo UGC video, multi-format ad assembly (feed, Stories, Reels)
+- **v3 (Autonomous Engine):** Self-healing loops, agentic orchestration, competitive intelligence, application layer (sessions, auth, curation)
 
 ---
 
 ## 2. Architectural Pillars
 
-Seven principles that constrain every design decision:
+Nine principles that constrain every design decision (per prd.md):
 
 | # | Pillar | What It Means in Practice |
 |---|--------|---------------------------|
@@ -32,6 +32,8 @@ Seven principles that constrain every design decision:
 | 5 | **State Is Sacred** | Append-only JSONL ledger — events are immutable. Identity-derived seeds — deterministic without position coupling. Snapshots capture full I/O for every API call. |
 | 6 | **Learning Is Structural** | Reference-decompose-recombine turns "what works" into combinatorial atoms. Pattern databases make competitive intel queryable. Cross-campaign transfer shares patterns, isolates content. |
 | 7 | **Visible Reasoning Is a First-Class Output** | Contrastive rationales on every score. Decision ledger records every system choice. Narrated pipeline replay for demos. |
+| 8 | **The Reviewer Is a User, Too** | Submission is a product for the reviewer. Curated showcase, 7-min demo, ADR + narrative log. |
+| 9 | **The Tool Is the Product** | Session management, auth, brief config, progress monitoring transform the pipeline into a product. |
 
 ---
 
@@ -771,8 +773,8 @@ All tunable parameters in `data/config.yaml`:
 ```
 PHASE 0 — Foundation (P0-01 → P0-08)
 ├── ✅ P0-01: Scaffolding
+├── ✅ P0-02: Decision ledger
 ├── ✅ P0-03: Seed chain + snapshots
-├── ⏳ P0-02: Decision ledger
 ├── ⏳ P0-04: Brand knowledge base
 ├── ⏳ P0-05: Reference ad collection
 ├── ⏳ P0-06: Evaluator calibration

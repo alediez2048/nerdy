@@ -5,11 +5,15 @@ alwaysApply: true
 
 # Tech Stack — Version Pinning
 
+## Pipeline (P0–P2, P4)
+
 - Language: Python 3.10+ (strict typing with type hints on every function)
 - LLM (Generation + Evaluation): Google Gemini API (`google-genai` SDK)
-  - Gemini Flash — first-draft generation, initial scoring, brief expansion, context distillation
-  - Gemini Pro — regeneration for improvable-range ads (5.5–7.0), complex evaluation
-- Image Generation (v2): Imagen via Gemini API, or Flux / Nano Banana
+  - Gemini Flash (`gemini-2.0-flash`) — first-draft generation, initial scoring, brief expansion, context distillation
+  - Gemini Pro (`gemini-2.5-pro`) — regeneration for improvable-range ads (5.5–7.0), complex evaluation
+- Image Generation (P1-14): Nano Banana Pro (`gemini-3-pro-image-preview`) — same `GEMINI_API_KEY`, ~$0.13/image
+- Image Generation Cost Tier (P3-01): Nano Banana 2 (`gemini-3.1-flash-image`) — ~$0.02–0.05/image for variant volume
+- Video Generation (P3-07): Veo 3.1 Fast — UGC video for Stories/Reels, ~$0.15/sec, same API key
 - Data & Visualization: pandas + matplotlib
 - Tokenizer: tiktoken (cl100k_base) for token counting and budget tracking
 - Logging: Python standard `logging` module
@@ -18,11 +22,23 @@ alwaysApply: true
 - Linting: ruff
 - Data Format: JSONL (append-only decision ledger), JSON (config, schemas)
 - Determinism: hashlib for per-ad seed chains
+- Image Processing: Pillow (`PIL`) for image handling
+
+## Application Layer (P1B: PA-01–PA-12)
+
+- Backend: FastAPI + SQLAlchemy + Alembic (migrations)
+- Database: PostgreSQL (user accounts, session metadata, curation state)
+- Task Queue: Celery + Redis (background pipeline execution, SSE pub/sub)
+- Frontend: React (Vite) — session list, brief config, progress view, dashboard
+- Auth: Google OAuth 2.0 (@nerdy.com SSO)
+- Deployment: Docker + Docker Compose (single-VM production)
+
+**Note:** PostgreSQL is for the application layer only. The pipeline's source of truth remains the append-only JSONL ledger.
 
 ## Do NOT
 
 - Use LangChain, LlamaIndex, or any orchestration framework — this is a custom pipeline
 - Use OpenAI API — all LLM calls go through Gemini
 - Add dependencies without explicit need tied to a ticket
-- Use databases (SQLite, Postgres) — the append-only JSONL ledger is the data store
+- Use databases for pipeline state — the append-only JSONL ledger is the pipeline data store
 - Hardcode API keys — use `.env` with python-dotenv

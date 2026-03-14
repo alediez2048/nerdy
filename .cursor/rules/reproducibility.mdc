@@ -1,0 +1,70 @@
+---
+description: Reproducibility — per-ad seed chains, I/O snapshots, checkpoint-resume protocol
+globs: ["generate/**", "iterate/**", "tests/**"]
+---
+
+# Reproducibility (R3-Q4, R3-Q2)
+
+## Seed Chain Contract
+
+Every ad gets a deterministic, identity-derived seed:
+
+```python
+seed = SHA256(global_seed + ":" + brief_id + ":" + cycle_number)[:8]
+```
+
+Properties:
+- **Deterministic:** same inputs → same seed, always
+- **Identity-derived:** brief_002's seed is independent of brief_001
+- **Order-independent:** adding/removing briefs doesn't affect other seeds
+- **No global seeds:** each ad has its own chain
+
+### Implementation
+
+- `generate/seeds.py` — `get_ad_seed(global_seed, brief_id, cycle_number) -> int`
+- `global_seed` loaded from env var `GLOBAL_SEED` → `config.yaml` → default `"nerdy-p0-default"`
+- Seed passed to every LLM API call and logged in every ledger event
+
+## I/O Snapshots
+
+Every API call is captured as a snapshot dict:
+
+```python
+{
+    "prompt": str,           # Full prompt sent to model
+    "response": str,         # Full response received
+    "model_version": str,    # e.g. "gemini-2.0-flash"
+    "timestamp": str,        # ISO-8601
+    "parameters": dict,      # temperature, max_tokens, etc.
+    "seed": int              # The ad seed used
+}
+```
+
+- `iterate/snapshots.py` — `capture_snapshot(prompt, response, model, parameters, seed) -> dict`
+- Snapshots embed into ledger events for full forensic replay
+- Given the same seed and prompt, reproduce the exact output
+
+## Checkpoint-Resume (P0-08)
+
+Every API call writes a checkpoint before and after:
+
+```
+BEFORE: {checkpoint_id: "ckpt_001", status: "started", ad_id: "ad_047", stage: "generation"}
+API CALL: ...
+AFTER:  {checkpoint_id: "ckpt_001", status: "completed", result_hash: "a3f2..."}
+```
+
+On `--resume`:
+1. Read ledger for all completed checkpoint IDs
+2. Skip any step already completed
+3. Resume from first incomplete checkpoint
+
+No work repeated. No state lost. No duplicate ad_ids after resume.
+
+## Do NOT
+
+- Use global seeds — each ad has its own seed chain
+- Skip snapshot capture on any API call
+- Modify or delete ledger events (append-only)
+- Resume without checking for completed checkpoints first
+- Generate without passing the seed to the model

@@ -56,7 +56,7 @@ docs/         — deliverables/, development/, reference/
 
 **Reference** (upstream specs):
 - **[ENVIRONMENT](docs/reference/ENVIRONMENT.md)** — Setup, config, troubleshooting
-- **[PRD](docs/reference/prd.md)** — Product requirements, 48 tickets across 6 phases
+- **[PRD](docs/reference/prd.md)** — Product requirements, 80 tickets across 7 phases
 
 ## Requirements
 

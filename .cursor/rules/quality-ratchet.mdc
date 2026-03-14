@@ -1,0 +1,75 @@
+---
+description: Quality ratchet — rolling high-water mark, SPC drift detection, canary injection, calibration anchors
+globs: ["evaluate/**", "iterate/**"]
+---
+
+# Quality Ratchet & Drift Detection (R1-Q1, R1-Q9)
+
+## Quality Ratchet (P1-10)
+
+The system remembers how well it has performed and refuses regression.
+
+```python
+effective_threshold = max(7.0, rolling_5batch_avg - 0.5)
+```
+
+Progression example:
+```
+Batch 1: avg 7.2 → threshold = 7.0 (floor)
+Batch 5: avg 8.1 → threshold = max(7.0, 7.72 - 0.5) = 7.22
+Batch 6: avg 8.3 → threshold = max(7.0, 7.92 - 0.5) = 7.42
+Batch N: avg 9.0 → threshold ~8.0 (refuses regression)
+```
+
+- `iterate/quality_ratchet.py` owns this logic (P1-10)
+- The 0.5 buffer prevents one exceptional batch from making threshold unreachable
+- The 7.0 floor is immutable — never drops below absolute minimum
+- Effective threshold plotted over time in quality trend visualization
+
+## Dimension Floor Constraints
+
+Hard minimums that override aggregate score:
+
+| Dimension | Floor | Effect |
+|-----------|-------|--------|
+| Clarity | 6.0 | Confusing ad is never publishable |
+| Brand Voice | 5.0 | Must sound recognizably like Varsity Tutors |
+
+Floor breach = automatic rejection regardless of weighted average.
+
+## SPC Drift Detection (P2-04)
+
+Statistical Process Control monitors evaluator consistency:
+
+```
+Batch scores → Control chart (rolling mean ± 2σ)
+                  │
+                  ├── Within limits → Continue (no action)
+                  │
+                  └── Breach → Inject 3-5 canary ads
+                                  │
+                                  ├── Canary scores normal → Real quality shift
+                                  │                          (ratchet adjusts)
+                                  │
+                                  └── Canary scores drifted → Evaluator drift
+                                                               (recalibrate)
+```
+
+- `evaluate/drift_detection.py` owns SPC logic (P2-04)
+- Control limits: ±2σ from rolling 5-batch mean
+- Canary injection only fires when drift is detected — no wasted tokens
+- Recalibration uses golden set anchor ads (P0-07)
+
+## Calibration Anchors (P0-06, P0-07)
+
+- **Cold-start calibration:** Run evaluator on 20–30 competitor + reference ads before generating anything
+- **Golden set:** 15–20 ads with human-assigned scores across all 5 dimensions
+- **Regression gate:** Evaluator must score within ±1.0 of human labels on ≥80% of golden set
+
+## Do NOT
+
+- Modify the 7.0 absolute floor — it's immutable
+- Skip floor constraint checks even when aggregate passes
+- Ignore SPC breaches — always investigate with canary injection
+- Use the same canary ads repeatedly without rotating them
+- Calibrate the evaluator against its own generated output (circular)
