@@ -13,7 +13,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from evaluate.evaluator import EvaluationResult, evaluate_ad
+from evaluate.evaluator import (
+    DimensionRationale,
+    EvaluationResult,
+    evaluate_ad,
+    _build_evaluation_prompt,
+    _parse_evaluation_response,
+)
 
 REFERENCE_ADS_PATH = Path(__file__).resolve().parents[2] / "data" / "reference_ads.json"
 GOLDEN_ADS_PATH = Path(__file__).resolve().parents[2] / "tests" / "test_data" / "golden_ads.json"
@@ -292,6 +298,119 @@ def test_dimension_ordering(golden_eval_pairs: list[tuple[dict, EvaluationResult
             matches += 1
     pct = matches / len(pairs) * 100 if pairs else 0
     assert pct >= 60, f"Dimension ordering only {pct:.1f}% (need 60%+). {matches}/{len(pairs)}"
+
+
+# --- P1-04 CoT / Contrastive / Structural Elements Tests ---
+
+
+def _mock_response_with_structural_elements() -> dict:
+    """Mock response including structural_elements and low confidence."""
+    base = _mock_evaluation_response()
+    base["structural_elements"] = {
+        "hook": "Is your child's SAT score holding them back?",
+        "value_proposition": "1-on-1 expert tutors, free practice test",
+        "cta": "Start Free Practice Test",
+        "emotional_angle": "Parent worry about college admissions",
+    }
+    base["scores"]["brand_voice"]["confidence"] = 5
+    base["flags"] = ["low_confidence:brand_voice"]
+    return base
+
+
+@patch("evaluate.evaluator._call_gemini")
+@patch("iterate.ledger.log_event")
+def test_structural_elements_extracted(mock_log: MagicMock, mock_call: MagicMock) -> None:
+    """Structural elements (hook, VP, CTA, emotional angle) are extracted."""
+    mock_call.return_value = _mock_response_with_structural_elements()
+    result = evaluate_ad(_sample_ad())
+    assert "hook" in result.structural_elements
+    assert "value_proposition" in result.structural_elements
+    assert "cta" in result.structural_elements
+    assert "emotional_angle" in result.structural_elements
+
+
+@patch("evaluate.evaluator._call_gemini")
+@patch("iterate.ledger.log_event")
+def test_rationales_have_contrastive_fields(mock_log: MagicMock, mock_call: MagicMock) -> None:
+    """Each dimension has DimensionRationale with plus_two_description and specific_gap."""
+    mock_call.return_value = _mock_evaluation_response()
+    result = evaluate_ad(_sample_ad())
+    for dim in ("clarity", "value_proposition", "cta", "brand_voice", "emotional_resonance"):
+        assert dim in result.rationales
+        r = result.rationales[dim]
+        assert isinstance(r, DimensionRationale)
+        assert r.plus_two_description
+        assert r.specific_gap
+        assert r.current_assessment
+        assert 1 <= r.confidence <= 10
+
+
+@patch("evaluate.evaluator._call_gemini")
+@patch("iterate.ledger.log_event")
+def test_low_confidence_dimensions_flagged(mock_log: MagicMock, mock_call: MagicMock) -> None:
+    """Dimensions with confidence < 7 appear in confidence_flags."""
+    mock_call.return_value = _mock_response_with_structural_elements()
+    result = evaluate_ad(_sample_ad())
+    assert "brand_voice" in result.confidence_flags
+    assert result.confidence_flags["brand_voice"] == 5
+    assert any("low_confidence" in f for f in result.flags)
+
+
+@patch("evaluate.evaluator._call_gemini")
+@patch("iterate.ledger.log_event")
+def test_malformed_response_falls_back_gracefully(mock_log: MagicMock, mock_call: MagicMock) -> None:
+    """Malformed JSON returns scores-only result, does not crash."""
+    mock_call.side_effect = lambda p, aid: _parse_evaluation_response("not valid json {{{", aid)
+    result = evaluate_ad(_sample_ad())
+    assert isinstance(result, EvaluationResult)
+    assert result.ad_id == "test_001"
+    for dim in ("clarity", "value_proposition", "cta", "brand_voice", "emotional_resonance"):
+        assert dim in result.scores
+        assert 1 <= result.scores[dim]["score"] <= 10
+
+
+def test_audience_specific_voice_rubric_in_prompt() -> None:
+    """Prompt includes audience-specific Brand Voice rubric from get_voice_for_evaluation."""
+    ad = _sample_ad()
+    prompt_parents = _build_evaluation_prompt(ad, "conversion", "parents")
+    prompt_students = _build_evaluation_prompt(ad, "conversion", "students")
+    assert "parents" in prompt_parents
+    assert "students" in prompt_students
+    assert "Brand Voice" in prompt_parents
+    assert "Brand Voice" in prompt_students
+
+
+def test_score_validation_clamps_to_1_10() -> None:
+    """Scores outside 1-10 are clamped."""
+    parsed = _parse_evaluation_response(
+        json.dumps({
+            "ad_id": "x",
+            "scores": {
+                "clarity": {"score": 15.0, "rationale": "x", "contrastive": "x", "confidence": 8},
+                "value_proposition": {"score": 0.5, "rationale": "x", "contrastive": "x", "confidence": 8},
+                "cta": {"score": 7.0, "rationale": "x", "contrastive": "x", "confidence": 8},
+                "brand_voice": {"score": 7.0, "rationale": "x", "contrastive": "x", "confidence": 8},
+                "emotional_resonance": {"score": 7.0, "rationale": "x", "contrastive": "x", "confidence": 8},
+            },
+            "weakest_dimension": "clarity",
+            "flags": [],
+        }),
+        "x",
+    )
+    assert parsed["scores"]["clarity"]["score"] == 10.0
+    assert parsed["scores"]["value_proposition"]["score"] == 1.0
+
+
+@patch("evaluate.evaluator._call_gemini")
+@patch("iterate.ledger.log_event")
+def test_evaluate_ad_accepts_audience_param(mock_log: MagicMock, mock_call: MagicMock) -> None:
+    """evaluate_ad accepts audience parameter for Brand Voice rubric."""
+    mock_call.return_value = _mock_evaluation_response()
+    result = evaluate_ad(_sample_ad(), campaign_goal="conversion", audience="students")
+    assert result.ad_id == "test_001"
+    mock_call.assert_called_once()
+    call_args = mock_call.call_args[0]
+    assert "students" in call_args[0]
 
 
 @requires_api

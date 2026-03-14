@@ -7,6 +7,106 @@
 
 ---
 
+## P1-04: Chain-of-Thought Evaluator ✅
+
+### Plain-English Summary
+- Extended `evaluate/evaluator.py` with full production 5-step CoT prompt (R3-Q6)
+- Added `DimensionRationale` for contrastive rationales (current, +2 description, specific gap) and confidence per dimension
+- Added `structural_elements` (hook, value_prop, cta, emotional_angle) and `confidence_flags` for low-confidence dimensions
+- Integrated `get_voice_for_evaluation(audience)` from P1-03 for audience-specific Brand Voice rubric
+- Logs AdEvaluated events to ledger with full rationales for narrated replay
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P1-04
+- **Branch:** `develop`
+- **Architectural Decisions:** R3-Q6 (CoT structured evaluation), R3-Q10 (contrastive rationales), R2-Q5 (confidence-gated autonomy), R1-Q6 (audience-specific Brand Voice rubric)
+
+### Key Achievements
+- DimensionRationale: current_assessment, score, plus_two_description, specific_gap, confidence
+- _build_evaluation_prompt(ad_text, campaign_goal, audience) — 5-step CoT with voice rubric
+- _parse_evaluation_response handles malformed JSON, clamps scores 1–10
+- _scores_to_rationales builds DimensionRationale from API response
+- evaluate_ad(ad_text, campaign_goal, audience) — logs AdEvaluated with outputs.to_dict()
+- confidence_flags: dimensions with confidence < 7 flagged for human review
+- Existing P0-06 tests pass; 8+ new tests for CoT, contrastive, confidence, structural elements
+
+### Files Changed
+- **Modified:** `evaluate/evaluator.py` — CoT prompt, DimensionRationale, confidence flags, ledger integration
+- **Modified:** `tests/test_evaluation/test_golden_set.py` — new tests for structural elements, rationales, malformed fallback, audience param
+
+### Testing
+- 21 tests in test_golden_set.py (16 mocked, 5 skipped without API key)
+- 124 tests pass total (5 API tests skipped)
+
+### Acceptance Criteria
+- [x] 5-step CoT evaluation prompt replaces/extends P0-06 prompt
+- [x] Every dimension has contrastive rationale (current, +2 description, specific gap)
+- [x] Confidence flags present; low-confidence (< 7) dimensions identified
+- [x] Structural elements (hook, VP, CTA, emotional angle) extracted
+- [x] Audience-specific Brand Voice rubric via get_voice_for_evaluation()
+- [x] Existing P0-06 tests still pass
+- [x] New tests pass, lint clean
+- [x] DEVLOG updated
+
+### Next Steps
+- **P1-05** (Campaign-goal-adaptive weighting) — applies campaign-specific weights to scores
+- P1-06 (Tiered model routing) — uses scores for routing
+- P1-07 (Pareto-optimal regeneration) — uses contrastive rationales
+
+---
+
+## P1-03: Audience-Specific Brand Voice Profiles ✅
+
+### Plain-English Summary
+- Created `generate/brand_voice.py` — audience-specific voice profiles with few-shot examples
+- `get_voice_profile(audience) -> VoiceProfile` loads from brand_knowledge.json + reference_ads.json
+- `get_voice_for_prompt(audience)` and `get_voice_for_evaluation(audience)` format profiles for generator and evaluator
+- Integrated voice profile into ad generator prompt via `get_voice_for_prompt(audience)`
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P1-03
+- **Branch:** `develop`
+- **Architectural Decisions:** R1-Q6 (audience-specific profiles with few-shot), R1-Q3 (Brand Voice floor 5.0)
+
+### Key Achievements
+- VoiceProfile: audience, tone, emotional_drivers, vocabulary_guidance, few_shot_examples, anti_examples, brand_constants
+- Parent profile: authoritative, reassuring, empathetic; drivers: college anxiety, expert guidance
+- Student profile: relatable, motivating, peer-level; drivers: test anxiety, competitive edge
+- Few-shot examples from reference_ads.json (VT ads, brand_voice ≥6.5)
+- Default/families fallback for unknown audiences
+- Ad generator prompt now includes full voice profile block
+- voice_profile_audience logged in AdGenerated inputs
+
+### Files Changed
+- **Created:** `generate/brand_voice.py` — voice profile module
+- **Created:** `tests/test_generation/test_brand_voice.py` — 10 tests
+- **Modified:** `generate/ad_generator.py` — integrate get_voice_for_prompt()
+- **Updated:** `docs/DEVLOG.md` — this entry
+
+### Testing
+- 10 tests: parent/student profiles, unknown fallback, required fields, few-shot, get_voice_for_prompt/evaluation, brand constants, profile differentiation
+- 108 tests pass (full suite minus golden set)
+
+### Acceptance Criteria
+- [x] get_voice_profile("parents") returns parent-facing profile
+- [x] get_voice_profile("students") returns student-facing profile
+- [x] Unknown audience falls back gracefully
+- [x] get_voice_for_prompt() produces prompt-injectable string
+- [x] get_voice_for_evaluation() produces evaluator rubric string
+- [x] Generator updated to use voice profile
+- [x] Tests pass, lint clean
+- [x] DEVLOG updated
+
+### Next Steps
+- **P1-04** (Chain-of-thought evaluator) — call get_voice_for_evaluation() when scoring Brand Voice
+- P1-05 (Campaign-goal-adaptive weighting) — Brand Voice floor 5.0
+
+---
+
 ## P1-02: Ad Copy Generator ✅
 
 ### Plain-English Summary
@@ -544,8 +644,8 @@
 |--------|-------|--------|
 | P1-01 | Brief expansion engine | ✅ |
 | P1-02 | Ad copy generator | ✅ |
-| P1-03 | Audience-specific brand voice profiles | ⏳ |
-| P1-04 | Chain-of-thought evaluator | ⏳ |
+| P1-03 | Audience-specific brand voice profiles | ✅ |
+| P1-04 | Chain-of-thought evaluator | ✅ |
 | P1-05 | Campaign-goal-adaptive weighting | ⏳ |
 | P1-06 | Tiered model routing | ⏳ |
 | P1-07 | Pareto-optimal regeneration | ⏳ |
