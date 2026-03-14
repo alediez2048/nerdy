@@ -1,0 +1,79 @@
+{
+  "brand": {
+    "name": "Varsity Tutors",
+    "parent": "Nerdy",
+    "voice": ["empowering", "knowledgeable", "approachable", "results-focused"],
+    "positioning": "Lead with outcomes, not features. Confident but not arrogant. Expert but not elitist. Meet people where they are.",
+    "source": "assignment_spec"
+  },
+  "products": {
+    "sat_prep": {
+      "type": "1-on-1 tutoring",
+      "format": "online",
+      "description": "SAT test prep tutoring for high school students",
+      "verified_claims": [
+        {
+          "claim": "Offers 1-on-1 SAT test prep tutoring",
+          "source": "assignment_spec"
+        },
+        {
+          "claim": "Online format available",
+          "source": "assignment_spec"
+        }
+      ]
+    }
+  },
+  "audiences": {
+    "parent": {
+      "pain_points": [
+        {"point": "College admissions anxiety", "source": "assignment_spec"},
+        {"point": "Comparing prep options (Princeton Review, Khan Academy, Chegg, Kaplan)", "source": "assignment_spec"},
+        {"point": "Wanting the best for their child", "source": "brand_context"}
+      ],
+      "emotional_drivers": [
+        {"driver": "College admissions anxiety", "source": "assignment_spec"},
+        {"driver": "Comparison shopping", "source": "brand_context"},
+        {"driver": "Wanting the best for their child", "source": "brand_context"}
+      ],
+      "tone_register": "authoritative, reassuring, outcome-focused",
+      "source": "brand_context"
+    },
+    "student": {
+      "pain_points": [
+        {"point": "Test anxiety", "source": "brand_context"},
+        {"point": "Score pressure", "source": "brand_context"}
+      ],
+      "emotional_drivers": [
+        {"driver": "Test anxiety", "source": "assignment_spec"},
+        {"driver": "Score pressure", "source": "brand_context"},
+        {"driver": "Desire to prove themselves", "source": "brand_context"}
+      ],
+      "tone_register": "relatable, motivating, peer-like",
+      "source": "brand_context"
+    }
+  },
+  "proof_points": [],
+  "competitors": ["Princeton Review", "Kaplan", "Khan Academy", "Chegg"],
+  "competitors_source": "assignment_spec",
+  "ctas": {
+    "awareness": ["Learn More", "Get Started"],
+    "conversion": ["Sign Up", "Start Free Practice Test", "Book Now"],
+    "source": "brand_context"
+  },
+  "compliance": {
+    "never_claim": [
+      "Guaranteed score improvements (e.g. 'Guaranteed 1500+')",
+      "Fear-based language implying the child is deficient",
+      "Specific competitor disparagement by name",
+      "Unverified statistics or pricing",
+      "Absolute promises ('100% guaranteed', 'always works')",
+      "PII in generated content"
+    ],
+    "always_include": [
+      "Factual basis for any claims (sourced from this knowledge base)",
+      "Appropriate CTA for the funnel stage",
+      "On-brand tone matching the target audience profile"
+    ],
+    "source": "brand_context"
+  }
+}

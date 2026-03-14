@@ -7,6 +7,56 @@
 
 ---
 
+## P0-04: Brand Knowledge Base ✅
+
+### Plain-English Summary
+- Created `data/brand_knowledge.json` — verified facts only for Varsity Tutors SAT test prep
+- Every fact tagged with source (assignment_spec, brand_context)
+- Covers: brand identity, products, audiences, proof points (empty until P0-05), competitors, CTAs, compliance
+- Added 10 validation tests in `tests/test_data/test_brand_knowledge.py`
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 13, 2026
+- **Ticket:** P0-04
+- **Branch:** `develop`
+- **Architectural Decisions:** R3-Q5 (grounded brief expansion), R3-Q3 (compliance)
+
+### Key Achievements
+- Single source of truth for brief expansion engine (P1-01)
+- No invented statistics, pricing, or testimonials
+- Proof points left empty — enriched after P0-05 (reference ad collection)
+- Validation: schema check, source citations, compliance blacklist
+
+### Files Changed
+- **Created:** `data/brand_knowledge.json` — verified facts
+- **Created:** `tests/test_data/__init__.py`
+- **Created:** `tests/test_data/test_brand_knowledge.py` — 10 tests
+- **Updated:** `docs/DEVLOG.md` — this entry
+
+### How to Add New Verified Facts
+1. **Identify the source:** `assignment_spec` | `reference_ad` | `public_website` | `brand_context`
+2. **Add to the correct section:** `products.sat_prep.verified_claims`, `audiences.*.pain_points`, `proof_points`, etc.
+3. **Include source on every fact:** `{"claim": "...", "source": "reference_ad"}` or `{"point": "...", "source": "..."}`
+4. **Never invent:** Statistics, pricing, testimonials must come from a verifiable source
+5. **Run validation:** `pytest tests/test_data/test_brand_knowledge.py -v`
+6. **Update compliance** if adding new never_claim/always_include rules
+
+### Acceptance Criteria
+- [x] `data/brand_knowledge.json` created with verified facts only
+- [x] Every fact has a source citation
+- [x] Covers: brand identity, products, audiences, proof points, competitors, CTAs, compliance
+- [x] No invented statistics, pricing, or testimonials
+- [x] DEVLOG updated
+- [x] Validation tests pass (10/10)
+
+### Next Steps
+- P0-05 (Reference ad collection) — enriches proof_points from real ads
+- P1-01 (Brief expansion engine) — consumes this file directly
+- P2-06 (Tiered compliance filter) — validates ads against this file
+
+---
+
 ## P0-03: Per-Ad Seed Chain + Snapshots ✅
 
 ### Plain-English Summary
@@ -122,7 +172,7 @@
 | P0-01 | Project scaffolding | ✅ |
 | P0-02 | Append-only decision ledger | ✅ |
 | P0-03 | Per-ad seed chain + snapshots | ✅ |
-| P0-04 | Brand knowledge base | ⏳ |
+| P0-04 | Brand knowledge base | ✅ |
 | P0-05 | Reference ad collection | ⏳ |
 | P0-06 | Evaluator cold-start calibration | ⏳ |
 | P0-07 | Golden set regression tests | ⏳ |
