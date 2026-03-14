@@ -148,7 +148,7 @@ def main() -> None:
 
     # Summary
     labels = [ad.get("quality_label", "neutral") for ad in ads]
-    print(f"\n--- Summary ---")
+    print("\n--- Summary ---")
     print(f"Excellent: {labels.count('excellent')}")
     print(f"Neutral:   {labels.count('neutral')}")
     print(f"Poor:      {labels.count('poor')}")

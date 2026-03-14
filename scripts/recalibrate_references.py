@@ -92,7 +92,7 @@ def main() -> None:
         json.dump(data, f, indent=2)
 
     labels = [ad.get("quality_label", "neutral") for ad in ads]
-    print(f"\n--- Updated Distribution ---")
+    print("\n--- Updated Distribution ---")
     print(f"Excellent: {labels.count('excellent')}")
     print(f"Neutral:   {labels.count('neutral')}")
     print(f"Poor:      {labels.count('poor')}")
