@@ -25,7 +25,7 @@ Nine principles that constrain every design decision (per prd.md):
 
 | # | Pillar | What It Means in Practice |
 |---|--------|---------------------------|
-| 1 | **Decomposition Is the Architecture** | Quality = 5 independent dimensions, not a holistic score. Pipeline = 4 modules, not a monolith. Ads = structural atoms, not opaque blobs. |
+| 1 | **Decomposition Is the Architecture** | Quality = 5 independent dimensions, not a holistic score. Pipeline = generate + generate_image + evaluate + iterate + output + app. Ads = structural atoms, not opaque blobs. |
 | 2 | **Prevention Over Detection Over Correction** | Shared semantic briefs prevent incoherence (don't detect it). Pareto selection prevents dimension collapse (don't constrain-prompt it). Floor constraints prevent bad ads from scoring well (don't fix them after). |
 | 3 | **Every Token Is an Investment** | No API call without a purpose. Tiered routing puts expensive tokens where ROI is highest. Marginal analysis kills diminishing-returns cycles. |
 | 4 | **The System Knows What It Doesn't Know** | Confidence scores on every evaluation. SPC detects evaluator drift. Escalation paths for unresolvable failures. |
@@ -39,33 +39,43 @@ Nine principles that constrain every design decision (per prd.md):
 
 ## 3. High-Level Architecture
 
+**Pipeline Flow (v1):**
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        AD-OPS-AUTOPILOT                             │
-│                                                                     │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐     │
-│  │          │    │          │    │          │    │          │     │
-│  │ generate │───▶│ evaluate │───▶│ iterate  │───▶│  output  │     │
-│  │          │    │          │    │          │    │          │     │
-│  └────┬─────┘    └────┬─────┘    └────┬─────┘    └────┬─────┘     │
-│       │               │               │               │           │
-│       │         ┌─────┴──────────────┐│               │           │
-│       │         │   Quality Gate     ││               │           │
-│       │         │  ≥ 7.0 → publish   ││               │           │
-│       │         │ 5.5-7.0 → regen   ││               │           │
-│       │         │  < 5.5 → discard   ││               │           │
-│       │         └────────────────────┘│               │           │
-│       │                               │               │           │
-│  ┌────┴───────────────────────────────┴───────────────┴────────┐  │
-│  │                     data/ (shared state)                     │  │
-│  │  config.yaml │ ledger.jsonl │ brand_kb │ ref_ads │ cache    │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │                    Gemini API Layer                           │  │
-│  │  Flash (default) ◄──── Model Router ────► Pro (escalation)   │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
+Brief → Expand (R3-Q5) → Generate Copy (R2-Q1) → Generate Image (Nano Banana Pro) → Coherence Check
+├─ Coherent → Evaluate Text (R3-Q6) + Evaluate Image (attribute checklist) → Above thresholds?
+│   ├─ Yes → Add to published library (full ad: copy + image)
+│   └─ No  → Identify weakest dimension → Contrastive rationale (R3-Q10) → Pareto regeneration (R1-Q5) → Re-evaluate
+└─ Incoherent → Regenerate image with adjusted prompt (1 retry) → Re-check coherence
+```
+
+**Module Overview:**
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           AD-OPS-AUTOPILOT                                      │
+│                                                                                 │
+│  ┌──────────┐   ┌──────────────────┐   ┌──────────┐   ┌──────────┐   ┌──────┐│
+│  │ generate │──▶│ generate_image    │──▶│ evaluate │──▶│ iterate  │──▶│output││
+│  │ (copy)   │   │ (Nano Banana Pro)│   │ (text +  │   │ (regen,   │   │      ││
+│  └────┬─────┘   └────────┬─────────┘   │  visual) │   │  ratchet) │   └──┬───┘│
+│       │                 │             └────┬─────┘   └────┬─────┘      │     │
+│       │                 │                  │              │             │     │
+│       │         ┌───────┴──────────────────┴──────────────┴─────────────┘     │
+│       │         │   Quality Gate: ≥7.0 text + ≥80% visual + ≥6 coherence      │
+│       │         └────────────────────────────────────────────────────────────│
+│       │                                                                       │
+│  ┌────┴───────────────────────────────────────────────────────────────────┐  │
+│  │  data/ (config, ledger, brand_kb, ref_ads, competitive/patterns.json)  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                               │
+│  ┌───────────────────────────────────────────────────────────────────────┐   │
+│  │  app/ (FastAPI + React) — Sessions, auth, brief config, progress,      │   │
+│  │  curation. Wraps pipeline for multi-session internal product (P1B).    │   │
+│  └───────────────────────────────────────────────────────────────────────┘   │
+│                                                                               │
+│  ┌──────────────────────────────────────────────────────────────────────┐    │
+│  │  API Layer: Gemini Flash/Pro | Nano Banana Pro (v1) | Veo (v2)      │    │
+│  └──────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -101,7 +111,7 @@ Raw Brief                    Expanded Brief
                              └──────────────────────────────────┘
 ```
 
-The expansion is grounded — it fills in audience demographics, pain points, and proof points from the brand knowledge base, not hallucinated.
+The expansion is grounded — it fills in audience demographics, pain points, and proof points from the brand knowledge base, not hallucinated. P1-01 injects competitive landscape context from `query_patterns(audience, tags)` (P0-10) for differentiation guidance.
 
 **Reference-Decompose-Recombine (P1-02):**
 ```
@@ -140,7 +150,7 @@ Flash handles ~80% of generation. Pro is reserved for the 5.5-7.0 "improvable ra
 
 ### 4.2 `evaluate/` — LLM-as-Judge Evaluation
 
-Scores every ad across 5 independent dimensions using chain-of-thought prompting.
+Scores every ad across 5 independent text dimensions using chain-of-thought prompting. Image evaluation (attribute checklist, coherence) lives in `generate_image/` (P1-15, P1-16).
 
 ```
 evaluate/
@@ -253,37 +263,31 @@ iterate/
 └── cache.py             — Result-level cache with version TTL (P1-12)
 ```
 
-**Core Feedback Loop:**
+**Core Feedback Loop (v1 — Copy + Image):**
 ```
-                 ┌──────────────────────────────────────────────┐
-                 │             FEEDBACK LOOP                    │
-                 │                                              │
-  Brief ──▶ EXPAND ──▶ GENERATE (Flash) ──▶ EVALUATE           │
-                                               │                │
-                              ┌─────────────── │ ◄── Score      │
-                              │                │                │
-                    ┌─────────┼────────────────┼──────────┐     │
-                    │ ≥ 7.0   │ 5.5-7.0        │ < 5.5    │     │
-                    │ PUBLISH │ REGEN           │ DISCARD  │     │
-                    │         │                 │          │     │
-                    │    ┌────┴────┐            │          │     │
-                    │    │ Pareto  │            │          │     │
-                    │    │ 3-5     │            │          │     │
-                    │    │ variants│            │          │     │
-                    │    └────┬────┘            │          │     │
-                    │         │                 │          │     │
-                    │    EVALUATE ALL           │          │     │
-                    │         │                 │          │     │
-                    │    Select Pareto-optimal  │          │     │
-                    │         │                 │          │     │
-                    │    Cycle ≤ 2?             │          │     │
-                    │    ├── Yes ──▶ loop back  │          │     │
-                    │    └── No  ──▶ MUTATE brief          │     │
-                    │              └── Cycle 3 fail?       │     │
-                    │                  └── ESCALATE        │     │
-                    └─────────────────────────────┘        │     │
-                                                           │     │
-                 └──────────────────────────────────────────────┘
+                 ┌──────────────────────────────────────────────────────────────┐
+                 │                    FEEDBACK LOOP (v1)                         │
+                 │                                                               │
+  Brief ──▶ EXPAND ──▶ GENERATE COPY ──▶ GENERATE IMAGE (3 variants) ──▶         │
+  (shared semantic brief)     (Flash)      (Nano Banana Pro)                      │
+                                                                  │              │
+                                    ┌── Coherence Check ──────────┤              │
+                                    │   (copy + image ≥ 6)        │              │
+                                    │   Pass? ──▶ EVALUATE       │              │
+                                    │   Fail? ──▶ Regen image    │              │
+                                    │            (1 retry)       │              │
+                                    └────────────────────────────┘              │
+                                                          │                     │
+                                    ┌───────────────────── │ ◄── Text + Visual   │
+                                    │                     │     scores          │
+                          ┌─────────┼─────────────────────┼──────────┐           │
+                          │ ≥ 7.0  │ 5.5-7.0             │ < 5.5   │           │
+                          │ PUBLISH│ REGEN (Pareto 3-5)   │ DISCARD │           │
+                          │        │ Cycle ≤ 2? loop back │         │           │
+                          │        │ Cycle 3? MUTATE brief│         │           │
+                          │        │ Still fail? ESCALATE  │         │           │
+                          └────────┴──────────────────────┴─────────┘           │
+                 └──────────────────────────────────────────────────────────────┘
 ```
 
 **Pareto-Optimal Selection (P1-07):**
@@ -358,16 +362,72 @@ Raw iteration history          Distilled context
 
 ---
 
-### 4.4 `output/` — Export & Visualization
+### 4.4 `generate_image/` — Nano Banana Pro Image Generation (v1)
+
+Generates brand-consistent images from the shared semantic brief. 3 variants per ad (anchor, tone shift, composition shift). Pareto selection by composite score: (attribute_pass_pct × 0.4) + (coherence_avg × 0.6).
+
+```
+generate_image/
+├── __init__.py          — Package exports
+├── visual_spec.py       — Extract visual spec from expanded brief (subject, setting, palette, tone)
+├── image_generator.py   — Nano Banana Pro API, 3 variants per ad (P1-14)
+├── attribute_eval.py    — Multimodal attribute checklist (P1-15)
+├── coherence.py         — Text-image coherence verification, 4 dimensions (P1-16)
+└── regen_loop.py        — Targeted image regen when all 3 fail (P1-17)
+```
+
+**Attribute Checklist (P1-15):** Age-appropriate, diversity, warm lighting, brand colors, no competitor branding, setting coherence, emotional match, no AI artifacts, aspect ratio. All Required must pass; 70%+ Recommended.
+
+**Targeted Regen (P1-17):** All 3 variants fail → diagnose weakest attribute, append diagnostic, generate 2 regen variants. Best fails coherence → append fix_suggestion, generate 1 regen. Max 5 images/ad. Exhausted → flag "image-blocked."
+
+---
+
+### 4.5 `generate_video/` — Veo UGC Video Generation (v2)
+
+Generates 6-sec UGC-style video from expanded brief. 2 variants per ad. Graceful degradation: video fails → publish copy + image only.
+
+```
+generate_video/
+├── __init__.py          — Package exports
+├── video_spec.py        — Extract video spec from brief (scene, pacing, audio, mood)
+├── video_generator.py  — Veo 3.1 Fast API (P3-07)
+├── attribute_eval.py   — Video attribute checklist (P3-08)
+└── coherence.py        — Script-video coherence (P3-09)
+```
+
+---
+
+### 4.6 `app/` — Application Layer (P1B)
+
+Wraps the pipeline in a multi-session internal product. Session = one pipeline run (immutable). Google SSO (@nerdy.com). Curation layer on top of immutable generation.
+
+```
+app/
+├── api/                 — FastAPI routes (sessions, auth, progress SSE)
+├── models/              — SQLAlchemy (users, sessions, curated_sets)
+├── workers/             — Celery tasks (pipeline execution, progress reporting)
+└── frontend/            — React (session list, brief config, progress view, dashboard shell)
+```
+
+**Session Model (R5-Q1):** Immutable after completion. One session = one pipeline run with specific config. Results never edited; create new session to re-run.
+
+**Curation Layer (R5-Q6):** Select/deselect ads, reorder, annotate, light edit with diff tracking. Dashboard metrics always reflect original pipeline output — never curated edits.
+
+---
+
+### 4.7 `output/` — Export & Visualization
 
 ```
 output/
-├── __init__.py          — Package exports
-├── export.py            — Ad library export (JSON/CSV) (P5-05)
-├── trends.py            — Quality trend visualization (P5-03)
-├── replay.py            — Narrated pipeline replay (P4-07)
-└── dashboard.py         — Cost-per-ad, QWTE reporting (P1-11)
+├── __init__.py              — Package exports
+├── export_dashboard.py      — Ledger → dashboard_data.json (P5-01)
+├── export.py                — Ad library export (JSON/CSV) (P5-10)
+├── trends.py                — Quality trend visualization (P5-03)
+├── replay.py                — Narrated pipeline replay (P4-07)
+└── nerdy_adgen_dashboard.html — Single-file 8-panel HTML dashboard
 ```
+
+**8-Panel Dashboard (P5-01–P5-06):** Pipeline Summary, Iteration Cycles, Quality Trends, Dimension Deep-Dive (correlation matrix), Ad Library (filterable with rationales), Token Economics, System Health (SPC, confidence, escalation), Competitive Intelligence. Data source: `output/dashboard_data.json` from `export_dashboard.py`.
 
 **Quality Trend Visualization (P5-03):**
 ```
@@ -386,18 +446,21 @@ Plots: per-dimension trends, aggregate score, effective threshold, token cost pe
 
 ---
 
-### 4.5 `data/` — Shared State & Configuration
+### 4.8 `data/` — Shared State & Configuration
 
 ```
 data/
-├── config.yaml              — Tunable parameters (all thresholds, batch size, API config)
-├── ledger.jsonl             — Append-only event log (generation, evaluation, decisions)
-├── brand_knowledge.json     — Brand voice profiles, audience personas, proof points (P0-04)
-├── reference_ads.json       — Decomposed reference ads with structural atoms (P0-05)
-├── pattern_database.json    — Competitive intelligence patterns (P4-03)
-├── golden_set.json          — Calibration ads with ground-truth scores (P0-07)
-└── cache/                   — Result-level cache with version TTL (P1-12)
+├── config.yaml                  — Tunable parameters (thresholds, batch size, API config)
+├── ledger.jsonl                 — Append-only event log (generation, evaluation, decisions)
+├── brand_knowledge.json         — Brand voice profiles, audience personas, proof points (P0-04)
+├── reference_ads.json           — Decomposed reference ads with structural atoms (P0-05)
+├── competitive/
+│   └── patterns.json            — Competitor pattern records from Meta Ad Library (P0-09)
+├── golden_set.json              — Calibration ads with ground-truth scores (P0-07)
+└── cache/                       — Result-level cache with version TTL (P1-12)
 ```
+
+**Competitive Pattern Database (P0-09, P0-10):** Claude in Chrome extracts structured records (hook_type, value_prop_structure, cta_style, emotional_register, visual_patterns) from 6 competitors. `query_patterns(audience, tags)` feeds brief expansion and generation.
 
 **Ledger Schema:**
 
@@ -415,7 +478,8 @@ Every system event is a single JSONL line:
   "scores": {"clarity": 8.0, "value_proposition": 7.5, "cta": 8.5, "brand_voice": 7.0, "emotional_resonance": 6.5},
   "tokens_consumed": 1240,
   "model_used": "gemini-2.0-flash",
-  "seed": 2847291045
+  "seed": 2847291045,
+  "checkpoint_id": "ckpt_001"
 }
 ```
 
@@ -434,54 +498,51 @@ Hardcoded defaults in code
 
 ---
 
-## 5. Data Flow: Full Pipeline Trace
+## 5. Data Flow: Full Pipeline Trace (v1)
 
-A single ad's journey through the system, from brief to published library:
+A single ad's journey through the system, from brief to published full ad (copy + image):
 
 ```
 1. INTAKE
    Brief: {audience: "parents", product: "SAT prep", goal: "conversion"}
                     │
 2. EXPAND (generate/brief_expansion.py)
-   Load brand KB → LLM expansion → Grounded brief with demographics,
-   pain points, proof points, hook/CTA candidates
+   Load brand KB + competitive patterns (query_patterns) → LLM expansion
+   → Grounded brief with demographics, pain points, proof points, hook/CTA candidates
                     │
 3. SEED (generate/seeds.py)
    seed = SHA256("nerdy-p0-default:brief_001:0")[:8] → 0xA3F2B1C9
                     │
-4. GENERATE (generate/ad_generator.py)
-   Select structural atoms from reference library
-   → Recombine with expanded brief + brand voice profile
+4. GENERATE COPY (generate/ad_generator.py)
+   Select structural atoms → Recombine with expanded brief + brand voice
    → Gemini Flash → Ad copy (primary_text, headline, description, cta_button)
-   → Snapshot captured (iterate/snapshots.py)
    → Ledger event: {event_type: "generation", tokens: 850, model: "flash"}
                     │
-5. EVALUATE (evaluate/evaluator.py)
-   5-step CoT → Scores on 5 dimensions with rationales
-   → Check floor constraints (Clarity ≥ 6.0, Brand Voice ≥ 5.0)
-   → Compute weighted aggregate (conversion weights)
+5. GENERATE IMAGE (generate_image/)
+   Extract visual spec from brief → Nano Banana Pro → 3 variants (anchor, tone, composition)
+   → Attribute checklist + coherence check → Pareto select best
+   → Ledger events: image generation, attribute eval, coherence scores
+                    │
+6. EVALUATE (evaluate/evaluator.py + generate_image/attribute_eval.py)
+   Text: 5-step CoT → 5 dimensions + contrastive rationales
+   Image: attribute pass %, coherence score
+   → Check: text ≥ 7.0, visual ≥ 80%, coherence ≥ 6
    → Ledger event: {event_type: "evaluation", scores: {...}, tokens: 1240}
                     │
-6. ROUTE (iterate/feedback_loop.py)
+7. ROUTE (iterate/feedback_loop.py)
    Score = 6.3 → In improvable range (5.5-7.0)
-   → Escalate to regeneration cycle
+   → Escalate to regeneration cycle (Pareto 3-5 variants)
                     │
-7. REGENERATE — CYCLE 1 (iterate/feedback_loop.py + pareto_selection.py)
-   Distill context → Generate 5 Pareto variants (Gemini Pro)
-   → Evaluate all 5 → Select Pareto-optimal
-   → Best variant: 6.9 — still below threshold
-   → Ledger events: 5x generation + 5x evaluation + 1x selection
-                    │
-8. REGENERATE — CYCLE 2
-   Distill context (includes Cycle 1 best)
-   → Generate 5 Pareto variants → Evaluate → Select
+8. REGENERATE — CYCLE 1
+   Distill context → Generate 5 Pareto copy variants (Gemini Pro)
+   → Re-evaluate all 5 → Select Pareto-optimal
    → Best variant: 7.4 — passes threshold and floor constraints
                     │
-9. PUBLISH
+9. PUBLISH (full ad: copy + winning image)
    → Ad added to published library
    → Ledger event: {event_type: "decision", action: "publish", aggregate: 7.4}
-   → Quality ratchet updated with new score
-   → Token attribution: total cost for this ad = 850 + 1240 + (10×1100) + (10×1240) = ~25,490 tokens
+   → Quality ratchet updated
+   → Token attribution: text tokens + image cost (~$0.13×3 variants) per ad
 ```
 
 ---
@@ -557,6 +618,8 @@ tests/
 │   ├── test_seeds.py            — Deterministic seed chain ✅ (10 tests)
 │   ├── test_feedback_loop.py    — Full cycle: generate→evaluate→regen
 │   └── test_checkpoint.py       — Resume from interruption (P2-07)
+├── test_image/                  — Image pipeline (v1)
+│   └── test_coherence.py        — Text-image coherence verification
 └── test_data/
     └── test_ledger.py           — Append-only, schema validation
 ```
@@ -609,32 +672,26 @@ Each layer is independently testable. Layer 1 is free (regex). Layers 2-3 cost e
 | Improvable-range regen | Gemini Pro | $$$ | Quality tokens on borderline ads (5.5-7.0) |
 | Context distillation | Gemini Flash | $ | Small prompt, structured summary |
 | Compliance check | Gemini Flash | $ | Binary decisions, low complexity |
-| Image generation (v2) | Gemini image model | $$ | Same API, best text rendering |
+| Image generation (v1) | Nano Banana Pro (Gemini 3 Pro Image) | $$ | ~$0.13/image, 3 variants per ad |
+| Image coherence eval | Gemini Flash (multimodal) | $ | Pass image + copy → coherence score |
+| Video generation (v2) | Veo 3.1 Fast | $$$ | ~$0.90/6-sec video, 2 variants per ad |
 
-### 8.2 Token Budget Projection (50 ads)
+### 8.2 Cost Projection (50 ads, v1 Copy + Image)
 
 ```
-Scenario: 50 briefs, 60% pass on first eval, 30% need 1 regen cycle, 10% need 2+
+Text tokens (same as before):
+  First pass + regen cycles: ~392,000 tokens
+  Cost per publishable ad (text): ~8,340 tokens
 
-First pass (all 50):
-  50 × (expansion + generation + evaluation)
-  50 × (~300 + ~850 + ~1,240) = ~119,500 tokens (Flash)
+Image cost (Nano Banana Pro, 3 variants per ad):
+  50 ads × 3 variants = 150 images × ~$0.13 = ~$19.50
+  ~15% regen (2 extra each) = +~$4
+  Total image: ~$24 for 50 ads
 
-Regen cycle 1 (15 ads × 5 Pareto variants):
-  75 × (~1,100 + ~1,240) = ~175,500 tokens (Pro for gen, Flash for eval)
-
-Regen cycle 2 (5 ads × 5 Pareto variants):
-  25 × (~1,100 + ~1,240) = ~58,500 tokens (Pro)
-
-Brief mutation + cycle 3 (2 ads):
-  10 × (~1,100 + ~1,240) = ~23,400 tokens (Pro)
-
-Overhead (distillation, compliance, ratchet):
-  ~15,000 tokens (Flash)
-
-TOTAL ESTIMATE: ~392,000 tokens
-Published ads: ~47 (94% success rate)
-Cost per publishable ad: ~8,340 tokens
+Combined (50 ads, ~47 published):
+  Text: ~392K tokens (~$1–2 on free tier)
+  Image: ~$24
+  Cost per publishable full ad: ~$0.50 (text + image)
 ```
 
 ---
@@ -678,24 +735,26 @@ Snapshots embed into ledger events, enabling full forensic replay: given the sam
 
 ## 10. Scaling: v1 → v2 → v3
 
-### v1: Text Pipeline (Current)
+### v1: Full-Ad Pipeline (Copy + Image) — P1
 ```
-Brief → Expand → Generate (text) → Evaluate (5 dims) → Iterate → Publish
-```
-
-### v2: Multi-Modal (P3)
-```
-                              ┌── Generate Text ──┐
-Brief → Shared Semantic ──────┤                    ├── Coherence Check → Publish
-        Brief Expansion       └── Generate Image ──┘
-                                        │
-                              Attribute Checklist Eval
-                              (6 visual brand attributes)
+Brief → Expand → Generate Copy → Generate Image (3 variants) → Coherence Check
+    → Evaluate (5 text dims + visual attribute checklist) → Iterate → Publish
 ```
 
-Key addition: Shared semantic brief expansion (R1-Q10) prevents text-image incoherence by design. Both generators receive the same enriched creative brief specifying emotional tone, visual setting, subject demographics, color palette, and key objects.
+Shared semantic brief (R1-Q10) prevents text-image incoherence. 10-attribute checklist (age, lighting, diversity, brand, artifacts, etc.). Pareto selection: composite = (attribute_pass_pct × 0.4) + (coherence_avg × 0.6).
 
-### v3: Autonomous Engine (P4)
+### v2: A/B Variant Engine + UGC Video — P3
+```
+v1 pipeline +
+  Single-variable A/B variants (copy + image)
+  Nano Banana 2 cost tier for variant volume
+  Veo 3.1 Fast for 6-sec UGC video (2 variants per ad)
+  Multi-format output: feed (1:1, 4:5), Stories/Reels (9:16)
+```
+
+Video: 10-attribute checklist (hook timing, UGC authenticity, pacing, brand safety). Script-video coherence (4 dimensions). Graceful degradation: video fails → publish copy + image only.
+
+### v3: Autonomous Engine — P4
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                  AGENTIC ORCHESTRATION                    │
@@ -758,8 +817,11 @@ All tunable parameters in `data/config.yaml`:
 |-----------|-----------|-----|
 | Language | Python 3.10+ | Ecosystem, Gemini SDK, data science libs |
 | LLM | Gemini API (Flash + Pro) | Free tier, strong creative writing, structured output |
-| Data | JSONL (ledger), YAML (config), JSON (knowledge bases) | Human-readable, no DB dependency |
-| Visualization | matplotlib | Quality trend plots, cost dashboards |
+| Image (v1) | Nano Banana Pro (Gemini 3 Pro Image) | ~$0.13/image, 4K, text rendering |
+| Video (v2) | Veo 3.1 Fast | Same ecosystem, 6-sec UGC video |
+| Data | JSONL (ledger), YAML (config), JSON (knowledge bases) | Human-readable, no DB for pipeline |
+| App layer | FastAPI + React + PostgreSQL + Celery + Redis | Sessions, auth, progress, curation (P1B) |
+| Visualization | matplotlib, Chart.js (dashboard) | Quality trends, 8-panel HTML dashboard |
 | Token counting | tiktoken | Accurate token budget tracking |
 | Config | python-dotenv + pyyaml | Env vars for secrets, YAML for tunable params |
 | Testing | pytest | Standard, good fixture support |
@@ -768,10 +830,10 @@ All tunable parameters in `data/config.yaml`:
 
 ---
 
-## 13. Phased Delivery Map
+## 13. Phased Delivery Map (80 Tickets)
 
 ```
-PHASE 0 — Foundation (P0-01 → P0-08)
+PHASE 0 — Foundation & Calibration (P0-01 → P0-10)
 ├── ✅ P0-01: Scaffolding
 ├── ✅ P0-02: Decision ledger
 ├── ✅ P0-03: Seed chain + snapshots
@@ -779,15 +841,25 @@ PHASE 0 — Foundation (P0-01 → P0-08)
 ├── ⏳ P0-05: Reference ad collection
 ├── ⏳ P0-06: Evaluator calibration
 ├── ⏳ P0-07: Golden set tests
-└── ⏳ P0-08: Checkpoint-resume
+├── ⏳ P0-08: Checkpoint-resume
+├── ⏳ P0-09: Competitive pattern database (Claude in Chrome)
+└── ⏳ P0-10: Competitive pattern query interface
 
-PHASE 1 — Core Pipeline (P1-01 → P1-14)
-├── Brief expansion, generator, brand voice
-├── CoT evaluator, adaptive weights
-├── Model routing, Pareto regen, brief mutation
-├── Context distillation, quality ratchet
+PHASE 1 — Full-Ad Pipeline v1 (P1-01 → P1-20)
+├── Brief expansion (with competitive context), generator, brand voice
+├── CoT evaluator, adaptive weights, model routing
+├── Pareto regen, brief mutation, context distillation, quality ratchet
 ├── Token tracking, cache, batch processor
-└── 50+ ad generation run
+├── Nano Banana Pro: visual spec, 3 variants, attribute eval, coherence (P1-14–P1-17)
+├── Full ad assembly, image cost tracking (P1-18–P1-19)
+└── 50+ full ad generation run (P1-20)
+
+PHASE 1B — Application Layer (PA-01 → PA-12)
+├── FastAPI backend, PostgreSQL, Celery + Redis
+├── Google SSO, session CRUD, brief config form
+├── Session list UI, progress reporting, "Watch Live" SSE
+├── Dashboard integration, curation layer, share link
+└── Docker Compose production deployment
 
 PHASE 2 — Testing & Validation (P2-01 → P2-07)
 ├── Inversion tests, correlation analysis
@@ -795,22 +867,23 @@ PHASE 2 — Testing & Validation (P2-01 → P2-07)
 ├── Compliance filter, e2e integration
 └── 15+ tests total
 
-PHASE 3 — Multi-Modal (P3-01 → P3-06)
-├── Shared semantic brief expansion
-├── Image generation + attribute eval
-├── Text-image coherence, A/B variants
-└── Multi-model orchestration
+PHASE 3 — A/B Variant Engine + UGC Video v2 (P3-01 → P3-13)
+├── Nano Banana 2 cost tier, single-variable A/B variants
+├── Image style transfer, multi-aspect-ratio batch
+├── Veo integration, video spec, attribute eval, coherence (P3-07–P3-10)
+├── Three-format assembly, video cost tracking
+└── 10-ad video pilot run (P3-13)
 
-PHASE 4 — Autonomous Engine (P4-01 → P4-07)
+PHASE 4 — Autonomous Engine v3 (P4-01 → P4-07)
 ├── Agentic orchestration, self-healing
-├── Competitive intelligence pipeline
+├── Competitive intelligence (automated refresh, trends)
 ├── Cross-campaign transfer, explore/exploit
 └── Narrated pipeline replay
 
-PHASE 5 — Documentation (P5-01 → P5-06)
-├── Decision log, technical writeup
-├── Quality visualizations, demo
-└── README, ad library export
+PHASE 5 — Dashboard, Docs & Submission (P5-01 → P5-11)
+├── export_dashboard.py, 8-panel HTML dashboard (P5-01–P5-06)
+├── Decision log, technical writeup, demo video (P5-07–P5-09)
+└── Ad library export, README (P5-10–P5-11)
 ```
 
 ---
