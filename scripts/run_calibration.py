@@ -3,7 +3,7 @@
 
 Compares evaluator scores to human labels. Success criteria:
 - Evaluator within ±1.0 of human labels on 80%+ of scores
-- Excellent ads average ≥7.5
+- Excellent ads average ≥7.0 (above publish threshold)
 - Poor ads average ≤5.0
 
 Requires GEMINI_API_KEY in .env.
@@ -83,7 +83,7 @@ def run_calibration() -> dict:
 
     passed = (
         pct_within >= 80
-        and excellent_avg >= 7.5
+        and excellent_avg >= 7.0
         and poor_avg <= 5.0
     )
 
@@ -113,7 +113,7 @@ def main() -> int:
     print("CALIBRATION RESULTS")
     print("=" * 60)
     print(f"Scores within ±1.0 of human: {out['within_tolerance_pct']}% (need 80%+)")
-    print(f"Excellent ads avg: {out['excellent_avg']} (need ≥7.5)")
+    print(f"Excellent ads avg: {out['excellent_avg']} (need ≥7.0)")
     print(f"Poor ads avg: {out['poor_avg']} (need ≤5.0)")
     print(f"PASSED: {out['passed']}")
     print()

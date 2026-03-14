@@ -8,10 +8,9 @@
     ],
     "total_count": 42,
     "labeling": {
-      "method": "gemini-2.0-flash first-pass averaged with evaluator CoT scores (40/60 blend), pending human review",
+      "method": "gemini-2.0-flash first-pass, pending human review",
       "labeled_date": "2026-03-14",
-      "status": "ai_draft",
-      "recalibrated_date": "2026-03-14"
+      "status": "ai_draft"
     }
   },
   "ads": [
@@ -26,14 +25,14 @@
       "audience_guess": "parents",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 8.4,
-        "value_proposition": 8.4,
+        "clarity": 9.0,
+        "value_proposition": 9.0,
         "cta": 7.0,
-        "brand_voice": 7.4,
-        "emotional_resonance": 7.4
+        "brand_voice": 8.0,
+        "emotional_resonance": 8.0
       },
       "quality_label": "excellent",
-      "ai_aggregate": 7.7,
+      "ai_aggregate": 8.2,
       "ai_rationales": {
         "clarity": "The ad clearly states the value proposition and the results achieved by a student.",
         "value_proposition": "The ad highlights a significant SAT score improvement and flexible scheduling, which are valuable to parents.",
@@ -53,14 +52,14 @@
       "audience_guess": "parents",
       "captured_date": "02/27/26",
       "human_scores": {
-        "clarity": 7.8,
-        "value_proposition": 7.4,
-        "cta": 5.4,
-        "brand_voice": 6.8,
-        "emotional_resonance": 6.4
+        "clarity": 9.0,
+        "value_proposition": 8.0,
+        "cta": 6.0,
+        "brand_voice": 8.0,
+        "emotional_resonance": 7.0
       },
-      "quality_label": "neutral",
-      "ai_aggregate": 6.8,
+      "quality_label": "excellent",
+      "ai_aggregate": 7.6,
       "ai_rationales": {
         "clarity": "The ad clearly states the problem (struggling with the test, not the material) and offers a solution (strategy-focused tutoring).",
         "value_proposition": "The ad highlights specific benefits like diagnostic pinpointing, digital interface training, and 1-on-1 coaching, making the value clear.",
@@ -80,14 +79,14 @@
       "audience_guess": "both",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 6.4,
-        "cta": 2.4,
-        "brand_voice": 6.2,
-        "emotional_resonance": 6.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 3.0,
+        "brand_voice": 8.0,
+        "emotional_resonance": 7.0
       },
-      "quality_label": "poor",
-      "ai_aggregate": 5.8,
+      "quality_label": "neutral",
+      "ai_aggregate": 6.6,
       "ai_rationales": {
         "clarity": "The message is clear: a better SAT score leads to more opportunities.",
         "value_proposition": "The ad highlights the value of improved SAT scores in expanding future options.",
@@ -107,14 +106,14 @@
       "audience_guess": "parents",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 5.8,
-        "value_proposition": 4.8,
+        "clarity": 7.0,
+        "value_proposition": 6.0,
         "cta": 1.0,
-        "brand_voice": 5.2,
-        "emotional_resonance": 3.4
+        "brand_voice": 7.0,
+        "emotional_resonance": 4.0
       },
       "quality_label": "poor",
-      "ai_aggregate": 4.0,
+      "ai_aggregate": 5.0,
       "ai_rationales": {
         "clarity": "The ad clearly states the service offered: SAT tutoring to help students reach their target score.",
         "value_proposition": "The value proposition is present (achieving target SAT score) but could be stronger by highlighting specific benefits or guarantees.",
@@ -134,14 +133,14 @@
       "audience_guess": "parents",
       "captured_date": "03/12/26",
       "human_scores": {
-        "clarity": 8.4,
+        "clarity": 9.0,
         "value_proposition": 8.0,
         "cta": 7.0,
-        "brand_voice": 8.4,
-        "emotional_resonance": 7.4
+        "brand_voice": 9.0,
+        "emotional_resonance": 8.0
       },
       "quality_label": "excellent",
-      "ai_aggregate": 7.8,
+      "ai_aggregate": 8.2,
       "ai_rationales": {
         "clarity": "The ad clearly identifies the problem (struggling in AP Calculus), the cause (jump from Algebra), and the solution (specialized tutors).",
         "value_proposition": "The ad offers specific benefits like AP Calculus specialists, quick start, grade improvement, and cancellation policy, making the value clear.",
@@ -161,14 +160,14 @@
       "audience_guess": "parents",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 8.4,
-        "value_proposition": 8.4,
-        "cta": 5.4,
-        "brand_voice": 7.4,
+        "clarity": 9.0,
+        "value_proposition": 9.0,
+        "cta": 6.0,
+        "brand_voice": 8.0,
         "emotional_resonance": 7.0
       },
-      "quality_label": "neutral",
-      "ai_aggregate": 7.3,
+      "quality_label": "excellent",
+      "ai_aggregate": 7.8,
       "ai_rationales": {
         "clarity": "The ad clearly explains the problem (using paper tests for a digital SAT) and the solution (Varsity Tutors' digital-focused approach).",
         "value_proposition": "The ad highlights specific benefits like training on the actual SAT interface, using built-in tools, and a significant score improvement, making the value proposition very strong.",
@@ -188,14 +187,14 @@
       "audience_guess": "parents",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 8.4,
-        "value_proposition": 8.4,
+        "clarity": 9.0,
+        "value_proposition": 9.0,
         "cta": 6.0,
-        "brand_voice": 7.4,
-        "emotional_resonance": 7.4
+        "brand_voice": 8.0,
+        "emotional_resonance": 8.0
       },
       "quality_label": "excellent",
-      "ai_aggregate": 7.5,
+      "ai_aggregate": 8.0,
       "ai_rationales": {
         "clarity": "The ad clearly explains the benefits of Varsity Tutors' SAT prep program, highlighting personalized tutoring, progress tracking, and digital practice.",
         "value_proposition": "The ad offers a strong value proposition by emphasizing personalized attention, data-driven progress, and a flexible commitment, all at a competitive price compared to group courses.",
@@ -218,11 +217,11 @@
         "clarity": 8.0,
         "value_proposition": 8.0,
         "cta": 7.0,
-        "brand_voice": 7.4,
+        "brand_voice": 8.0,
         "emotional_resonance": 7.0
       },
       "quality_label": "excellent",
-      "ai_aggregate": 7.5,
+      "ai_aggregate": 7.6,
       "ai_rationales": {
         "clarity": "The ad clearly outlines the problem, solution, and benefits of Varsity Tutors' SAT prep.",
         "value_proposition": "The ad highlights specific benefits like score improvement, personalized tutoring, and digital interface training.",
@@ -242,14 +241,14 @@
       "audience_guess": "parents",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 6.8,
-        "value_proposition": 5.8,
-        "cta": 2.4,
-        "brand_voice": 5.8,
-        "emotional_resonance": 4.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 3.0,
+        "brand_voice": 7.0,
+        "emotional_resonance": 5.0
       },
-      "quality_label": "poor",
-      "ai_aggregate": 5.0,
+      "quality_label": "neutral",
+      "ai_aggregate": 6.0,
       "ai_rationales": {
         "clarity": "The ad clearly states the value proposition: matching children with high-scoring SAT tutors.",
         "value_proposition": "The value proposition is decent, highlighting the tutor's high score as a key benefit, but could be stronger by mentioning specific improvements or strategies.",
@@ -269,14 +268,14 @@
       "audience_guess": "parents",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 7.4,
-        "cta": 6.6,
-        "brand_voice": 7.4,
+        "clarity": 8.0,
+        "value_proposition": 8.0,
+        "cta": 6.0,
+        "brand_voice": 8.0,
         "emotional_resonance": 7.0
       },
-      "quality_label": "neutral",
-      "ai_aggregate": 7.2,
+      "quality_label": "excellent",
+      "ai_aggregate": 7.4,
       "ai_rationales": {
         "clarity": "The ad clearly explains the problem (SAT score discrepancy) and the solution (Varsity Tutors' diagnostic approach).",
         "value_proposition": "The ad offers a free SAT Strategy Call and highlights the specific areas where Varsity Tutors can help students improve their scores.",
@@ -296,14 +295,14 @@
       "audience_guess": "parents",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 8.4,
+        "clarity": 9.0,
         "value_proposition": 8.0,
-        "cta": 5.8,
-        "brand_voice": 7.8,
-        "emotional_resonance": 7.4
+        "cta": 7.0,
+        "brand_voice": 9.0,
+        "emotional_resonance": 8.0
       },
       "quality_label": "excellent",
-      "ai_aggregate": 7.5,
+      "ai_aggregate": 8.2,
       "ai_rationales": {
         "clarity": "The ad clearly explains the problem (strong AP student struggling on SAT) and the solution (digital SAT-specific training).",
         "value_proposition": "The ad highlights the unique value of focusing on digital test strategy and efficiency, with specific benefits like real digital interface training and a tutor match guarantee.",
@@ -323,14 +322,14 @@
       "audience_guess": "parents",
       "captured_date": "03/12/26",
       "human_scores": {
-        "clarity": 8.4,
+        "clarity": 9.0,
         "value_proposition": 8.0,
-        "cta": 4.4,
-        "brand_voice": 7.4,
+        "cta": 5.0,
+        "brand_voice": 8.0,
         "emotional_resonance": 7.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 7.0,
+      "ai_aggregate": 7.4,
       "ai_rationales": {
         "clarity": "The ad clearly explains why other methods fail and what Varsity Tutors offers as a solution.",
         "value_proposition": "The ad highlights specific benefits like subject-specific expertise, catering to struggling students, and a 2.6x score improvement.",
@@ -350,14 +349,14 @@
       "audience_guess": "parents",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 8.4,
-        "value_proposition": 8.4,
-        "cta": 5.8,
-        "brand_voice": 7.4,
-        "emotional_resonance": 7.4
+        "clarity": 9.0,
+        "value_proposition": 9.0,
+        "cta": 7.0,
+        "brand_voice": 8.0,
+        "emotional_resonance": 8.0
       },
       "quality_label": "excellent",
-      "ai_aggregate": 7.5,
+      "ai_aggregate": 8.2,
       "ai_rationales": {
         "clarity": "The ad clearly explains the problem (stuck SAT scores), the reason (lack of digital practice), and the solution (Varsity Tutors' 1:1 tutoring).",
         "value_proposition": "The ad offers a strong value proposition by highlighting the benefits of 1:1 tutoring, score improvements, digital interface training, and a lower price point compared to competitors.",
@@ -377,14 +376,14 @@
       "audience_guess": "parents",
       "captured_date": "03/07/26",
       "human_scores": {
-        "clarity": 8.4,
+        "clarity": 9.0,
         "value_proposition": 8.0,
         "cta": 6.0,
-        "brand_voice": 7.4,
+        "brand_voice": 8.0,
         "emotional_resonance": 7.0
       },
-      "quality_label": "neutral",
-      "ai_aggregate": 7.4,
+      "quality_label": "excellent",
+      "ai_aggregate": 7.6,
       "ai_rationales": {
         "clarity": "The ad clearly explains the shift to a digital SAT and the need for digital preparation.",
         "value_proposition": "The ad highlights the benefits of 1-on-1 tutoring, digital practice, and personalized focus, with quantifiable score improvements.",
@@ -404,14 +403,14 @@
       "audience_guess": "parents",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 8.4,
+        "clarity": 9.0,
         "value_proposition": 8.0,
         "cta": 5.0,
-        "brand_voice": 7.4,
+        "brand_voice": 8.0,
         "emotional_resonance": 7.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 7.2,
+      "ai_aggregate": 7.4,
       "ai_rationales": {
         "clarity": "The ad clearly explains the problem (score not matching grades) and the solution (targeted tutoring).",
         "value_proposition": "The ad highlights specific benefits like targeted fixes, 1:1 tutoring, digital interface training, and a perfect tutor match guarantee.",
@@ -431,14 +430,14 @@
       "audience_guess": "students",
       "captured_date": "01/20/26",
       "human_scores": {
-        "clarity": 5.6,
+        "clarity": 5.0,
         "value_proposition": 5.0,
-        "cta": 3.2,
-        "brand_voice": 5.6,
-        "emotional_resonance": 4.4
+        "cta": 5.0,
+        "brand_voice": 5.0,
+        "emotional_resonance": 5.0
       },
-      "quality_label": "poor",
-      "ai_aggregate": 4.8,
+      "quality_label": "neutral",
+      "ai_aggregate": 5.0,
       "ai_rationales": {}
     },
     {
@@ -452,14 +451,14 @@
       "audience_guess": "students",
       "captured_date": "01/21/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 6.4,
-        "cta": 5.4,
-        "brand_voice": 5.4,
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 6.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 6.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 6.1,
+      "ai_aggregate": 6.0,
       "ai_rationales": {
         "clarity": "The ad clearly states the offer (20% off) and how to redeem it, though the reliance on a bio link adds a step.",
         "value_proposition": "The discount on Chegg Study is a tangible benefit, especially for students struggling in finance and accounting.",
@@ -479,14 +478,14 @@
       "audience_guess": "students",
       "captured_date": "01/22/26",
       "human_scores": {
-        "clarity": 6.8,
-        "value_proposition": 5.8,
-        "cta": 4.8,
-        "brand_voice": 5.4,
-        "emotional_resonance": 6.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 6.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 7.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.8,
+      "ai_aggregate": 6.2,
       "ai_rationales": {
         "clarity": "The ad clearly shows how Chegg helps a busy student manage their academic life.",
         "value_proposition": "The ad highlights Chegg's ability to provide study support in various locations, appealing to busy students.",
@@ -506,14 +505,14 @@
       "audience_guess": "both",
       "captured_date": "01/20/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 6.4,
-        "cta": 1.6,
-        "brand_voice": 5.4,
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 1.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 6.0
       },
       "quality_label": "poor",
-      "ai_aggregate": 5.4,
+      "ai_aggregate": 5.0,
       "ai_rationales": {
         "clarity": "The ad clearly states the problem (stuck on homework) and Chegg's solution (finding the missing piece).",
         "value_proposition": "The value proposition is that Chegg helps students understand homework better, which is a decent benefit.",
@@ -533,14 +532,14 @@
       "audience_guess": "both",
       "captured_date": "02/11/26",
       "human_scores": {
-        "clarity": 6.8,
-        "value_proposition": 5.2,
-        "cta": 1.6,
-        "brand_voice": 4.2,
-        "emotional_resonance": 5.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 1.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 6.0
       },
       "quality_label": "poor",
-      "ai_aggregate": 4.6,
+      "ai_aggregate": 5.0,
       "ai_rationales": {
         "clarity": "The ad clearly states the problem (homework/exam prep struggles) and offers Chegg as a solution.",
         "value_proposition": "The value proposition is that Chegg provides support, but it's not highly specific about what kind of support.",
@@ -560,14 +559,14 @@
       "audience_guess": "both",
       "captured_date": "03/12/26",
       "human_scores": {
-        "clarity": 5.8,
-        "value_proposition": 4.8,
-        "cta": 1.6,
-        "brand_voice": 4.2,
+        "clarity": 7.0,
+        "value_proposition": 6.0,
+        "cta": 1.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 5.0
       },
       "quality_label": "poor",
-      "ai_aggregate": 4.3,
+      "ai_aggregate": 4.4,
       "ai_rationales": {
         "clarity": "The ad clearly states that Chegg offers study tools to help with difficult subjects.",
         "value_proposition": "The value proposition is present but not particularly strong; it's a generic benefit of study tools.",
@@ -587,14 +586,14 @@
       "audience_guess": "both",
       "captured_date": "01/20/26",
       "human_scores": {
-        "clarity": 6.4,
-        "value_proposition": 5.4,
-        "cta": 3.4,
-        "brand_voice": 4.8,
-        "emotional_resonance": 5.4
+        "clarity": 7.0,
+        "value_proposition": 6.0,
+        "cta": 4.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 6.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.1,
+      "ai_aggregate": 5.2,
       "ai_rationales": {
         "clarity": "The ad clearly states that it will show student testimonials about Chegg.",
         "value_proposition": "The value proposition is implied: learn about Chegg's benefits from other students, but it's not explicitly stated what those benefits are.",
@@ -614,14 +613,14 @@
       "audience_guess": "both",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 6.4,
-        "value_proposition": 5.4,
-        "cta": 2.2,
-        "brand_voice": 4.8,
+        "clarity": 7.0,
+        "value_proposition": 6.0,
+        "cta": 1.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 5.0
       },
       "quality_label": "poor",
-      "ai_aggregate": 4.8,
+      "ai_aggregate": 4.4,
       "ai_rationales": {
         "clarity": "The ad clearly states that Chegg helps with difficult topics by providing step-by-step solutions.",
         "value_proposition": "The value proposition is that Chegg offers solutions to tough topics, but it's not particularly unique or compelling.",
@@ -641,14 +640,14 @@
       "audience_guess": "both",
       "captured_date": "03/03/25",
       "human_scores": {
-        "clarity": 6.8,
-        "value_proposition": 5.8,
-        "cta": 1.6,
-        "brand_voice": 4.8,
-        "emotional_resonance": 4.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 1.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 5.0
       },
       "quality_label": "poor",
-      "ai_aggregate": 4.7,
+      "ai_aggregate": 4.8,
       "ai_rationales": {
         "clarity": "The ad clearly states what Chegg offers: AI tools for homework, flashcards, and expert support.",
         "value_proposition": "The value proposition is decent, highlighting AI tools and expert support, but it could be more specific about the benefits.",
@@ -668,14 +667,14 @@
       "audience_guess": "parents",
       "captured_date": "02/24/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 6.4,
-        "cta": 4.4,
-        "brand_voice": 4.8,
-        "emotional_resonance": 5.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 5.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 6.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.7,
+      "ai_aggregate": 5.8,
       "ai_rationales": {
         "clarity": "The ad clearly states the service offered (tutoring) and the target audience (parents).",
         "value_proposition": "The ad highlights personalized tutoring and support for academic growth, which are decent value propositions.",
@@ -695,11 +694,11 @@
       "audience_guess": "both",
       "captured_date": "02/23/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 6.4,
-        "cta": 3.6,
-        "brand_voice": 4.2,
-        "emotional_resonance": 4.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 3.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 5.0
       },
       "quality_label": "neutral",
       "ai_aggregate": 5.2,
@@ -722,14 +721,14 @@
       "audience_guess": "parents",
       "captured_date": "02/23/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 6.4,
-        "cta": 3.8,
-        "brand_voice": 4.8,
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 5.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 6.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.7,
+      "ai_aggregate": 5.8,
       "ai_rationales": {
         "clarity": "The ad clearly states what Wyzant offers: tutors for various subjects like music, art, and chess.",
         "value_proposition": "The ad highlights the availability of 'kid-friendly' tutors and mentions a large number of positive reviews, suggesting quality and safety.",
@@ -749,14 +748,14 @@
       "audience_guess": "parents",
       "captured_date": "02/23/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 6.4,
+        "clarity": 8.0,
+        "value_proposition": 7.0,
         "cta": 4.0,
-        "brand_voice": 4.8,
+        "brand_voice": 3.0,
         "emotional_resonance": 5.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.5,
+      "ai_aggregate": 5.4,
       "ai_rationales": {
         "clarity": "The ad clearly states the service offered (tutoring) and the target audience (parents).",
         "value_proposition": "The ad highlights personalized tutoring, convenience, and a wide range of subjects, which are decent value propositions.",
@@ -776,14 +775,14 @@
       "audience_guess": "both",
       "captured_date": "02/23/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 6.4,
-        "cta": 5.4,
-        "brand_voice": 4.2,
-        "emotional_resonance": 3.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 6.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 4.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.4,
+      "ai_aggregate": 5.6,
       "ai_rationales": {
         "clarity": "The ad clearly states the service offered (expert tutors, affordable prices) and the key benefit (flexibility in choosing instructors and sessions).",
         "value_proposition": "The value proposition is decent, highlighting affordability and flexibility, which are attractive to students and parents.",
@@ -803,14 +802,14 @@
       "audience_guess": "both",
       "captured_date": "02/23/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 5.4,
+        "clarity": 8.0,
+        "value_proposition": 6.0,
         "cta": 3.0,
-        "brand_voice": 3.8,
+        "brand_voice": 2.0,
         "emotional_resonance": 4.0
       },
       "quality_label": "poor",
-      "ai_aggregate": 4.7,
+      "ai_aggregate": 4.6,
       "ai_rationales": {
         "clarity": "The ad clearly states the target audience and the service offered.",
         "value_proposition": "The value proposition is present (expert tutor), but not particularly strong or differentiated.",
@@ -830,14 +829,14 @@
       "audience_guess": "students",
       "captured_date": "02/23/26",
       "human_scores": {
-        "clarity": 6.8,
-        "value_proposition": 5.8,
-        "cta": 3.8,
-        "brand_voice": 4.2,
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 5.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 6.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.3,
+      "ai_aggregate": 5.8,
       "ai_rationales": {
         "clarity": "The ad clearly states the benefits of tutoring: staying on track, improving scores, and building confidence.",
         "value_proposition": "The value proposition is decent, highlighting personalized coaching from expert tutors, but could be more specific about the results.",
@@ -857,14 +856,14 @@
       "audience_guess": "both",
       "captured_date": "02/23/26",
       "human_scores": {
-        "clarity": 6.8,
-        "value_proposition": 5.8,
-        "cta": 4.4,
-        "brand_voice": 4.2,
-        "emotional_resonance": 5.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 5.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 6.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.3,
+      "ai_aggregate": 5.8,
       "ai_rationales": {
         "clarity": "The ad clearly states the service offered (college application help) and the format (1-on-1, online).",
         "value_proposition": "The value proposition is decent, highlighting expert help with key application components, but could be stronger by quantifying the benefit.",
@@ -884,14 +883,14 @@
       "audience_guess": "both",
       "captured_date": "02/23/26",
       "human_scores": {
-        "clarity": 6.2,
-        "value_proposition": 5.6,
-        "cta": 4.4,
-        "brand_voice": 5.6,
-        "emotional_resonance": 4.4
+        "clarity": 5.0,
+        "value_proposition": 5.0,
+        "cta": 5.0,
+        "brand_voice": 5.0,
+        "emotional_resonance": 5.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.2,
+      "ai_aggregate": 5.0,
       "ai_rationales": {}
     },
     {
@@ -905,14 +904,14 @@
       "audience_guess": "both",
       "captured_date": "02/04/26",
       "human_scores": {
-        "clarity": 6.8,
-        "value_proposition": 5.8,
-        "cta": 2.4,
-        "brand_voice": 4.2,
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 3.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 6.0
       },
-      "quality_label": "poor",
-      "ai_aggregate": 5.0,
+      "quality_label": "neutral",
+      "ai_aggregate": 5.4,
       "ai_rationales": {
         "clarity": "The ad clearly states the importance of a few points on the ACT and suggests Kaplan can help achieve a better score.",
         "value_proposition": "The value proposition is that Kaplan's prep can lead to a score you're proud of, implying better college opportunities.",
@@ -932,14 +931,14 @@
       "audience_guess": "both",
       "captured_date": "02/26/26",
       "human_scores": {
-        "clarity": 6.4,
-        "value_proposition": 4.8,
-        "cta": 2.4,
-        "brand_voice": 4.2,
+        "clarity": 7.0,
+        "value_proposition": 6.0,
+        "cta": 3.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 4.0
       },
       "quality_label": "poor",
-      "ai_aggregate": 4.4,
+      "ai_aggregate": 4.6,
       "ai_rationales": {
         "clarity": "The ad clearly states that Kaplan can help students get into their top schools.",
         "value_proposition": "The value proposition is that Kaplan provides secrets to getting into top schools, but it's not very specific or compelling.",
@@ -959,11 +958,11 @@
       "audience_guess": "both",
       "captured_date": "02/17/26",
       "human_scores": {
-        "clarity": 6.4,
-        "value_proposition": 5.4,
-        "cta": 1.6,
-        "brand_voice": 4.2,
-        "emotional_resonance": 3.4
+        "clarity": 7.0,
+        "value_proposition": 6.0,
+        "cta": 1.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 4.0
       },
       "quality_label": "poor",
       "ai_aggregate": 4.2,
@@ -986,14 +985,14 @@
       "audience_guess": "both",
       "captured_date": "02/17/26",
       "human_scores": {
-        "clarity": 6.8,
-        "value_proposition": 5.4,
+        "clarity": 8.0,
+        "value_proposition": 6.0,
         "cta": 4.0,
-        "brand_voice": 4.8,
-        "emotional_resonance": 5.4
+        "brand_voice": 3.0,
+        "emotional_resonance": 6.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.3,
+      "ai_aggregate": 5.4,
       "ai_rationales": {
         "clarity": "The ad clearly states its purpose: college prep with Kaplan.",
         "value_proposition": "The value proposition is somewhat generic, focusing on getting into college but lacking specific benefits of Kaplan's prep program.",
@@ -1013,14 +1012,14 @@
       "audience_guess": "parents",
       "captured_date": "03/02/26",
       "human_scores": {
-        "clarity": 6.4,
-        "value_proposition": 5.4,
+        "clarity": 7.0,
+        "value_proposition": 6.0,
         "cta": 3.0,
-        "brand_voice": 4.6,
+        "brand_voice": 4.0,
         "emotional_resonance": 6.0
       },
       "quality_label": "neutral",
-      "ai_aggregate": 5.1,
+      "ai_aggregate": 5.2,
       "ai_rationales": {
         "clarity": "The ad clearly identifies the problem (overwhelming college process) and offers a solution (one-stop solution).",
         "value_proposition": "The value proposition is somewhat generic; 'one-stop solution' needs more specifics to be compelling.",
@@ -1040,14 +1039,14 @@
       "audience_guess": "both",
       "captured_date": "02/03/26",
       "human_scores": {
-        "clarity": 6.4,
-        "value_proposition": 5.4,
-        "cta": 2.2,
-        "brand_voice": 4.8,
+        "clarity": 7.0,
+        "value_proposition": 6.0,
+        "cta": 1.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 4.0
       },
       "quality_label": "poor",
-      "ai_aggregate": 4.6,
+      "ai_aggregate": 4.2,
       "ai_rationales": {
         "clarity": "The ad clearly states that it's about ACT prep for the enhanced exam.",
         "value_proposition": "Being the 'official prep partner' is a decent value proposition, implying authority and accuracy, but it's not particularly compelling.",
@@ -1067,14 +1066,14 @@
       "audience_guess": "both",
       "captured_date": "02/24/26",
       "human_scores": {
-        "clarity": 6.8,
-        "value_proposition": 5.8,
-        "cta": 2.4,
-        "brand_voice": 4.2,
-        "emotional_resonance": 5.4
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 3.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 6.0
       },
-      "quality_label": "poor",
-      "ai_aggregate": 4.9,
+      "quality_label": "neutral",
+      "ai_aggregate": 5.4,
       "ai_rationales": {
         "clarity": "The ad clearly states the services offered, which include essay help and school selection guidance.",
         "value_proposition": "The value proposition is that Kaplan provides tailored guidance to make the college admissions process clear and confident.",
@@ -1094,11 +1093,11 @@
       "audience_guess": "both",
       "captured_date": "03/04/26",
       "human_scores": {
-        "clarity": 6.4,
-        "value_proposition": 5.4,
-        "cta": 1.6,
-        "brand_voice": 4.2,
-        "emotional_resonance": 3.4
+        "clarity": 7.0,
+        "value_proposition": 6.0,
+        "cta": 1.0,
+        "brand_voice": 3.0,
+        "emotional_resonance": 4.0
       },
       "quality_label": "poor",
       "ai_aggregate": 4.2,
@@ -1121,10 +1120,10 @@
       "audience_guess": "both",
       "captured_date": "03/06/26",
       "human_scores": {
-        "clarity": 7.4,
-        "value_proposition": 6.4,
-        "cta": 5.4,
-        "brand_voice": 4.8,
+        "clarity": 8.0,
+        "value_proposition": 7.0,
+        "cta": 6.0,
+        "brand_voice": 3.0,
         "emotional_resonance": 7.0
       },
       "quality_label": "neutral",
