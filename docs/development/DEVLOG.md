@@ -7,6 +7,55 @@
 
 ---
 
+## P1-01: Brief Expansion Engine ✅
+
+### Plain-English Summary
+- Created `generate/brief_expansion.py` — LLM-powered brief expansion with grounding constraints
+- `expand_brief(brief) -> ExpandedBrief` loads verified facts from brand_knowledge.json, injects competitive context via `get_landscape_context()`, calls Gemini Flash with "use ONLY verified facts" prompt
+- Added 13 tests in `tests/test_generation/test_brief_expansion.py`
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P1-01
+- **Branch:** `develop`
+- **Architectural Decisions:** R3-Q5 (LLM expansion with grounding), Section 4.8.6 (competitive landscape injection), R2-Q4 (distilled context objects)
+
+### Key Achievements
+- ExpandedBrief dataclass: original_brief, audience_profile, brand_facts, competitive_context, emotional_angles, value_propositions, key_differentiators, constraints
+- Prompt explicitly instructs: "Use ONLY the following verified facts. Do NOT invent statistics, testimonials, or claims."
+- Audience normalization: parent/parents → brand KB "parent"; student/students → "student"
+- Malformed API response handled gracefully (partial expansion with empty lists)
+- Logs BriefExpanded events to decision ledger with tokens_consumed, model_used, seed
+- retry_with_backoff wraps Gemini call for 429/500/503 resilience
+
+### Files Changed
+- **Created:** `generate/brief_expansion.py` — brief expansion engine
+- **Created:** `tests/test_generation/test_brief_expansion.py` — 13 tests
+- **Updated:** `docs/DEVLOG.md` — this entry
+
+### Testing
+- 13 tests: schema, grounding, competitive context, audience-appropriate facts, malformed response, retry logic, minimal brief, parse helper
+- 83+ tests pass (full suite minus golden set API-dependent tests)
+
+### Acceptance Criteria
+- [x] expand_brief() produces rich ExpandedBrief from minimal input
+- [x] All brand facts traceable to brand_knowledge.json (no hallucination)
+- [x] Competitive landscape from get_landscape_context() included
+- [x] Malformed API responses handled gracefully
+- [x] Tests pass, lint clean
+- [x] DEVLOG updated
+
+### Learnings
+- Module-level imports (log_event, retry_with_backoff) enable clean test patching
+- Audience key mismatch (brand KB "parent" vs competitive "parents") handled via normalization maps
+
+### Next Steps
+- **P1-02** (Ad copy generator) consumes ExpandedBrief output
+- P1-03 (Brand voice profiles) complementary to P1-01 audience selection
+
+---
+
 ## P0-10: Competitive Pattern Query Interface ✅
 
 ### Plain-English Summary
@@ -415,7 +464,7 @@
 | Phase | Name | Tickets | Timeline | Status |
 |-------|------|---------|----------|--------|
 | P0 | Foundation & Calibration | P0-01 – P0-10 (10) | Day 0–1 | ✅ Complete |
-| P1 | Full-Ad Pipeline (v1: Copy + Image) | P1-01 – P1-20 (20) | Days 1–4 | ⏳ Not Started |
+| P1 | Full-Ad Pipeline (v1: Copy + Image) | P1-01 – P1-20 (20) | Days 1–4 | 🔄 In Progress |
 | P1B | Application Layer | PA-01 – PA-13 (13) | Days 3–5 | ⏳ Not Started |
 | P2 | Testing & Validation | P2-01 – P2-07 (7) | Days 3–4 | ⏳ Not Started |
 | P3 | A/B Variant Engine + UGC Video (v2) | P3-01 – P3-13 (13) | Days 4–7 | ⏳ Not Started |
@@ -443,7 +492,7 @@
 ### Phase 1: Full-Ad Pipeline — v1 Copy + Image (20 tickets)
 | Ticket | Title | Status |
 |--------|-------|--------|
-| P1-01 | Brief expansion engine | ⏳ |
+| P1-01 | Brief expansion engine | ✅ |
 | P1-02 | Ad copy generator | ⏳ |
 | P1-03 | Audience-specific brand voice profiles | ⏳ |
 | P1-04 | Chain-of-thought evaluator | ⏳ |
