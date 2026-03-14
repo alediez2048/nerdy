@@ -32,7 +32,7 @@ CLARITY_FLOOR = 6.0
 BRAND_VOICE_FLOOR = 5.0
 QUALITY_THRESHOLD = 7.0
 
-EVALUATOR_PROMPT_VERSION = "p0-06-v1"
+EVALUATOR_PROMPT_VERSION = "p0-06-v2"
 
 
 def _build_prompt(ad_text: dict[str, Any], campaign_goal: str) -> str:
@@ -52,7 +52,26 @@ DESCRIPTION: {description}
 CTA BUTTON: {cta}
 """
 
-    return f"""You are an expert ad copy evaluator for Varsity Tutors SAT test prep ads on Meta (Facebook/Instagram). Score this ad on 5 dimensions (1-10 scale). Campaign goal: {campaign_goal}.
+    return f"""You are a strict, calibrated ad copy evaluator for Varsity Tutors SAT test prep ads on Meta (Facebook/Instagram). You must use the FULL 1-10 scale. Most ads are mediocre (4-6). Only truly excellent ads score 8+. Truly bad ads score 2-3. Campaign goal: {campaign_goal}.
+
+CRITICAL SCORING CALIBRATION — use these anchors:
+
+SCORE 9-10 (Exceptional — rare):
+  Example: "Is your child's SAT score holding them back from their dream school? College admissions are more competitive than ever. Varsity Tutors pairs your student with expert 1-on-1 tutors who adapt to how they learn. See the difference personalized prep can make." [CTA: Start Free Practice Test]
+  WHY 9: Crystal clear single message, specific differentiation (1-on-1, adaptive), low-friction CTA, empowering brand voice, taps parent college anxiety.
+
+SCORE 5-6 (Mediocre — common):
+  Example: "Stressed about the SAT? You're not alone. Varsity Tutors offers personalized 1-on-1 prep with tutors who specialize in the test. Flexible scheduling, online sessions, and a free practice test to get started."
+  WHY 5-6: Not scroll-stopping, generic "personalized" with no specific outcome, bland tone, mild emotional engagement. Competent but forgettable.
+
+SCORE 2-3 (Bad — clear failures):
+  Example: "SAT prep. We do it. Online. With tutors. Sometimes it works. Try us."
+  WHY 2-3: No hook, no value prop, undermines credibility ("sometimes it works"), zero brand personality, no emotional engagement.
+
+COMPLIANCE FAILURES (automatic score penalties):
+  - "Guaranteed 1500+" → Brand Voice capped at 3 (off-brand, compliance violation)
+  - Competitor disparagement by name → Brand Voice capped at 3
+  - "100% guaranteed" / absolute promises → Value Proposition capped at 4
 
 AD TO EVALUATE (ad_id: {ad_id}):
 {ad_block}
@@ -61,23 +80,21 @@ Follow this 5-step sequence exactly:
 
 Step 1: READ the ad completely.
 
-Step 2: DECOMPOSE — Before scoring, identify in your own words:
-  - The hook (first line/sentence)
-  - The value proposition
-  - The call to action
-  - The emotional angle
+Step 2: DECOMPOSE — Before scoring, identify:
+  - The hook (first line/sentence) — is it scroll-stopping or generic?
+  - The value proposition — is it specific and differentiated, or could any tutoring company say this?
+  - The call to action — is it specific and low-friction, or vague?
+  - The emotional angle — does it tap a real emotion, or is it flat?
 
-Step 3: COMPARE each element against the rubric:
-  - Clarity (1=confusing, 10=crystal clear single takeaway)
-  - Value Proposition (1=generic "we have tutors", 10=differentiated "raise SAT 200+ pts")
-  - CTA (1=no CTA or vague, 10=specific, urgent "Start free practice test")
-  - Brand Voice (1=generic, 10=distinctly empowering, knowledgeable)
-  - Emotional Resonance (1=flat, 10=taps parent worry, student ambition)
+Step 3: COMPARE against the calibration anchors above. Ask yourself:
+  - Is this closer to the 9-10 example or the 2-3 example?
+  - Would a real parent/student stop scrolling for this?
+  - Could a generic tutoring company use this exact ad? If yes, Brand Voice is ≤5.
 
-Step 4: SCORE each dimension with a CONTRASTIVE rationale:
+Step 4: SCORE each dimension with a CONTRASTIVE rationale. Be harsh — use the full scale:
   - "This ad scores [X] on [dimension] because [specific reason]."
   - "A version scoring [X+2] would [specific concrete change]."
-  - "The gap is [specific element]."
+  - If the ad has compliance violations, note them and cap the relevant dimension.
 
 Step 5: FLAG CONFIDENCE per dimension (1-10). Below 7 = flag for review.
 

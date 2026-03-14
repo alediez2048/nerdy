@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "within_tolerance_pct": 60.0,
+  "excellent_avg": 6.84,
+  "poor_avg": 3.92,
+  "n_labeled": 10,
+  "n_excellent": 5,
+  "n_poor": 5
+}

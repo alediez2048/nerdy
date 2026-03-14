@@ -21,10 +21,18 @@ This project has 7 phases. Phases are sequential. Do NOT implement Phase N+1 wor
 
 **Total: 80 tickets | 14 days (per prd.md Section 10)**
 
+## Before You Start Any Ticket
+
+1. Read the ticket's primer (`docs/development/tickets/<TICKET-ID>-primer.md`)
+2. Cross-reference acceptance criteria in `docs/reference/prd.md`
+3. **Check for overlap:** Compare this ticket's deliverables against ALL other tickets in the same phase and adjacent phases. If two tickets produce similar outputs (e.g., both collect the same data, both build similar utilities), flag it and resolve BEFORE implementing:
+   - **Merge:** One ticket produces the data, the other consumes it
+   - **Sequence:** Do the upstream ticket first, reference its output
+   - **Deduplicate:** One shared file/module, not two separate ones
+4. Never create synthetic placeholder data when the real data source is defined in another ticket — sequence the tickets instead
+
 ## Only Do What the Ticket Asks
 
-- Read the ticket's primer (`docs/development/tickets/<TICKET-ID>-primer.md`) BEFORE writing any code
-- Cross-reference acceptance criteria in `docs/reference/prd.md`
 - Implement ONLY the deliverables listed in the primer's checklist
 - If the ticket says "implement evaluator," do not also build the regeneration loop
 - If the ticket says "add tests for X," only add tests for X
