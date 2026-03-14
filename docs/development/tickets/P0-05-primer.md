@@ -58,6 +58,8 @@ Collect 20–30 Varsity Tutors + 20–30 competitor ads. Label 5–10 as "excell
   - Audience
 - [ ] Stored as queryable pattern records for the generator
 
+**Note:** This pattern database focuses on structural atoms from *reference ads* for the generator (R2-Q1). P0-09 creates a separate competitive pattern database (`data/competitive/patterns.json`) for broader competitive intelligence from Meta Ad Library.
+
 #### D. Documentation
 
 - [ ] Add P0-05 entry in `docs/DEVLOG.md`
@@ -67,9 +69,10 @@ Collect 20–30 Varsity Tutors + 20–30 competitor ads. Label 5–10 as "excell
 
 ## Branch & Merge Workflow
 
+All work is done directly on `develop`. No feature branches.
+
 ```bash
-git switch main && git pull
-git switch -c feature/P0-05-reference-ad-collection
+git switch develop && git pull
 ```
 
 ---
@@ -95,7 +98,7 @@ git switch -c feature/P0-05-reference-ad-collection
 
 | File | Why |
 |------|-----|
-| `requirements.md` (lines 43–61) | What works on Meta, ad anatomy |
+| `docs/reference/prd.md` (lines 43–61) | What works on Meta, ad anatomy |
 | `.claude/skills/adops-generation/references/meta-ad-patterns.md` | Hook types, body patterns, CTA patterns |
 | `.cursor/rules/brand-context.mdc` | Competitor list and ad structure |
 
@@ -107,7 +110,7 @@ git switch -c feature/P0-05-reference-ad-collection
 - [ ] 5–10 labeled excellent, 5–10 labeled poor, with per-dimension human scores
 - [ ] Top ads decomposed into structural atoms in pattern database
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
+- [ ] Committed on `develop`
 
 ---
 

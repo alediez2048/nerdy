@@ -46,9 +46,9 @@ Build the first draft of the chain-of-thought evaluation prompt, run it against 
   4. Score with contrastive rationale per dimension
   5. Flag confidence per dimension
 - [ ] Returns structured JSON matching the evaluation output schema
-- [ ] Campaign-goal-adaptive weighting (R1-Q3)
-- [ ] Floor constraint enforcement (Clarity ≥ 6.0, Brand Voice ≥ 5.0)
-- [ ] Uses Gemini API for evaluation calls
+- [ ] Default equal weighting across dimensions (full campaign-goal-adaptive weighting is P1-05)
+- [ ] Basic floor awareness (Clarity ≥ 6.0, Brand Voice ≥ 5.0) — full enforcement is P1-05
+- [ ] Uses Gemini API for evaluation calls (requires `GEMINI_API_KEY` in `.env`)
 
 #### B. Calibration Run
 
@@ -79,9 +79,10 @@ Build the first draft of the chain-of-thought evaluation prompt, run it against 
 
 ## Branch & Merge Workflow
 
+All work is done directly on `develop`. No feature branches.
+
 ```bash
-git switch main && git pull
-git switch -c feature/P0-06-evaluator-calibration
+git switch develop && git pull
 ```
 
 ---
@@ -111,7 +112,7 @@ git switch -c feature/P0-06-evaluator-calibration
 | `data/reference_ads.json` | Labeled reference ads for calibration |
 | `.claude/skills/adops-evaluation/SKILL.md` | Full evaluation framework spec |
 | `.claude/skills/adops-evaluation/references/evaluation-sample.json` | Expected output format |
-| `interviews.md` (R3-Q6) | CoT evaluation prompt design rationale |
+| `docs/reference/prd.md` (R3-Q6) | CoT evaluation prompt design rationale |
 | `.cursor/rules/evaluation-framework.mdc` | Dimension definitions, weighting, ratchet |
 
 ---
@@ -124,7 +125,7 @@ git switch -c feature/P0-06-evaluator-calibration
 - [ ] Tests pass
 - [ ] Lint clean
 - [ ] DEVLOG updated with calibration results
-- [ ] Feature branch pushed
+- [ ] Committed on `develop`
 
 ---
 
@@ -135,5 +136,11 @@ git switch -c feature/P0-06-evaluator-calibration
 ## After This Ticket: What Comes Next
 
 - **P0-07** (Golden set regression tests) — uses the calibrated evaluator as the test target
-- **P1-04** (Chain-of-thought evaluator) — extends this with full pipeline integration
+- **P1-04** (Chain-of-thought evaluator) — extends with full structured JSON output and pipeline integration
+- **P1-05** (Campaign-goal-adaptive weighting) — adds goal-specific weights and floor enforcement
 - The evaluator is now trusted — the feedback loop can begin
+
+## Prerequisites
+
+- `GEMINI_API_KEY` must be set in `.env` — this is the first ticket making real Gemini API calls
+- Reference ads with human labels must exist (`data/reference_ads.json` from P0-05)
