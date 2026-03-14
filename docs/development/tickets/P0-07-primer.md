@@ -47,7 +47,7 @@ Create a permanent golden set test file and automated regression test suite that
 #### B. Regression Test Suite (`tests/test_evaluation/test_golden_set.py`)
 
 - [ ] `test_evaluator_calibration` — run evaluator against all golden ads, verify ±1.0 tolerance on 80%+
-- [ ] `test_excellent_ads_score_high` — ads labeled "excellent" average ≥7.5
+- [ ] `test_excellent_ads_score_high` — ads labeled "excellent" average ≥7.0
 - [ ] `test_poor_ads_score_low` — ads labeled "poor" average ≤5.0
 - [ ] `test_dimension_ordering` — for each ad, the weakest human-scored dimension should be among the bottom 2 evaluator-scored dimensions
 - [ ] `test_floor_constraints` — ads with Clarity <6.0 or Brand Voice <5.0 are rejected regardless of aggregate

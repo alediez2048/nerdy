@@ -22,7 +22,7 @@ P0-10 builds the **query interface** for the competitive pattern database create
 
 ## What Was Already Done
 
-- P0-09: Competitive pattern database with 48--60 structured pattern records across 6 competitors
+- P0-09: Competitive pattern database with 40 structured pattern records across 4 competitors (VT, Chegg, Wyzant, Kaplan)
 - P0-05: Reference ads and structural atom decomposition
 - P0-04: Brand knowledge base
 
@@ -50,7 +50,7 @@ Build a utility function that queries the competitive pattern database by audien
   - Returns top-N results (default 5)
 - [ ] `get_competitor_summary(competitor: str) -> dict | None`
   - Returns the strategy summary for a given competitor
-  - Loads from `data/competitive/summaries.json`
+  - Loads from `competitor_summaries` key in `data/competitive/patterns.json`
 - [ ] `get_all_competitors() -> list[str]`
   - Returns list of all competitors in the database
 - [ ] `get_landscape_context(audience: str, campaign_goal: str, top_n: int = 3) -> str`
@@ -124,8 +124,7 @@ git switch develop && git pull
 | File | Why |
 |------|-----|
 | `data/competitive/patterns.json` (P0-09) | The database this module queries |
-| `data/competitive/summaries.json` (P0-09) | Competitor strategy summaries |
-| `data/competitive/schema.json` (P0-09) | Schema for pattern records |
+| `data/competitive/patterns.json` (P0-09) | Also contains `competitor_summaries` key |
 | `prd.md` (Section 4.8) | Full competitive intelligence architecture spec |
 | `docs/reference/prd.md` (R2-Q2) | Structured pattern extraction rationale |
 | `docs/reference/prd.md` (R3-Q8) | Cross-campaign shared patterns design |
