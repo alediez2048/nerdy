@@ -7,6 +7,62 @@
 
 ---
 
+## P5-11: README with One-Command Setup ✅
+
+### Plain-English Summary
+- Rewrote README.md with Quick Start (clone → install → run → dashboard in 4 commands)
+- Architecture overview with pipeline diagram and module table
+- Usage section with all CLI commands (run, resume, dry-run, export, test, lint)
+- Configuration table documenting all `config.yaml` parameters
+- Dashboard section describing all 8 panels
+- Deliverables table linking every submission artifact
+- Limitations section with honest assessment
+- Testing section with test count (670 tests)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** P5-11
+- **Files:** `README.md`
+
+---
+
+## P5-10: Ad Library Export ✅
+
+### Plain-English Summary
+- `output/export_ad_library.py`: reads JSONL ledger, reconstructs ad lifecycle, exports JSON + CSV
+- JSON export includes summary header: total ads, publishable count, avg scores, per-dimension averages, token cost
+- CSV export is flattened with one row per ad, sorted by aggregate score descending
+- Each ad includes: copy, 5 dimension scores, aggregate score, rationale, status, cycle count, model, tokens, seed
+- 7 tests covering: all ads present, required fields, summary stats, CSV rows, sort order, status assignment
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** P5-10
+- **Tests:** 7 (all passing)
+- **Files:** `output/export_ad_library.py`, `tests/test_output/test_ad_library_export.py`
+
+---
+
+## P5-09: Demo Video Script ✅
+
+### Plain-English Summary
+- Created `docs/deliverables/demo-script.md` — narration script for 7-minute demo video
+- Three-act structure: Problem (naive LLM fails) → Solution (architecture walkthrough) → Proof (dashboard + results)
+- Act 1 (~1.5 min): naive prompt → low evaluator scores → "generation is easy, evaluation is hard"
+- Act 2 (~2 min): pipeline diagram, 5-dimension evaluation, Pareto selection, quality ratchet, brief mutation
+- Act 3 (~3.5 min): before/after ad pair, dashboard walkthrough (all 8 panels), top 3 ads
+- Recording notes: resolution, font size, editing guidelines
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** P5-09
+- **Files:** `docs/deliverables/demo-script.md`
+
+---
+
 ## P5-08: Technical Writeup ✅
 
 ### Plain-English Summary
