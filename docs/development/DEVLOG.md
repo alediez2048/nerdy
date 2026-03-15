@@ -7,6 +7,27 @@
 
 ---
 
+## PA-04: Session CRUD API ✅
+
+### Plain-English Summary
+- Per-user isolation on all endpoints: users only see/modify their own sessions
+- Typed `SessionConfig` schema with validation: audience (enum), campaign_goal (enum), ad_count (1-200), cycle_count, quality_threshold, dimension_weights, model_tier, budget_cap, image_enabled, aspect_ratios
+- `GET /sessions` with filtering (audience, campaign_goal, status) and pagination (offset + limit) — returns `SessionListResponse` with total count
+- `DELETE /sessions/{session_id}` with ownership check and Celery task cancellation
+- Auto-generated session names: "SAT Parents Conversion — Mar 15"
+- `SessionSummary` now includes name and config for card rendering
+- `SessionDetail` extended with ledger_path, output_path, updated_at, completed_at
+- 12 tests: create (valid, custom name, invalid audience, missing required, out-of-range), list (per-user, status filter, pagination), get (own, other user 404), delete (own, other user 404)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-04
+- **Tests:** 12 (all passing)
+- **Files:** `app/api/routes/sessions.py`, `app/api/schemas/session.py`, `tests/test_app/test_sessions.py`
+
+---
+
 ## PA-03: Google SSO Authentication ✅
 
 ### Plain-English Summary

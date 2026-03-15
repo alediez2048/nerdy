@@ -1,0 +1,289 @@
+# PA-04: Session CRUD tests
+"""Tests for session creation, listing, filtering, per-user isolation, and deletion."""
+
+import tempfile
+from contextlib import asynccontextmanager
+from unittest.mock import MagicMock, patch
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.models.base import Base
+import app.models.user  # noqa: F401
+import app.models.session  # noqa: F401
+import app.models.curation  # noqa: F401
+
+
+@asynccontextmanager
+async def _noop_lifespan(app):
+    yield
+
+
+# Use a temp file DB per test run
+_tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+_tmp.close()
+_DB_PATH = _tmp.name
+_engine = create_engine(f"sqlite:///{_DB_PATH}")
+Base.metadata.create_all(_engine)
+_TestSessionLocal = sessionmaker(bind=_engine)
+
+
+def _override_get_db():
+    db = _TestSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@pytest.fixture(autouse=True)
+def _clean_rows():
+    """Delete all session rows between tests."""
+    yield
+    from app.models.session import Session as SessionModel
+    db = _TestSessionLocal()
+    db.query(SessionModel).delete()
+    db.commit()
+    db.close()
+
+
+def _build_app_with_user(user_id: str):
+    """Build a fresh TestClient with a specific user override."""
+    from app.api.main import app
+    from app.api.deps import get_current_user
+    from app.db import get_db
+
+    def override_user():
+        return {"user_id": user_id, "email": f"{user_id}@nerdy.com", "name": user_id}
+
+    app.router.lifespan_context = _noop_lifespan
+    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user] = override_user
+
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    p1 = patch("app.api.main.lifespan", _noop_lifespan)
+    p2 = patch("app.api.routes.sessions.run_pipeline_session", mock_task)
+    p3 = patch("app.api.routes.sessions.init_db")
+    p1.start()
+    p2.start()
+    p3.start()
+
+    client = TestClient(app)
+    return client, [p1, p2, p3]
+
+
+@pytest.fixture()
+def alice():
+    client, patches = _build_app_with_user("alice")
+    yield client
+    client.close()
+    for p in patches:
+        p.stop()
+    from app.api.main import app
+    app.dependency_overrides.clear()
+
+
+VALID_CONFIG = {
+    "config": {
+        "audience": "parents",
+        "campaign_goal": "conversion",
+        "ad_count": 50,
+    }
+}
+
+
+def _create(client, config=None):
+    return client.post("/sessions", json=config or VALID_CONFIG)
+
+
+# --- Create ---
+
+
+def test_create_session_valid_config(alice):
+    resp = _create(alice)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["session_id"].startswith("sess_")
+    assert data["user_id"] == "alice"
+    assert data["config"]["audience"] == "parents"
+    assert data["name"] is not None
+
+
+def test_create_session_with_custom_name(alice):
+    resp = alice.post("/sessions", json={
+        "name": "My Custom Session",
+        "config": {"audience": "students", "campaign_goal": "awareness"},
+    })
+    assert resp.status_code == 201
+    assert resp.json()["name"] == "My Custom Session"
+
+
+def test_create_session_invalid_audience_returns_422(alice):
+    resp = alice.post("/sessions", json={
+        "config": {"audience": "dogs", "campaign_goal": "conversion"},
+    })
+    assert resp.status_code == 422
+
+
+def test_create_session_missing_required_returns_422(alice):
+    resp = alice.post("/sessions", json={"config": {}})
+    assert resp.status_code == 422
+
+
+def test_create_session_ad_count_out_of_range_returns_422(alice):
+    resp = alice.post("/sessions", json={
+        "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 999},
+    })
+    assert resp.status_code == 422
+
+
+# --- Per-user isolation ---
+
+
+def test_list_sessions_only_own():
+    """Alice's sessions are not visible to Bob."""
+    # Create sessions as alice
+    client_a, patches_a = _build_app_with_user("alice")
+    _create(client_a)
+    _create(client_a)
+    client_a.close()
+    for p in patches_a:
+        p.stop()
+
+    from app.api.main import app
+    app.dependency_overrides.clear()
+
+    # Create session as bob
+    client_b, patches_b = _build_app_with_user("bob")
+    _create(client_b)
+
+    # Bob sees only 1
+    resp_bob = client_b.get("/sessions")
+    assert resp_bob.json()["total"] == 1
+    client_b.close()
+    for p in patches_b:
+        p.stop()
+    app.dependency_overrides.clear()
+
+    # Alice sees only 2
+    client_a2, patches_a2 = _build_app_with_user("alice")
+    resp_alice = client_a2.get("/sessions")
+    assert resp_alice.json()["total"] == 2
+    client_a2.close()
+    for p in patches_a2:
+        p.stop()
+    app.dependency_overrides.clear()
+
+
+# --- Filters ---
+
+
+def test_list_sessions_filter_by_status(alice):
+    _create(alice)
+
+    resp = alice.get("/sessions?status=completed")
+    assert resp.json()["total"] == 0
+
+    resp = alice.get("/sessions?status=pending")
+    assert resp.json()["total"] == 1
+
+
+# --- Pagination ---
+
+
+def test_list_sessions_pagination(alice):
+    for _ in range(5):
+        _create(alice)
+
+    resp = alice.get("/sessions?offset=0&limit=2")
+    data = resp.json()
+    assert len(data["sessions"]) == 2
+    assert data["total"] == 5
+    assert data["offset"] == 0
+    assert data["limit"] == 2
+
+    resp2 = alice.get("/sessions?offset=2&limit=2")
+    assert len(resp2.json()["sessions"]) == 2
+
+
+# --- Get ---
+
+
+def test_get_session_own(alice):
+    create_resp = _create(alice)
+    sid = create_resp.json()["session_id"]
+
+    resp = alice.get(f"/sessions/{sid}")
+    assert resp.status_code == 200
+    assert resp.json()["session_id"] == sid
+
+
+def test_get_session_other_user_returns_404():
+    """Bob cannot see Alice's session."""
+    client_a, patches_a = _build_app_with_user("alice")
+    create_resp = _create(client_a)
+    sid = create_resp.json()["session_id"]
+    client_a.close()
+    for p in patches_a:
+        p.stop()
+
+    from app.api.main import app
+    app.dependency_overrides.clear()
+
+    client_b, patches_b = _build_app_with_user("bob")
+    resp = client_b.get(f"/sessions/{sid}")
+    assert resp.status_code == 404
+    client_b.close()
+    for p in patches_b:
+        p.stop()
+    app.dependency_overrides.clear()
+
+
+# --- Delete ---
+
+
+def test_delete_session_own(alice):
+    create_resp = _create(alice)
+    sid = create_resp.json()["session_id"]
+
+    resp = alice.delete(f"/sessions/{sid}")
+    assert resp.status_code == 204
+
+    resp2 = alice.get(f"/sessions/{sid}")
+    assert resp2.status_code == 404
+
+
+def test_delete_session_other_user_returns_404():
+    """Bob cannot delete Alice's session."""
+    client_a, patches_a = _build_app_with_user("alice")
+    create_resp = _create(client_a)
+    sid = create_resp.json()["session_id"]
+    client_a.close()
+    for p in patches_a:
+        p.stop()
+
+    from app.api.main import app
+    app.dependency_overrides.clear()
+
+    client_b, patches_b = _build_app_with_user("bob")
+    resp = client_b.delete(f"/sessions/{sid}")
+    assert resp.status_code == 404
+    client_b.close()
+    for p in patches_b:
+        p.stop()
+    app.dependency_overrides.clear()
+
+    # Still exists for alice
+    client_a2, patches_a2 = _build_app_with_user("alice")
+    resp2 = client_a2.get(f"/sessions/{sid}")
+    assert resp2.status_code == 200
+    client_a2.close()
+    for p in patches_a2:
+        p.stop()
+    app.dependency_overrides.clear()
