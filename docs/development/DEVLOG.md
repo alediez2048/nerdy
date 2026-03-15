@@ -7,6 +7,56 @@
 
 ---
 
+## P3-13: 10-Ad Video Pilot Run Config ✅
+
+### Plain-English Summary
+- Pilot run configuration: 10 ads, 2 video variants each, $20/ad budget cap
+- Balanced ad spec generation: alternates parent-facing/student-facing segments and awareness/conversion goals
+- Config validation catches invalid params (zero ads, empty segments, bad budget)
+- PilotResult computes derived metrics: video success rate, degradation rate, cost per ad with video
+- Budget compliance check prevents runaway costs
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 11 (all passing)
+- **Files:** `iterate/pilot_config.py`, `tests/test_pipeline/test_video_pilot.py`
+
+---
+
+## P3-12: Video Cost Tracking ✅
+
+### Plain-English Summary
+- Per-video cost tracking at $0.15/sec (VEO_COST_PER_SECOND)
+- Audio vs silent mode flagged on each entry
+- Regen costs tracked separately (is_regen flag)
+- get_video_costs_by_ad: reads VideoGenerated events from ledger for one ad
+- get_video_cost_summary: aggregates totals, averages, regen overhead percentage
+- Video-blocked ads correctly return zero cost entries
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 7 (all passing)
+- **Files:** `iterate/video_cost.py`, `tests/test_pipeline/test_video_cost.py`
+
+---
+
+## P3-11: Three-Format Ad Assembly ✅
+
+### Plain-English Summary
+- ThreeFormatAd dataclass: copy + image_paths + optional video_path
+- assemble_three_format: builds ad with format_flags (copy/image/video booleans)
+- Metadata export: format_mode = "three-format" or "image-only" based on video presence
+- PlacementMap: maps assets to Meta placements (Feed, Stories, Reels)
+- Feed prefers 4:5, falls back to 1:1; Stories uses 9:16 + optional video; Reels requires video
+- Two-format ads (no video) get Feed + Stories only — Reels excluded
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 7 (all passing)
+- **Files:** `output/three_format_assembler.py`, `output/placement.py`, `tests/test_pipeline/test_three_format_assembly.py`
+
+---
+
 ## P3-10: Video Pareto Selection + Regen Loop ✅
 
 ### Plain-English Summary
