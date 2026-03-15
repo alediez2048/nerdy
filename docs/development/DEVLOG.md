@@ -7,6 +7,33 @@
 
 ---
 
+## PA-05: Brief Configuration Form (React) ✅
+
+### Plain-English Summary
+- Bootstrapped React + TypeScript + Vite project in `app/frontend/`
+- Vite proxy configured: `/api/*` → `localhost:8000` for backend calls
+- Design system tokens: ink, surface, cyan, mint, yellow, red, Poppins font, card/button radii
+- TypeScript types matching backend schemas: `SessionConfig`, `SessionSummary`, `SessionDetail`, `SessionListResponse`
+- API client: `createSession()`, `listSessions()`, `getSession()`, `deleteSession()` with JWT Bearer auth from localStorage
+- Auth client: `googleLogin()`, `saveToken()`, `clearToken()`, `isLoggedIn()`
+- `NewSessionForm` with progressive disclosure:
+  - Required (always visible): Audience toggle, Campaign Goal toggle, Ad Count input
+  - Advanced (collapsible): Cycle count, quality threshold, dimension weights, model tier, budget cap, image toggle, aspect ratios
+  - Clone-from-previous: loads recent sessions, populates form from selected config
+  - Submit → `POST /sessions` → redirect to session detail
+  - Loading state, inline error display
+- App router with routes for sessions list, new session, detail, watch live (placeholders for PA-06/08/09)
+- Poppins font loaded via Google Fonts CDN
+- Clean global CSS, no Vite boilerplate
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-05
+- **Files:** `app/frontend/` (entire React project), `src/design/tokens.ts`, `src/types/session.ts`, `src/api/sessions.ts`, `src/api/auth.ts`, `src/views/NewSessionForm.tsx`, `src/App.tsx`
+
+---
+
 ## PA-04: Session CRUD API ✅
 
 ### Plain-English Summary

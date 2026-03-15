@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     # Auth — leave GOOGLE_CLIENT_ID empty for DEV_MODE (mock auth)
     GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
     SECRET_KEY: str = "dev-secret-change-in-production"
     JWT_EXPIRY_HOURS: int = 24
 
