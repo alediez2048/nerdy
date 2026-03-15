@@ -7,6 +7,26 @@
 
 ---
 
+## PA-01: FastAPI Backend Scaffold ✅
+
+### Plain-English Summary
+- FastAPI app with CORS (localhost:5173), health check (`GET /health`), OpenAPI docs at `/docs`
+- SQLAlchemy engine + session factory with PostgreSQL (via `app/db.py`)
+- Celery worker with Redis broker + ping task for health verification
+- Docker Compose: 4 services (api, db, redis, worker) with health checks, hot-reload volume mounts, and `env_file` support
+- Pydantic Settings for environment-based config (`app/config.py`)
+- `.env.example` with all required variables (DB, Redis, Gemini, auth placeholders)
+- 7 scaffold tests: health check, CORS allow/reject, OpenAPI docs, ping task, settings, engine
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-01
+- **Tests:** 7 (all passing)
+- **Files:** `app/api/main.py`, `app/config.py`, `app/db.py`, `app/models/session.py`, `app/workers/celery_app.py`, `app/workers/tasks/ping.py`, `app/workers/progress.py`, `app/api/routes/sessions.py`, `app/api/routes/progress.py`, `docker-compose.yml`, `Dockerfile.api`, `.env.example`, `tests/test_app/test_scaffold.py`
+
+---
+
 ## P5-11: README with One-Command Setup ✅
 
 ### Plain-English Summary

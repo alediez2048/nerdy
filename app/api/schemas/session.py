@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SessionCreate(BaseModel):
@@ -25,18 +25,19 @@ class ProgressSummary(BaseModel):
 class SessionSummary(BaseModel):
     """Session list item."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     session_id: str
     status: str
     created_at: datetime
     progress_summary: ProgressSummary | None = None
 
-    class Config:
-        from_attributes = True
-
 
 class SessionDetail(BaseModel):
     """Session detail (GET /sessions/{id})."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     session_id: str
@@ -46,6 +47,3 @@ class SessionDetail(BaseModel):
     celery_task_id: str | None
     results_summary: dict[str, Any] | None
     created_at: datetime
-
-    class Config:
-        from_attributes = True
