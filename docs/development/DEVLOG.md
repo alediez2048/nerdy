@@ -7,6 +7,27 @@
 
 ---
 
+## PA-06: Session List UI (React) ✅
+
+### Plain-English Summary
+- `SessionList` view: fetches sessions from API, reverse-chronological card layout, empty state
+- `SessionCard`: name, relative date, audience/goal badges, status badge (color-coded), metrics (published count, avg score, cost/ad), sparkline
+- Running sessions show live progress (cycle, generated, avg score, cost) + "Watch Live" button
+- `SessionFilters`: audience, goal, status dropdowns with clear button — applies to API query params
+- `Sparkline`: tiny SVG inline chart, cyan for improving, red for regression
+- `Badge` + `StatusBadge`: reusable badge components with color variants
+- 30-second auto-polling when any session is running
+- "Load more" pagination button with remaining count
+- App router updated: `/sessions` → real SessionList
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-06
+- **Files:** `src/views/SessionList.tsx`, `src/components/SessionCard.tsx`, `src/components/SessionFilters.tsx`, `src/components/Sparkline.tsx`, `src/components/Badge.tsx`, `src/App.tsx`
+
+---
+
 ## PA-05: Brief Configuration Form (React) ✅
 
 ### Plain-English Summary
