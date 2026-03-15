@@ -7,6 +7,26 @@
 
 ---
 
+## P3-03: Single-Variable A/B Variants — Image ✅
+
+### Plain-English Summary
+- Implemented single-variable A/B image variant generation: 1 control + 3 variants per ad
+- Each variant changes exactly ONE visual element (composition, color_palette, subject_framing)
+- Copy held constant — isolates pure visual impact from messaging
+- Composite scoring (attribute_pass_pct * 0.4 + coherence_avg * 0.6) identifies winning visual patterns
+- Visual pattern tracker aggregates win rates per audience per element
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-03
+
+### Files Changed
+- **Created:** `generate/ab_image_variants.py` — ImageABVariant, ImageVariantComparison, generate_image_variants(), compare_image_variants(), track_image_variant_win(), get_visual_patterns()
+- **Created:** `tests/test_generation/test_ab_image_variants.py` — 12 tests
+
+---
+
 ## P3-04: Image Style Transfer Experiments ✅
 
 ### Plain-English Summary
