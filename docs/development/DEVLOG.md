@@ -7,6 +7,27 @@
 
 ---
 
+## PA-09: Session Detail — Dashboard Integration ✅
+
+### Plain-English Summary
+- Backend: 7 dashboard API endpoints (`/sessions/{id}/summary`, `/cycles`, `/dimensions`, `/costs`, `/ads`, `/spc`) + `/competitive/summary`
+- All endpoints session-scoped with per-user isolation, reuse `output/export_dashboard.py` logic
+- Falls back to global `data/ledger.jsonl` when session-scoped ledger doesn't exist
+- Frontend: `SessionDetail` view with breadcrumb, session header (name, status badge, date, config), 7-tab navigation with URL persistence (`?tab=quality`)
+- 7 tabs: Overview (hero metrics), Quality (batch scores, distribution histogram), Ad Library (filterable ad list with expandable detail), Competitive Intel (frequency charts), Token Economics (cost by stage/model), Curated Set (placeholder for PA-10), System Health (SPC, confidence, compliance)
+- Dashboard API client (`src/api/dashboard.ts`) with typed fetch helpers
+- App router: `/sessions/:id` → real SessionDetail
+- 7 backend tests: summary, cycles, ads, 404 (nonexistent + other user), SPC, competitive
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-09
+- **Tests:** 7 (all passing, 52 total app tests)
+- **Files:** `app/api/routes/dashboard.py`, `app/api/main.py`, `src/views/SessionDetail.tsx`, `src/tabs/Overview.tsx`, `src/tabs/Quality.tsx`, `src/tabs/AdLibrary.tsx`, `src/tabs/CompetitiveIntel.tsx`, `src/tabs/TokenEconomics.tsx`, `src/tabs/CuratedSet.tsx`, `src/tabs/SystemHealth.tsx`, `src/api/dashboard.ts`, `tests/test_app/test_dashboard.py`
+
+---
+
 ## PA-07: Background Job Progress Reporting ✅
 
 ### Plain-English Summary
