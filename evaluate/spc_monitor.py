@@ -130,7 +130,7 @@ def detect_drift(ledger_path: str) -> DriftReport:
     batch_avgs: list[float] = []
     for event in events:
         outputs = event.get("outputs", {})
-        avg = outputs.get("batch_avg_score")
+        avg = outputs.get("batch_average", outputs.get("batch_avg_score"))
         if avg is not None:
             batch_avgs.append(float(avg))
 
@@ -187,7 +187,7 @@ def get_control_chart_data(ledger_path: str) -> ControlChartData:
     batch_avgs: list[float] = []
     for event in events:
         outputs = event.get("outputs", {})
-        avg = outputs.get("batch_avg_score")
+        avg = outputs.get("batch_average", outputs.get("batch_avg_score"))
         if avg is not None:
             batch_avgs.append(float(avg))
 

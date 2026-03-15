@@ -155,6 +155,52 @@ if (scoreTrendCtx) {{
     options: {{ responsive: true, plugins: {{ title: {{ display: true, text: 'Quality Score Trend with Ratchet Line' }} }} }}
   }});
 }}
+// Score Distribution chart
+var distCtx = document.getElementById('distributionChart');
+if (distCtx) {{
+  var distData = {json.dumps(trends.get("score_distribution", [0]*10))};
+  new Chart(distCtx, {{
+    type: 'bar',
+    data: {{
+      labels: ['0-1','1-2','2-3','3-4','4-5','5-6','6-7','7-8','8-9','9-10'],
+      datasets: [{{ label: 'Count', data: distData,
+        backgroundColor: distData.map(function(v, i) {{ return i >= 7 ? '#4CAF50' : i >= 5 ? '#FF9800' : '#F44336'; }}) }}]
+    }},
+    options: {{ responsive: true, plugins: {{ title: {{ display: true, text: 'Score Distribution (All Evaluations)' }} }},
+      scales: {{ y: {{ beginAtZero: true }} }} }}
+  }});
+}}
+// Publish Rate chart
+var pubCtx = document.getElementById('publishRateChart');
+if (pubCtx) {{
+  var pubLabels = {json.dumps([b["batch"] for b in batch_scores])};
+  var pubData = {json.dumps([b.get("publish_rate", 0) for b in batch_scores])};
+  new Chart(pubCtx, {{
+    type: 'bar',
+    data: {{
+      labels: pubLabels.map(function(b) {{ return 'Batch ' + b; }}),
+      datasets: [{{ label: 'Publish Rate', data: pubData.map(function(r) {{ return r * 100; }}),
+        backgroundColor: '#4CAF50' }}]
+    }},
+    options: {{ responsive: true, plugins: {{ title: {{ display: true, text: 'Publish Rate per Batch (%)' }} }},
+      scales: {{ y: {{ beginAtZero: true, max: 100 }} }} }}
+  }});
+}}
+// Cost per Batch chart
+var costCtx = document.getElementById('costBatchChart');
+if (costCtx) {{
+  var costLabels = {json.dumps([b["batch"] for b in batch_scores])};
+  var costData = {json.dumps([b.get("tokens", 0) for b in batch_scores])};
+  new Chart(costCtx, {{
+    type: 'bar',
+    data: {{
+      labels: costLabels.map(function(b) {{ return 'Batch ' + b; }}),
+      datasets: [{{ label: 'Tokens', data: costData, backgroundColor: '#2196F3' }}]
+    }},
+    options: {{ responsive: true, plugins: {{ title: {{ display: true, text: 'Token Cost per Batch' }} }},
+      scales: {{ y: {{ beginAtZero: true }} }} }}
+  }});
+}}
 function showChart(name) {{
   ['scoreTrend','distribution','publishRate','costBatch'].forEach(n => {{
     var el = document.getElementById('chart-' + n);

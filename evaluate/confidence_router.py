@@ -134,6 +134,7 @@ def get_confidence_stats(ledger_path: str) -> ConfidenceStats:
     Returns:
         ConfidenceStats with counts and percentages per routing level.
     """
+    # Try ConfidenceRouted events first; fall back to deriving from AdEvaluated
     events = read_events_filtered(ledger_path, event_type="ConfidenceRouted")
 
     counts = {
@@ -143,10 +144,45 @@ def get_confidence_stats(ledger_path: str) -> ConfidenceStats:
         BRAND_SAFETY_STOP: 0,
     }
 
-    for event in events:
-        level = event.get("outputs", {}).get("confidence_level", "")
-        if level in counts:
-            counts[level] += 1
+    if events:
+        for event in events:
+            level = event.get("outputs", {}).get("confidence_level", "")
+            if level in counts:
+                counts[level] += 1
+    else:
+        # Derive from AdEvaluated confidence flags
+        eval_events = read_events_filtered(ledger_path, event_type="AdEvaluated")
+        for event in eval_events:
+            outputs = event.get("outputs", {})
+            scores = outputs.get("scores", {})
+            flags = outputs.get("flags", [])
+
+            # Check for brand safety (score < 4 on any dimension)
+            has_brand_safety = any(
+                "floor_violation" in str(f) for f in flags
+            )
+            if has_brand_safety:
+                counts[BRAND_SAFETY_STOP] += 1
+                continue
+
+            # Compute avg confidence across dimensions
+            confidences = []
+            for dim_data in scores.values():
+                if isinstance(dim_data, dict):
+                    conf = dim_data.get("confidence")
+                    if isinstance(conf, (int, float)):
+                        confidences.append(conf)
+
+            if confidences:
+                avg_conf = sum(confidences) / len(confidences)
+                if avg_conf >= 7:
+                    counts[AUTONOMOUS] += 1
+                elif avg_conf >= 5:
+                    counts[FLAGGED] += 1
+                else:
+                    counts[HUMAN_REQUIRED] += 1
+            else:
+                counts[AUTONOMOUS] += 1  # No confidence data = trust it
 
     total = sum(counts.values())
 

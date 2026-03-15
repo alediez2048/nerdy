@@ -238,15 +238,21 @@ def _parse_evaluation_response(text: str, ad_id: str) -> dict[str, Any]:
 
     try:
         data = json.loads(stripped)
-    except json.JSONDecodeError as e:
-        logger.warning("Evaluator: malformed JSON, returning minimal result: %s", e)
-        return {
-            "ad_id": ad_id,
-            "structural_elements": {},
-            "scores": {d: {"score": 5.0, "rationale": "Parse error", "contrastive": "N/A", "confidence": 5} for d in DIMENSIONS},
-            "weakest_dimension": "clarity",
-            "flags": ["parse_error"],
-        }
+    except json.JSONDecodeError:
+        # Try to salvage: strip trailing commas before closing braces/brackets
+        salvaged = re.sub(r",\s*([}\]])", r"\1", stripped)
+        try:
+            data = json.loads(salvaged)
+            logger.info("Evaluator: salvaged malformed JSON after stripping trailing commas")
+        except json.JSONDecodeError as e:
+            logger.warning("Evaluator: malformed JSON, returning minimal result: %s", e)
+            return {
+                "ad_id": ad_id,
+                "structural_elements": {},
+                "scores": {d: {"score": 5.0, "rationale": "Parse error", "contrastive": "N/A", "confidence": 5} for d in DIMENSIONS},
+                "weakest_dimension": "clarity",
+                "flags": ["parse_error"],
+            }
 
     scores = data.get("scores", {})
     for dim in DIMENSIONS:

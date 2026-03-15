@@ -94,9 +94,16 @@ def _build_iteration_cycles(events: list[dict]) -> list[dict]:
         scores = first.get("outputs", {}).get("scores", {})
         weakest = "unknown"
         if scores:
+            def _dim_score(d: str) -> float:
+                val = scores.get(d, 10)
+                if isinstance(val, dict):
+                    return val.get("score", 10)
+                if isinstance(val, (int, float)):
+                    return val
+                return 10
             weakest = min(
                 (d for d in DIMENSIONS if d in scores),
-                key=lambda d: scores.get(d, 10) if isinstance(scores.get(d), (int, float)) else 10,
+                key=_dim_score,
                 default="unknown",
             )
 
@@ -119,14 +126,39 @@ def _build_quality_trends(events: list[dict]) -> dict:
     batch_events = [e for e in events if e.get("event_type") == "BatchCompleted"]
     batch_events.sort(key=lambda e: e.get("timestamp", ""))
 
+    # Also collect per-batch token costs
+    all_events = events  # full event list for token aggregation
+    batch_token_map: dict[int, int] = defaultdict(int)
+    current_batch = 0
+    for e in all_events:
+        if e.get("event_type") == "BatchCompleted":
+            current_batch = e.get("outputs", {}).get("batch_num", current_batch + 1)
+        batch_token_map[current_batch] += e.get("tokens_consumed", 0)
+
+    # Collect all evaluation scores for distribution
+    all_eval_scores: list[float] = []
+    for e in all_events:
+        if e.get("event_type") == "AdEvaluated":
+            agg = e.get("outputs", {}).get("aggregate_score")
+            if isinstance(agg, (int, float)) and agg > 0:
+                all_eval_scores.append(float(agg))
+
     batch_scores: list[dict] = []
     for i, e in enumerate(batch_events, 1):
         outputs = e.get("outputs", {})
-        avg = outputs.get("batch_avg_score", 0.0)
+        avg = outputs.get("batch_average", outputs.get("batch_avg_score", 0.0))
+        generated = outputs.get("generated", 0)
+        published = outputs.get("published", 0)
+        pub_rate = round(published / max(generated, 1), 2)
+        batch_num = outputs.get("batch_num", i)
         batch_scores.append({
-            "batch": outputs.get("batch_num", i),
+            "batch": batch_num,
             "avg_score": avg,
             "threshold": 7.0,
+            "published": published,
+            "generated": generated,
+            "publish_rate": pub_rate,
+            "tokens": batch_token_map.get(batch_num, 0),
         })
 
     # Ratchet history — compute monotonically increasing thresholds
@@ -140,9 +172,16 @@ def _build_quality_trends(events: list[dict]) -> dict:
             "threshold": round(current_max, 2),
         })
 
+    # Score distribution histogram (buckets: 1-2, 2-3, ..., 9-10)
+    distribution: list[int] = [0] * 10
+    for s in all_eval_scores:
+        bucket = min(int(s), 9)
+        distribution[bucket] += 1
+
     return {
         "batch_scores": batch_scores,
         "ratchet_history": ratchet_history,
+        "score_distribution": distribution,
     }
 
 
@@ -157,6 +196,8 @@ def _build_dimension_deep_dive(events: list[dict]) -> dict:
         scores = e.get("outputs", {}).get("scores", {})
         for dim in DIMENSIONS:
             val = scores.get(dim)
+            if isinstance(val, dict):
+                val = val.get("score")
             if isinstance(val, (int, float)):
                 dim_trends[dim].append(float(val))
 
@@ -170,6 +211,8 @@ def _build_dimension_deep_dive(events: list[dict]) -> dict:
             parsed: dict[str, float] = {}
             for dim in DIMENSIONS:
                 val = scores.get(dim)
+                if isinstance(val, dict):
+                    val = val.get("score")
                 if isinstance(val, (int, float)):
                     parsed[dim] = float(val)
             if len(parsed) == len(DIMENSIONS):
@@ -226,9 +269,18 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
         copy_source = regen_events[-1] if regen_events else gen
 
         copy_data = copy_source.get("outputs", {}) if copy_source else {}
-        scores = latest_eval.get("outputs", {}).get("scores", {}) if latest_eval else {}
+        raw_scores = latest_eval.get("outputs", {}).get("scores", {}) if latest_eval else {}
+        # Flatten nested score dicts to plain numbers for dashboard
+        scores: dict[str, float] = {}
+        rationale: dict[str, str] = {}
+        for dim in DIMENSIONS:
+            val = raw_scores.get(dim)
+            if isinstance(val, dict):
+                scores[dim] = val.get("score", 0)
+                rationale[dim] = val.get("rationale", "")
+            elif isinstance(val, (int, float)):
+                scores[dim] = float(val)
         aggregate = latest_eval.get("outputs", {}).get("aggregate_score", 0.0) if latest_eval else 0.0
-        rationale = latest_eval.get("outputs", {}).get("rationale", {}) if latest_eval else {}
         cycle_count = max((e.get("cycle_number", 0) for e in ad_events), default=1)
 
         library.append({
