@@ -7,6 +7,25 @@
 
 ---
 
+## PA-03: Google SSO Authentication ✅
+
+### Plain-English Summary
+- `app/api/routes/auth.py`: `POST /auth/google` verifies Google id_token, enforces `@nerdy.com` domain, upserts User, issues JWT. `GET /auth/me` returns current user from JWT.
+- `app/api/deps.py`: `get_current_user()` now validates JWT (Bearer token) in prod mode. DEV_MODE fallback when `GOOGLE_CLIENT_ID` is empty — accepts `X-User-Id` header or returns mock user.
+- `app/config.py`: Added `GOOGLE_CLIENT_ID`, `SECRET_KEY`, `JWT_EXPIRY_HOURS` settings
+- JWT: HS256, 24h expiry, contains user_id, email, name
+- Auth router registered at `/auth` in main.py
+- 11 tests: DEV_MODE fallback (2), JWT validation (5), domain check (1), JWT round-trip (1), user upsert (2)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-03
+- **Tests:** 11 (all passing)
+- **Files:** `app/api/routes/auth.py`, `app/api/deps.py`, `app/config.py`, `app/api/main.py`, `app/requirements.txt`, `tests/test_app/test_auth.py`
+
+---
+
 ## PA-02: Database Schema — Users & Sessions ✅
 
 ### Plain-English Summary

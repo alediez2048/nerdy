@@ -17,5 +17,8 @@ redis>=5.0.0,<6.0.0
 # Config
 pydantic-settings>=2.0.0,<3.0.0
 
+# Auth
+python-jose[cryptography]>=3.3.0,<4.0.0
+
 # SSE
 sse-starlette>=1.8.0,<2.0.0

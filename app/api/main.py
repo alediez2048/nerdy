@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import progress, sessions
+from app.api.routes import auth, progress, sessions
 from app.db import init_db
 
 
@@ -31,5 +31,6 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
 app.include_router(progress.router, prefix="/sessions", tags=["progress"])
