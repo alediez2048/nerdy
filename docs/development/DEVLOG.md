@@ -7,6 +7,23 @@
 
 ---
 
+## P4-07: Narrated Pipeline Replay ✅
+
+### Plain-English Summary
+- Event parser: converts all ledger event types into human-readable narratives
+- Covers: BriefExpanded, AdGenerated, AdEvaluated, AdRegenerated, AdPublished, AdDiscarded, BatchCompleted, VideoGenerated, VideoBlocked, AgentFailed, SelfHealingTriggered, ExplorationTriggered, PatternPromoted, BriefMutated + unknown fallback
+- Batch grouping: events organized between BatchCompleted markers with per-batch summary
+- Failures highlighted with [!] prefix; healing/explore/learn get special prefixes
+- Full replay: total summary with publish rate, failure count, token total
+- Text and Markdown formatters for console output and documentation
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 11 (all passing)
+- **Files:** `output/replay.py`, `tests/test_pipeline/test_replay.py`
+
+---
+
 ## P4-06: Full Marginal Analysis Engine ✅
 
 ### Plain-English Summary
