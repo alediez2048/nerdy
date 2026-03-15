@@ -7,6 +7,27 @@
 
 ---
 
+## PA-07: Background Job Progress Reporting ✅
+
+### Plain-English Summary
+- Backend: `publish_progress()` now buffers last 50 events in Redis list (5 min TTL) for Last-Event-ID replay on reconnect
+- Backend: SSE endpoint accepts JWT via `?token=` query param (EventSource can't send headers)
+- Backend: `Last-Event-ID` header support — replays missed events from buffer before streaming live
+- Backend: `get_buffered_events(session_id, after_id)` for replay logic
+- Frontend: `useSessionProgress(sessionId)` React hook — connects to SSE, parses progress events, tracks history, auto-reconnects with exponential backoff (max 3 retries)
+- Frontend: `createProgressStream()` helper attaches JWT token as query param
+- Frontend: `ProgressEvent` type matching backend schema
+- 7 backend tests: publish (channel + timestamp), summary cache (hit + miss), buffer replay, pipeline task status, event types
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-07
+- **Tests:** 7 (all passing)
+- **Files:** `app/workers/progress.py`, `app/api/routes/progress.py`, `src/hooks/useSessionProgress.ts`, `src/api/sse.ts`, `src/types/progress.ts`, `tests/test_app/test_progress.py`
+
+---
+
 ## PA-06: Session List UI (React) ✅
 
 ### Plain-English Summary
