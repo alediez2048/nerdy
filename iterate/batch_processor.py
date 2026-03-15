@@ -253,7 +253,7 @@ def _generate_and_select_image(
             "body": ad.primary_text,
             "cta": ad.cta_button,
         }
-        spec_dict = visual_spec.to_dict() if hasattr(visual_spec, "to_dict") else {
+        spec_dict = asdict(visual_spec) if hasattr(visual_spec, "__dataclass_fields__") else {
             "subject": getattr(visual_spec, "subject", "student"),
             "setting": getattr(visual_spec, "setting", "study environment"),
         }
