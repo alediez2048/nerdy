@@ -3,7 +3,7 @@
 **Author:** JAD
 **Project:** Autonomous Ad Copy Generation for FB/IG (Varsity Tutors SAT Prep)
 **Started:** March 11, 2026
-**Last Updated:** March 14, 2026
+**Last Updated:** March 15, 2026
 
 ---
 
@@ -36,6 +36,32 @@ This log documents my reasoning, trade-offs, failed experiments, and honest asse
 19. [P0-09 Competitive Data Collection — Thunderbit Over Claude in Chrome](#19-p0-09-competitive-data-collection--thunderbit-over-claude-in-chrome)
 20. [P0-05/P0-09 Scope Overlap — Real Ads Over Synthetic Data](#20-p0-05p0-09-scope-overlap--real-ads-over-synthetic-data)
 21. [P0-06 Evaluator Calibration v2→v3 — Prompt Tuning Against Real Ads](#21-p0-06-evaluator-calibration-v2v3--prompt-tuning-against-real-ads)
+22. [Why Simulated Performance Data Over Waiting for Real Data](#22-why-simulated-performance-data-over-waiting-for-real-data)
+
+**Formal ADRs — The 5 Ambiguous Elements**
+
+23. [ADR-01: Dimension Weighting](#adr-01-dimension-weighting)
+24. [ADR-02: Improvement Strategies](#adr-02-improvement-strategies)
+25. [ADR-03: Failure Handling](#adr-03-failure-handling)
+26. [ADR-04: Human-in-the-Loop Triggers](#adr-04-human-in-the-loop-triggers)
+27. [ADR-05: Context Management](#adr-05-context-management)
+
+**P1–P4 Architectural Decisions**
+
+28. [Evaluator Score Clustering — The Calibration Trap](#28-evaluator-score-clustering--the-calibration-trap)
+29. [Structural Diversity — Why All Ads Were Identical](#29-structural-diversity--why-all-ads-were-identical)
+30. [Multi-Modal Pipeline — Image Generation via Nano Banana Pro](#30-multi-modal-pipeline--image-generation-via-nano-banana-pro)
+31. [Video Pipeline — Graceful Degradation Over Hard Failure](#31-video-pipeline--graceful-degradation-over-hard-failure)
+32. [Agentic Orchestration — Bounded Agents Over Free-Form Chains](#32-agentic-orchestration--bounded-agents-over-free-form-chains)
+33. [Self-Healing — SPC + Brief Mutation + Ratchet as Closed Loop](#33-self-healing--spc--brief-mutation--ratchet-as-closed-loop)
+34. [Competitive Intelligence — Temporal Trends Over Static Snapshots](#34-competitive-intelligence--temporal-trends-over-static-snapshots)
+35. [Single-Variable A/B Testing — Causal Attribution Over Multivariate](#35-single-variable-ab-testing--causal-attribution-over-multivariate)
+
+**Narrative Reflections**
+
+36. [Failed Experiments — What I Tried and Abandoned](#36-failed-experiments--what-i-tried-and-abandoned)
+37. [What I'd Do Differently](#37-what-id-do-differently)
+38. [Biggest Surprises](#38-biggest-surprises)
 
 ---
 
@@ -433,4 +459,294 @@ I've committed to shared semantic brief expansion (R1-Q10) for text-image cohere
 
 ---
 
-*This is a living document. Entries will be added as the project progresses through P0-P5.*
+## 22. Why Simulated Performance Data Over Waiting for Real Data
+
+**Decision:** Built a full simulation infrastructure (PF-01 through PF-05) to demonstrate the closed-loop feedback architecture using synthetic performance data, rather than waiting for real Meta Ads performance metrics.
+
+**Why:** The closed loop (publish → measure → correlate → recalibrate → republish) is the most architecturally significant part of the system — it's what separates a "generate ads" tool from a "learn what works" engine. But real performance data requires:
+1. Published ads running on Meta with real budget
+2. A 72-hour minimum observation window per ad for CTR/CPA to stabilize
+3. Weeks for ROAS data to become meaningful
+4. Sufficient sample sizes (30+ ads with 100+ impressions each) for reliable correlation
+
+Within a 14-day project timeline, waiting for real data would mean the feedback loop architecture — the most important differentiator — would be entirely theoretical. We'd have a design document but no working code, no validated data flow, and no demonstration that the pieces actually fit together.
+
+**The honest trade-off:** Simulated data is synthetic. The correlations it produces are artifacts of the noise model, not discoveries about real ad performance. We are explicit about this throughout: the simulation exists to validate the architecture, not to produce actionable advertising insights.
+
+**What makes the simulation credible despite being synthetic:**
+
+The noise model is grounded in reality. The 30% copy-quality variance figure aligns with Meta's own published research showing creative quality accounts for 25-35% of ad performance variance. The remaining variance is attributed to targeting (40%), audience effects (20%), and temporal factors (10%). These proportions are reasonable enough that the downstream modules encounter realistic challenges: weak correlations, noisy signals, and the need for conservative recalibration.
+
+The 30% finding is the most important number in the simulation. It means the system's internal quality scores can never predict more than ~30% of real-world performance — and the simulation honestly reflects this. Precision@10 comes out around 0.4-0.5 (better than random but far from perfect), which is exactly what you'd expect with that signal-to-noise ratio.
+
+**What would change with real data:**
+
+The blend ratio in `weight_recalibrator.py` would shift from the current conservative 70/30 (prior/data) toward 90/10 (data/prior) as sample sizes grow. With real data and sufficient volume, the system should increasingly trust empirical correlations over expert priors. The architecture already supports this — the blend ratio is a parameter, not hardcoded logic. A production deployment would use a dynamic formula like `data_weight = min(0.9, n_ads / 100)` that automatically increases data trust as evidence accumulates.
+
+**Options considered:**
+- A: Wait for real data — architecturally complete but impossible within timeline
+- B: Mock data (random numbers) — fast but proves nothing about the pipeline
+- C: Simulation with explicit noise model (chosen) — demonstrates full data flow with honest, grounded synthetic data
+- D: Use historical performance data from a different brand — would require data access we don't have
+
+**What this enables:** The full feedback loop architecture document (`docs/deliverables/feedback_loop_architecture.md`) is backed by working code at every stage. A reviewer can trace data from `simulated_performance.py` through `performance_schema.py` → `performance_correlation.py` → `weight_recalibrator.py` → `accuracy_report.py` and verify that each transformation is correct, each event is logged, and each output is reasonable. That is a stronger deliverable than a design document with no implementation.
+
+---
+
+---
+
+## ADR-01: Dimension Weighting
+
+**Status:** Accepted
+**Context:** The assignment lists "Dimension weighting: How do you balance the 5 dimensions? Why?" as an intentionally ambiguous element. Equal weights are the obvious default, but they obscure critical failures.
+
+**Options Considered:**
+1. **Equal weights (20% each)** — Simple, fair, but an ad with Clarity 4.0 and Emotional Resonance 9.0 scores 6.8 aggregate — nearly publishable despite being fundamentally confusing.
+2. **Campaign-goal-adaptive weights with floors** — CTA weight swings from 10% (awareness) to 30% (conversion). Floor constraints: Clarity ≥ 6.0, Brand Voice ≥ 5.0.
+3. **Dynamic self-adjusting weights** — Weights shift based on recent performance data.
+
+**Decision:** Option 2. Two weight profiles (awareness: 25/20/10/20/25, conversion: 25/25/30/10/10) with hard floor constraints.
+
+**Consequences:** The 7.0 threshold means different things for awareness vs. conversion campaigns, but the floor constraints prevent the worst failure modes. Weight values are educated guesses — no real Meta Ads performance data to validate them. After the P1 pipeline run, I checked whether the weight profiles produced the ranking I'd expect. They did: conversion ads with weak CTAs scored lower despite high emotional resonance, which is the correct behavior.
+
+**What Surprised Me:** Equal weights actively hide problems. I tested this — an ad that was genuinely confusing scored 6.8 with equal weights because its emotional resonance was high. Floor constraints are not optional.
+
+**Where Assumptions Were Wrong:** I assumed I'd need to tune the specific weight values after seeing real data. In practice, the floor constraints matter far more than the exact percentages. An ad that violates a floor is rejected regardless of weights. The weights only differentiate ads in the "all floors passed" zone, where the differences are subtler.
+
+---
+
+## ADR-02: Improvement Strategies
+
+**Status:** Accepted
+**Context:** "Improvement strategies: Re-prompting? Chain-of-thought? Few-shot? What works?" — the assignment asks what iteration approach produces real quality gains.
+
+**Options Considered:**
+1. **Re-prompting with feedback** — "Your CTA scored 5.0, improve it." Simple but the model ignores constraints and regresses other dimensions.
+2. **Chain-of-thought evaluation + targeted regeneration** — CoT evaluation surfaces the specific gap, then regeneration targets that gap with contrastive rationale.
+3. **Few-shot with exemplars** — Include high-scoring ads as examples. Works for style but doesn't address structural weaknesses.
+
+**Decision:** Combination approach. CoT evaluation (5-step: Read → Decompose → Compare → Score → Flag) produces contrastive rationales that identify the specific gap. Regeneration uses Pareto selection across 3-5 variants rather than single-target improvement. Brief mutation addresses root causes when regeneration fails.
+
+**Consequences:** More tokens per cycle (5 variants × evaluation each), but fewer total cycles to converge. The contrastive rationale ("current: generic CTA 'Learn More'; +2 description: specific action 'Start your free practice test'") gives the generator a concrete target rather than a vague instruction.
+
+**What Surprised Me:** The biggest quality gains came not from better prompting but from better structural atom selection. When the generator used `question hook + problem-agitate-solution body` instead of `stat hook + direct body`, scores jumped 0.5-1.0 points consistently. The structural decomposition (Decision #13) turned out to be more impactful than any prompt engineering.
+
+**Where Assumptions Were Wrong:** I assumed re-prompting with specific feedback would work. It doesn't — LLMs treat "improve CTA while maintaining clarity" as "rewrite focusing on CTA." Constraint prompting is unreliable for multi-objective optimization. Pareto selection is the only approach that reliably prevents dimension regression.
+
+---
+
+## ADR-03: Failure Handling
+
+**Status:** Accepted
+**Context:** "Failure handling: When quality doesn't improve after N cycles, what happens?" — the assignment asks about the failure escalation path.
+
+**Options Considered:**
+1. **Hard cutoff at 3 attempts** — Discard after 3 cycles regardless of trajectory.
+2. **Diminishing returns threshold** — Stop when marginal gain < 0.3 points.
+3. **Brief mutation + escalation** — After 2 failures, mutate the brief targeting the weak dimension. After 3 total failures, escalate with diagnostics.
+
+**Decision:** Option 3. The key insight is that persistent failure usually means the brief is broken, not the generator. Mutating the brief is cheaper than more regeneration cycles and addresses the root cause.
+
+**Consequences:** 3 cycles × (up to 5 variants + 5 evaluations) = 30 API calls maximum per failed ad. This is the absolute ceiling. The P4-06 marginal analysis engine validates this empirically: average gain drops below 0.2 after cycle 2, confirming that cycle 3 is rarely worth the tokens. The auto-cap recommendation ("cap at 2 cycles") emerged from actual pipeline data.
+
+**What Surprised Me:** The brief mutation engine (P1-08) diagnoses the weakest dimension and prescribes targeted mutations. When Brand Voice was persistently low, injecting stronger brand context into the brief worked better than any amount of regeneration. The brief was the problem all along.
+
+**Where Assumptions Were Wrong:** I originally thought 3 cycles would be the sweet spot. The marginal analysis data shows cycle 2 captures most of the gains and cycle 3 is rarely worth it. In production, I'd default to 2 cycles and only allow a 3rd for ads scoring 6.5-7.0 (the "almost there" range).
+
+---
+
+## ADR-04: Human-in-the-Loop Triggers
+
+**Status:** Accepted
+**Context:** "Human-in-the-loop: When should a human intervene?" — the assignment asks about the boundary between autonomous operation and human oversight.
+
+**Options Considered:**
+1. **Threshold-based escalation** — Human reviews all ads scoring 6.5-7.5 (near threshold).
+2. **Confidence-gated autonomy** — Each evaluation includes a confidence score. High confidence (>7) → autonomous. Medium (5-7) → flagged. Low (<5) → requires human.
+3. **Anomaly-driven on 2σ** — Human reviews when batch scores deviate >2σ from rolling mean.
+
+**Decision:** Option 2, supplemented by brand safety thresholds. The evaluator's `confidence_flags` field (P1-04) identifies dimensions where the evaluator is uncertain. Ads with low-confidence dimensions are flagged for review rather than auto-published.
+
+**Consequences:** Most ads (confidence >7) flow through autonomously. The gray zone (5-7) concentrates human attention on genuinely ambiguous cases — ads where the evaluator isn't sure whether they meet the bar. This is more efficient than reviewing every near-threshold ad.
+
+**What Surprised Me:** The confidence signal is noisier than expected. Gemini's self-reported confidence doesn't always correlate with actual accuracy. A high-confidence wrong answer is worse than a low-confidence correct one. The SPC drift detection (P4-02) turned out to be a more reliable trigger for human intervention than per-ad confidence scores.
+
+**Where Assumptions Were Wrong:** I assumed confidence-gated autonomy would be the primary human-in-the-loop mechanism. In practice, the brand safety threshold (>30% batch failure rate) and SPC drift alerts are more actionable triggers. Per-ad confidence is useful for the individual ad decision, but batch-level anomalies are better at catching systematic problems that require human judgment.
+
+---
+
+## ADR-05: Context Management
+
+**Status:** Accepted
+**Context:** "Context management: What context does each generation/evaluation call see?" — the assignment asks how to manage growing context as iteration history accumulates.
+
+**Options Considered:**
+1. **Fixed-window (last 2 cycles)** — Simple but loses learning from earlier cycles.
+2. **Structured partitioning with rigid token budgets** — Allocate 500 tokens for history, 200 for instructions, etc. Rigid and wastes budget when sections are short.
+3. **Distilled context objects** — After each cycle, distill the full history into a compact object: best attempt, primary weakness, key strength to preserve, anti-patterns.
+
+**Decision:** Option 3. The generator doesn't need the journey — it needs the destination. A distilled context object costs ~150 tokens regardless of iteration depth, versus raw history that grows linearly.
+
+**Consequences:** Prompt size stays constant. Cycle 10 costs the same tokens as cycle 1. The distillation step itself costs one extra LLM call per cycle (~100 tokens input, ~50 tokens output), but this is a tiny fraction of the generation/evaluation cost it saves.
+
+**What Surprised Me:** The distillation step sometimes loses important nuance. "Brand Voice is the key strength" might lose the detail that "specifically, the parent-authoritative tone is working but the empathetic angle is weak." I compensated by including the contrastive rationale for the weakest dimension verbatim in the distilled object, which adds ~50 tokens but preserves the actionable detail.
+
+**Where Assumptions Were Wrong:** I assumed distilled context would be a clear win over raw history. For cycles 1-2, raw history is actually better — there isn't enough context to distill meaningfully, and the full history is still small. I'd implement a hybrid: raw history for cycles 1-2, distilled context for cycle 3+.
+
+---
+
+---
+
+## 28. Evaluator Score Clustering — The Calibration Trap
+
+**Decision:** Added granular mid-range calibration examples (6.2-8.3) and increased evaluation temperature from 0.2 to 0.4 to fix score clustering.
+
+**What happened:** After the initial P1 pipeline run, every ad scored exactly 7.0/6.0/8.0/7.0/7.0 across the five dimensions. The evaluator wasn't evaluating — it was pattern-matching to the coarsest calibration examples (scores of 3, 5, 7, 9). With temperature 0.2, the model stuck to the nearest anchor every time.
+
+**The fix:** Added calibration examples at 6.2, 6.8, 7.3, 7.8, 8.3 — the mid-range where most publishable ads live. Bumped temperature to 0.4 for more variance. After the fix, scores ranged from 6.2 to 7.8 per dimension with decimal granularity.
+
+**Lesson:** Calibration anchors define the output distribution. If your only examples are at round numbers, you get round numbers. The evaluator is only as granular as its references.
+
+---
+
+## 29. Structural Diversity — Why All Ads Were Identical
+
+**Decision:** Added seed-based shuffling and hook-type deduplication to atom selection.
+
+**What happened:** The first 50-ad run produced 50 variations of "Ace the SAT with Expert 1-on-1 Tutoring." Same hook, same body pattern, same CTA. The structural atom selector returned the top-N most relevant patterns for a given audience — but since all ads targeted the same audience, they all got the same top-N atoms.
+
+**The fix:** Per-brief seed-based shuffling of the atom pool before selection, plus hook-type deduplication (no two consecutive ads use the same hook type). Combined with stronger prompt instructions ("Do NOT use generic patterns like 'Ace the SAT'"), this produced genuinely diverse output.
+
+**Lesson:** Relevance ranking without diversity constraints produces monocultures. The most "relevant" pattern will dominate unless you force exploration. This is the same insight behind explore/exploit (P4-05) at a smaller scale.
+
+---
+
+## 30. Multi-Modal Pipeline — Image Generation via Nano Banana Pro
+
+**Decision:** Used Imagen 3 (Nano Banana Pro) for anchor image variants and Gemini 3.1 Flash Image (Nano Banana 2) for cost-tier variants. Budget override forces NB2 when remaining budget < $2.00.
+
+**Why:** Image quality matters for anchor variants (the hero creative), but for A/B testing composition or color shifts, the cheaper model produces sufficient quality. This mirrors the text-side Flash/Pro routing — spend more where marginal quality has the highest ROI.
+
+**What surprised me:** The shared semantic brief approach (text and image generation both reading from the same expanded brief) produced better text-image coherence than sequential generation with a separate image prompt. The brief acts as a contract between modalities.
+
+---
+
+## 31. Video Pipeline — Graceful Degradation Over Hard Failure
+
+**Decision:** Video failure (Veo API error, attribute check failure, coherence below threshold) results in image-only fallback, never blocking ad delivery.
+
+**Why:** Video is additive — it enhances an ad that already works as text+image. A video failure should not discard a publishable ad. The three-format assembler (P3-11) handles this: if video is absent, the ad gets Feed + Stories placements but not Reels.
+
+**Budget cap:** Max 3 videos per ad (2 initial variants + 1 targeted regen). At $0.15/sec × 6 seconds, that's ~$2.70 maximum video cost per ad. The pilot config (P3-13) enforces a $20/ad total budget including text + image + video.
+
+---
+
+## 32. Agentic Orchestration — Bounded Agents Over Free-Form Chains
+
+**Decision:** Four agents (Researcher → Writer → Evaluator → Editor) with bounded contracts and error containment, not free-form LLM chains.
+
+**Why:** Each agent has a typed `execute(input) -> AgentResult` interface with try/except error boundaries. An agent failure returns a failure result — it does NOT cascade to downstream agents. This prevents the "one bad prompt crashes the pipeline" problem that plagues unbounded chain architectures.
+
+**The Editor agent** is the decision-maker: publish (score meets threshold), regenerate (below threshold, cycles remaining), or discard (max cycles reached or floor violation). This concentrates the publish/reject decision in a single location with explicit criteria.
+
+**What I rejected:** LangChain-style free-form chains where each step decides what to do next. These are flexible but unpredictable — hard to test, hard to debug, and the token cost is opaque. Bounded agents are less clever but more reliable.
+
+---
+
+## 33. Self-Healing — SPC + Brief Mutation + Ratchet as Closed Loop
+
+**Decision:** Integrated SPC drift detection (P4-02), brief mutation (P1-08), and quality ratchet (P1-10) into a single self-healing orchestrator.
+
+**How it works:** SPC monitors batch score distributions against ±2σ control limits. When a breach is detected (mean shift for 3+ consecutive batches, monotonic trend for 5+ batches, or single outlier), the self-healing orchestrator diagnoses the weakest dimension and prescribes a targeted brief mutation. The quality ratchet ensures the threshold only rises.
+
+**Why this matters:** The system monitors its own health and intervenes before quality degrades visibly. A reviewer never needs to ask "why did quality drop?" — the system detects the drift, diagnoses the cause, and prescribes the fix.
+
+**Honest limitation:** SPC with small batch sizes (5-10 ads) has high natural variance. The ±2σ limits may fire false positives. In practice, requiring 3+ consecutive breaches before intervention filters out noise, but it also means slow drift takes longer to catch.
+
+---
+
+## 34. Competitive Intelligence — Temporal Trends Over Static Snapshots
+
+**Decision:** Added temporal awareness to the competitive pattern database (P4-03) with trend detection and strategy shift alerts.
+
+**Why:** A static competitive snapshot ("Chegg uses question hooks 40% of the time") is useful once. A temporal trend ("Chegg's question hook usage increased 15% over the last month") enables proactive strategy adjustment. The gap analysis identifies hook types with low coverage in our output, surfacing opportunities to differentiate.
+
+**Alert thresholds:** >15% distribution change = warning, >30% = action alert. These feed into the dashboard Panel 8 for human review.
+
+---
+
+## 35. Single-Variable A/B Testing — Causal Attribution Over Multivariate
+
+**Decision:** A/B variants change exactly ONE element (hook_type, emotional_angle, cta_style for copy; composition, color_palette, subject_framing for image).
+
+**Why:** Multivariate testing is more efficient but attribution is ambiguous. If you change the hook AND the CTA and the new version scores higher, which change helped? Single-variable isolation means every win is attributable to a specific structural element. The segment pattern tracker (P3-02) aggregates win rates per audience per element — this is structural learning that transfers across campaigns.
+
+**Trade-off:** 3 variants per element × 3 elements = 9 variants vs. a single multivariate batch. More tokens, but each insight is causal rather than correlational.
+
+---
+
+---
+
+## 36. Failed Experiments — What I Tried and Abandoned
+
+### Tried: "Be Harsh" in the Evaluator Prompt (P0-06 → Decision #21)
+**What:** Added "Be a critical evaluator. Do not give inflated scores." to the evaluation prompt.
+**What happened:** Systematic downward bias of 1-2 points. Excellent ads that should score 8+ scored 6.5. The evaluator became a pessimist, not a discriminator.
+**Lesson:** "Be harsh" is not a calibration instruction — it's a bias instruction. Use concrete score anchors instead.
+
+### Tried: Generic Structural Atoms (P1 Post-Completion)
+**What:** The initial pattern database had atoms like "engaging hook" and "strong CTA" without specifying the type.
+**What happened:** Every ad used the same "engaging" hook (which the model interpreted as a question) and the same "strong" CTA ("Learn More"). Zero diversity.
+**Lesson:** Structural atoms must be specific and typed. "question hook" vs. "stat hook" vs. "pain-point hook" produces diversity. "Engaging hook" produces repetition.
+
+### Tried: Exhaustive Compliance Regex (Early P1)
+**What:** 50+ regex patterns to catch every possible compliance violation.
+**What happened:** High false-positive rate. The regex `\$\d+` flagged "$0 down" (which is a valid claim with disclaimer). Maintaining the regex library took more time than the violations it caught.
+**Lesson:** Three-layer compliance is correct (prompt instruction + evaluator check + regex), but the regex layer should be surgical — catch obvious violations (guaranteed, 100%, competitor names in negative context) and let the evaluator handle nuance.
+
+### Tried: Full History as Regeneration Context (Early P1)
+**What:** Passed all previous cycle scores and feedback to the generator for regeneration.
+**What happened:** By cycle 3, the generator received contradictory feedback ("improve CTA" from cycle 1, "don't lose brand voice" from cycle 2, "clarity dipped" from cycle 3). Output quality degraded with more context, not less.
+**Lesson:** This directly motivated distilled context objects (ADR-05). The generator needs the destination, not the journey.
+
+---
+
+## 37. What I'd Do Differently
+
+### Build Token Tracking from Day One
+I deferred token tracking to P1-11, which means all P0 development has no cost data. I can't retroactively measure how much evaluator calibration cost, or whether my early prompt experiments were wasteful. In a redo, `tokens_consumed` would be a required field from the first API call.
+
+### Start with Real Ads, Not Synthetic Ones
+P0-05 initially created synthetic reference ads. These were replaced by real Meta Ad Library ads in P0-09. The synthetic ads were wasted effort — the evaluator calibrated differently against synthetic vs. real ads (Decision #21), and all the synthetic calibration work had to be redone. Starting with real ads would have saved a full iteration cycle.
+
+### Test the Evaluator on Generated Ads Earlier
+The evaluator was calibrated against reference ads (P0-06) but not tested against generated ads until P1 was complete. The score clustering issue (Decision #28) would have been caught immediately if I'd generated 5 test ads during P0 calibration. Calibrating against only reference ads creates a false sense of accuracy.
+
+### Invest More in Prompt Diversity Instructions
+The structural diversity fix (Decision #29) was a post-P1 patch. The root cause was that the generation prompt didn't explicitly demand diversity. Adding "Do NOT repeat hook types across ads in the same batch" to the prompt was a one-line fix that should have been there from the start.
+
+---
+
+## 38. Biggest Surprises
+
+### Evaluator Calibration Is the Hardest Problem
+I expected generation to be the hard part. It wasn't — Gemini Flash produces reasonable ad copy on the first try. The hard part was getting the evaluator to discriminate reliably between a 6.5 and a 7.5 ad. Four prompt iterations (v1 → v2 → v3 → v3.1) and three calibration runs before it worked. The assignment was right: "The taste problem."
+
+### Structural Atoms > Prompt Engineering
+The biggest quality gains came from the reference-decompose-recombine approach (Decision #13), not from better prompts. Telling the model "use a question hook with problem-agitate-solution body and trial CTA" produced better results than any amount of "write a compelling ad" instructions. Structure is a stronger lever than prose.
+
+### Temperature Doesn't Control What You Think It Controls
+Temperature 1.0 produces different words, not different ideas. All five high-temperature variants used the same hook type with different synonyms. Structural diversity requires structural instructions (different atoms per variant), not statistical randomness. This was genuinely counterintuitive.
+
+### SPC Is Overkill — Until It Isn't
+For 5 batches of 10 ads, the SPC control chart barely has enough data to compute meaningful limits. I almost cut it as over-engineering. But when the evaluator prompt was accidentally updated mid-run (during P1 post-completion tuning), SPC immediately flagged the batch as a mean-shift breach. It caught a real drift event that would have contaminated 20+ ads without detection. The investment paid for itself in one incident.
+
+### The Brief Is Usually the Problem
+When ads consistently fail to improve, the instinct is to blame the generator or the evaluator. In every case I investigated, the root cause was the brief — conflicting requirements, vague audience targeting, or a value proposition that doesn't map to specific copy. Brief mutation (ADR-03) addresses this, but I wish I'd built it earlier.
+
+### 560 Tests Is Both Too Many and Not Enough
+The test suite (560 tests, 559 passing) provides high confidence in module behavior but almost no confidence in end-to-end pipeline quality. Unit tests verify that `evaluate_ad()` returns valid JSON; they don't verify that the evaluator produces meaningful scores. The 1 failing test (golden set API test) is the only test that validates actual LLM behavior — and it's the most important one. More integration tests, fewer unit tests, would be my recommendation.
+
+---
+
+*This is a living document. Last major update: P5-07 (March 15, 2026) — added formal ADRs for the 5 ambiguous elements, P1-P4 architectural decisions, and narrative reflections.*

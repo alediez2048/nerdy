@@ -7,6 +7,40 @@
 
 ---
 
+## P5-08: Technical Writeup ✅
+
+### Plain-English Summary
+- Filled in `docs/deliverables/writeup.md` with real content (was skeleton with placeholders)
+- 6 sections: Architecture Overview, Methodology, Key Findings, Quality Trends, Performance Per Token, Limitations
+- Concise 1-2 page format targeting a technical reviewer with 10 minutes
+- References specific numbers: 89.5% calibration accuracy, 40% publish rate, 560 tests, cycle gain curves
+- Honest limitations: no real performance data, CTA diversity weakness, cold-start dependency, evaluator boundary clustering
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** P5-08
+- **Files:** `docs/deliverables/writeup.md`
+
+---
+
+## P5-07: Decision Log Extension ✅
+
+### Plain-English Summary
+- Extended `docs/deliverables/decisionlog.md` from 22 entries to 38 entries
+- Added 5 formal ADR entries for the ambiguous elements: dimension weighting (ADR-01), improvement strategies (ADR-02), failure handling (ADR-03), human-in-the-loop (ADR-04), context management (ADR-05)
+- Added 8 P1-P4 architectural decisions: score clustering fix, structural diversity, multi-modal pipeline, video graceful degradation, agentic orchestration, self-healing, competitive trends, single-variable A/B testing
+- Added 3 narrative reflection sections: Failed Experiments (4 entries), What I'd Do Differently (4 entries), Biggest Surprises (6 entries)
+- Every ADR includes: options considered, decision, consequences, what surprised me, where assumptions were wrong
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** P5-07
+- **Files:** `docs/deliverables/decisionlog.md`
+
+---
+
 ## P4-07: Narrated Pipeline Replay ✅
 
 ### Plain-English Summary
