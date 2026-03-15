@@ -7,6 +7,27 @@
 
 ---
 
+## P3-04: Image Style Transfer Experiments ✅
+
+### Plain-English Summary
+- Defined 5 style presets (photorealistic, illustrated, flat_design, lifestyle, editorial) with prompt modifiers
+- Style experiment runner generates same scene in each style, evaluates, and ranks by composite score
+- Aggregation computes average composite per audience per style across all experiments
+- Style-audience mapping picks best style per audience with confidence based on sample size
+- Fallback to photorealistic when insufficient data
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-04
+
+### Files Changed
+- **Created:** `generate/style_library.py` — STYLE_PRESETS, StylePreset, StyleAudienceMap, apply_style_to_spec(), build_style_audience_map(), get_recommended_style()
+- **Created:** `generate/style_experiments.py` — StyleExperimentResult, aggregate_style_results()
+- **Created:** `tests/test_generation/test_style_experiments.py` — 10 tests
+
+---
+
 ## P3-02: Single-Variable A/B Variants — Copy ✅
 
 ### Plain-English Summary
