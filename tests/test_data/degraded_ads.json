@@ -1,0 +1,147 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-03-14",
+    "methodology": "3 excellent ads from golden_ads.json, each degraded across 5 dimensions (one at a time). 15 degraded variants total. Used for P2-01 inversion tests.",
+    "source": "golden_ads.json (ref_vt_01, ref_vt_05, ref_vt_07)"
+  },
+  "originals": [
+    {
+      "ad_id": "ref_vt_01",
+      "primary_text": "Her SAT Score Jumped 360 Points! 📈 From 1010 to 1370 in Just 2 Months 🎓 📈 \"My daughter's SAT score jumped from 1010 to 1370 in just 2 months with Varsity Tutors' 1:1 tutoring.\" \"She uses her sessions for SAT prep --- and sometimes even for her AP classes when she needs extra help. I love that we can schedule each week around her busy school schedule.\" If your child is aiming for a great college, this program is a game changer. 👉 Fill out the quick form, and an SAT-prep expert will call right away to match your child with the right tutor. Learn More",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.4,
+        "cta": 7.0,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.4
+      }
+    },
+    {
+      "ad_id": "ref_vt_05",
+      "primary_text": "🔥 When honors students suddenly crash in AP Calculus, parents panic.But here's what most don't know: It's not about intelligence. It's about the massive jump from Algebra to limits and derivatives.✅ AP Calculus specialists (not general tutors)✅ Same-week start available✅ Typical improvement: 2 letter grades in 6 weeks✅ Cancel anytimeVarsity Tutors: 15+ years helping families through exactly this crisis. We've seen the calculus wall before -- and know exactly how to break through it.Get matched with an expert today.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.0,
+        "cta": 7.0,
+        "brand_voice": 8.4,
+        "emotional_resonance": 7.4
+      }
+    },
+    {
+      "ad_id": "ref_vt_07",
+      "primary_text": "Picture this: Your child walks into their May SAT confident, prepared, and ready to show colleges who they really are. ✨Not because they crammed with Khan Academy or sat through generic group classes.Because they had 16 focused sessions with a real human tutor who knew exactly what they needed to work on.**2 sessions per week. Digital practice that mirrors test day. 200-point improvements in 8 weeks.**While other parents stress about whether their child is \"ready,\" you'll have data showing steady progress: 1200→1250→1300→1400.Your child gets:🎯 A tutor matched specifically to how they learn📊 Weekly progress tracking (no guessing if it's working)💻 Training on the actual digital SAT interface🚫 Cancel anytime - no long commitmentsFor what Princeton Review charges for group courses ($1,500-2,000), you get 1:1 attention focused entirely on your child's gaps.Because your smart child shouldn't be held back by a test score that doesn't reflect their true ability.",
+      "headline": "—",
+      "description": "—",
+      "cta_button": "—",
+      "campaign_goal": "conversion",
+      "human_scores": {
+        "clarity": 8.4,
+        "value_proposition": 8.4,
+        "cta": 6.0,
+        "brand_voice": 7.4,
+        "emotional_resonance": 7.4
+      }
+    }
+  ],
+  "degraded": [
+    {
+      "original_id": "ref_vt_01",
+      "degraded_dimension": "clarity",
+      "degraded_text": "So there's this thing where like, scores can go up and it happened, it was a lot of points actually, and the tutoring was involved somehow with things going well and there were sessions that could be scheduled and also other subjects were part of it too maybe, and if you're thinking about colleges which is a whole other thing entirely but related in some ways to test scores depending on what you look at, then there's a form somewhere you could probably fill out and someone might get in touch about matching or something along those lines eventually.",
+      "expected_drop_dimension": "clarity"
+    },
+    {
+      "original_id": "ref_vt_01",
+      "degraded_dimension": "value_proposition",
+      "degraded_text": "We Help Students! 📈 Our tutoring program is really good 🎓 📈 \"My daughter used a tutoring service and it was nice.\" \"She goes to sessions sometimes. It's flexible.\" If your child wants to do well, this could help. 👉 Fill out the quick form, and someone will call right away to help your child. Learn More",
+      "expected_drop_dimension": "value_proposition"
+    },
+    {
+      "original_id": "ref_vt_01",
+      "degraded_dimension": "cta",
+      "degraded_text": "Her SAT Score Jumped 360 Points! 📈 From 1010 to 1370 in Just 2 Months 🎓 📈 \"My daughter's SAT score jumped from 1010 to 1370 in just 2 months with Varsity Tutors' 1:1 tutoring.\" \"She uses her sessions for SAT prep --- and sometimes even for her AP classes when she needs extra help. I love that we can schedule each week around her busy school schedule.\" If your child is aiming for a great college, this program is a game changer. Maybe check out our website sometime if you feel like it, or don't, whatever works for you really.",
+      "expected_drop_dimension": "cta"
+    },
+    {
+      "original_id": "ref_vt_01",
+      "degraded_dimension": "brand_voice",
+      "degraded_text": "🍔 BOOM! SAT scores EXPLODED by 360 points!! From 1010 to 1370 BABY!! 🔥🔥🔥 \"My kid CRUSHED IT with these tutors yo!\" \"She uses the sessions for whatever she wants lol. The scheduling is fire no cap fr fr.\" If your kid wants to get into a SICK college, this program SLAPS. 👉 SMASH that form button and we'll HIT YOU UP with a tutor ASAP!! LET'S GOOOOO",
+      "expected_drop_dimension": "brand_voice"
+    },
+    {
+      "original_id": "ref_vt_01",
+      "degraded_dimension": "emotional_resonance",
+      "degraded_text": "SAT score increased by 360 points. From 1010 to 1370 in 2 months. Tutoring was provided on a 1:1 basis. Sessions available for SAT preparation and AP classes. Scheduling is flexible on a weekly basis. Program available for college-bound students. Form available online. SAT prep expert will contact to arrange tutor matching.",
+      "expected_drop_dimension": "emotional_resonance"
+    },
+    {
+      "original_id": "ref_vt_05",
+      "degraded_dimension": "clarity",
+      "degraded_text": "🔥 So calculus is hard and students have trouble with it sometimes when they get to the advanced placement level because of various mathematical concepts that are different from what they learned before, and there are specialists but also general tutors and the difference matters or maybe it doesn't depending on the situation, and improvement can happen in some timeframe with certain conditions, and the company has been around for a while doing things related to education and tutoring in general and specifically for this type of situation or others.",
+      "expected_drop_dimension": "clarity"
+    },
+    {
+      "original_id": "ref_vt_05",
+      "degraded_dimension": "value_proposition",
+      "degraded_text": "🔥 When honors students suddenly crash in AP Calculus, parents panic. But here's what most don't know: It's not about intelligence. It's about the massive jump from Algebra to limits and derivatives. ✅ We have tutors ✅ You can start soon ✅ Students may improve ✅ Flexible options. We've been around for a while. We can help with things. Get in touch.",
+      "expected_drop_dimension": "value_proposition"
+    },
+    {
+      "original_id": "ref_vt_05",
+      "degraded_dimension": "cta",
+      "degraded_text": "🔥 When honors students suddenly crash in AP Calculus, parents panic. But here's what most don't know: It's not about intelligence. It's about the massive jump from Algebra to limits and derivatives. ✅ AP Calculus specialists (not general tutors) ✅ Same-week start available ✅ Typical improvement: 2 letter grades in 6 weeks ✅ Cancel anytime. Varsity Tutors: 15+ years helping families through exactly this crisis. We've seen the calculus wall before -- and know exactly how to break through it. You could look into this further on your own if you want to maybe at some point.",
+      "expected_drop_dimension": "cta"
+    },
+    {
+      "original_id": "ref_vt_05",
+      "degraded_dimension": "brand_voice",
+      "degraded_text": "YO CALCULUS IS BRUTAL!! 🔥🔥 When your brainy kid TOTALLY TANKS in calc, you're freaking OUT right?? Here's the TEA: it ain't about being smart or dumb lmao. It's just that algebra and derivatives are like TOTALLY different vibes. We got calc specialists who absolutely DESTROY that learning curve!! Start like THIS WEEK. Your kid gonna go UP 2 whole letter grades in 6 weeks NO CAP. Cancel whenever you want we don't care. We been doing this for like 15 years or whatever. YOLO just get matched with someone today bruh!!",
+      "expected_drop_dimension": "brand_voice"
+    },
+    {
+      "original_id": "ref_vt_05",
+      "degraded_dimension": "emotional_resonance",
+      "degraded_text": "AP Calculus presents challenges for some students transitioning from Algebra. The subject covers limits and derivatives. Available services include: AP Calculus specialist tutors (not general tutors), same-week start, typical improvement of 2 letter grades in 6 weeks, cancellation at any time. The tutoring company has 15+ years of experience. Expert matching is available.",
+      "expected_drop_dimension": "emotional_resonance"
+    },
+    {
+      "original_id": "ref_vt_07",
+      "degraded_dimension": "clarity",
+      "degraded_text": "Think about something, like maybe your kid going to take a test at some point and they'd be in a certain state of mind about it, and it wasn't from one approach but rather another approach that involved someone helping them with things over multiple sessions that focused on what needed to be worked on, and there are numbers that could change over time going up, and there are various features of the service including people being matched and tracking and interfaces and cancellation policies, and the cost compares to something else in some way, and the underlying point is about potential and test scores and ability.",
+      "expected_drop_dimension": "clarity"
+    },
+    {
+      "original_id": "ref_vt_07",
+      "degraded_dimension": "value_proposition",
+      "degraded_text": "Picture this: Your child walks into their May SAT confident, prepared, and ready to show colleges who they really are. ✨ Not because they crammed or sat through generic classes. Because they had help from a tutoring service. Some sessions over some weeks. Improvements are possible. While other parents stress, you'll feel better. Your child gets: 🎯 A tutor 📊 Some kind of tracking 💻 Practice 🚫 Cancel anytime. Tutoring is available at a cost. Because your child deserves support.",
+      "expected_drop_dimension": "value_proposition"
+    },
+    {
+      "original_id": "ref_vt_07",
+      "degraded_dimension": "cta",
+      "degraded_text": "Picture this: Your child walks into their May SAT confident, prepared, and ready to show colleges who they really are. ✨ Not because they crammed with Khan Academy or sat through generic group classes. Because they had 16 focused sessions with a real human tutor who knew exactly what they needed to work on. **2 sessions per week. Digital practice that mirrors test day. 200-point improvements in 8 weeks.** While other parents stress about whether their child is \"ready,\" you'll have data showing steady progress: 1200→1250→1300→1400. Your child gets: 🎯 A tutor matched specifically to how they learn 📊 Weekly progress tracking (no guessing if it's working) 💻 Training on the actual digital SAT interface 🚫 Cancel anytime - no long commitments. For what Princeton Review charges for group courses ($1,500-2,000), you get 1:1 attention focused entirely on your child's gaps. Anyway, that's the general idea if you're interested or not.",
+      "expected_drop_dimension": "cta"
+    },
+    {
+      "original_id": "ref_vt_07",
+      "degraded_dimension": "brand_voice",
+      "degraded_text": "AYO picture this fam: Your kid WALKS IN to that SAT like a BOSS, ready to FLEX on those colleges!! 💪🔥 Not because they were grinding on Khan Academy like a normie. Because they had 16 INSANE sessions with a tutor who was absolutely GOATED. **2 seshes per week. Digital practice that HITS DIFFERENT. 200-point glow-ups in 8 weeks.** While other parents are having a whole meltdown about their kid being \"ready,\" you'll be CHILLING with the receipts: 1200→1250→1300→1400. Your kid gets: 🎯 A tutor who's literally their perfect match 📊 Progress tracking so you don't have to stress 💻 Training on the real SAT interface. Princeton Review charging $1,500-2,000 for GROUP classes?? LMAOOO you get 1:1 attention for way less. Because your kid is a LEGEND and no test should hold them back!! 🙌",
+      "expected_drop_dimension": "brand_voice"
+    },
+    {
+      "original_id": "ref_vt_07",
+      "degraded_dimension": "emotional_resonance",
+      "degraded_text": "SAT preparation is available. 16 sessions with a tutor are provided. Sessions occur 2 times per week. Digital practice platform is available. Score improvements of approximately 200 points may occur in 8 weeks. Progress tracking is included. Tutors are matched based on learning style. Training uses the digital SAT interface. Cancellation is available at any time with no commitment. Pricing compares favorably to group courses ($1,500-2,000). 1:1 attention is focused on identified knowledge gaps.",
+      "expected_drop_dimension": "emotional_resonance"
+    }
+  ]
+}

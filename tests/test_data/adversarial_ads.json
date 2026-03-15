@@ -1,0 +1,75 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-03-14",
+    "methodology": "Hand-crafted adversarial ads designed to probe dimension boundaries. Each targets a specific evaluator weakness. Used for P2-03 boundary tests.",
+    "source": "Manual creation based on PRD R2-Q3 adversarial test requirements"
+  },
+  "ads": [
+    {
+      "ad_id": "adv_wrong_brand_voice",
+      "ad_text": "🍔 HUNGRY FOR SCORES?? MEGA SAT DEAL!! Two-for-one tutoring sessions! Supersize your kid's score! Rush in NOW before seats run out!!! Drive-thru signup — no waiting! GRAB THIS COMBO DEAL before the lunch rush!! 🔥🔥🔥 Would you like fries with that tutoring?? GET IT WHILE IT'S HOT!!",
+      "boundary_being_tested": "Wrong brand voice with decent content structure",
+      "expected_failures": ["brand_voice"],
+      "expected_passes": [],
+      "failure_threshold": 3.0
+    },
+    {
+      "ad_id": "adv_high_clarity_zero_emotion",
+      "ad_text": "SAT preparation tutoring service. Format: 1-on-1 online sessions. Duration: 60 minutes per session. Frequency: 2 sessions per week. Scheduling: available Monday through Saturday. Platform: online via video call. Subject coverage: Math and Reading/Writing. Contact method: website form submission. Provider: Varsity Tutors.",
+      "boundary_being_tested": "High clarity but zero emotional engagement",
+      "expected_failures": ["emotional_resonance"],
+      "expected_passes": ["clarity"],
+      "failure_threshold": 4.0,
+      "pass_threshold": 6.0
+    },
+    {
+      "ad_id": "adv_pure_manipulation",
+      "ad_text": "Every parent dreams of that magical moment. Your child, standing tall, acceptance letter in hand. Tears of joy streaming down. Years of sacrifice, finally worth it. The pride that fills your heart when they achieve what you always knew they could. Don't let that dream slip away. Don't be the parent who looks back and wonders 'what if.' This feeling — this moment — is within reach. Your child deserves this. YOU deserve this.",
+      "boundary_being_tested": "Pure emotional manipulation with no substance or value proposition",
+      "expected_failures": ["value_proposition", "cta"],
+      "expected_passes": [],
+      "failure_threshold": 4.0
+    },
+    {
+      "ad_id": "adv_competitor_branding",
+      "ad_text": "Princeton Review's expert tutors guarantee 200+ point SAT improvement. Our proven Kaplan-style methodology combines the best of Khan Academy's free resources with Chegg's homework help approach. Unlike Sylvan Learning's outdated centers, we offer modern online prep. Sign up for Princeton Review's SAT course today — the gold standard in test preparation.",
+      "boundary_being_tested": "Competitor branding — should fail brand voice for Varsity Tutors",
+      "expected_failures": ["brand_voice"],
+      "expected_passes": [],
+      "failure_threshold": 3.0
+    },
+    {
+      "ad_id": "adv_aggressive_cta_no_value",
+      "ad_text": "SIGN UP NOW! DON'T WAIT! LIMITED SPOTS AVAILABLE! ACT TODAY! CLICK HERE! ENROLL IMMEDIATELY! TIME IS RUNNING OUT! LAST CHANCE! REGISTER NOW! HURRY! SPOTS FILLING FAST! DON'T MISS OUT! SIGN UP SIGN UP SIGN UP!",
+      "boundary_being_tested": "Aggressive CTA spam with no value proposition or clarity",
+      "expected_failures": ["value_proposition", "clarity"],
+      "expected_passes": [],
+      "failure_threshold": 3.0
+    },
+    {
+      "ad_id": "adv_jargon_overload",
+      "ad_text": "Leveraging proprietary metacognitive scaffolding algorithms, our pedagogical framework optimizes neuroplasticity-driven retention curves through adaptive spaced-repetition protocols. Our psychometrically-validated assessment matrices employ Bloom's taxonomy-aligned rubric decomposition to quantify epistemological growth vectors across standardized testing modalities. Synergistic integration of Vygotskian ZPD calibration with Bayesian knowledge-state estimation delivers measurably superior learning outcomes.",
+      "boundary_being_tested": "Technical jargon that sounds impressive but communicates nothing clearly",
+      "expected_failures": ["clarity"],
+      "expected_passes": [],
+      "failure_threshold": 4.0
+    },
+    {
+      "ad_id": "adv_compliance_violation",
+      "ad_text": "GUARANTEED 1600 SAT score or 100% money back! Every single student who uses our program scores a perfect 1600 — we have NEVER failed! 100% success rate guaranteed. Your child WILL get a perfect score, absolutely guaranteed, no exceptions. This is a promise we always keep.",
+      "boundary_being_tested": "Compliance violation — absolute guarantees and unverified claims",
+      "expected_failures": ["brand_voice", "value_proposition"],
+      "expected_passes": [],
+      "failure_threshold": 4.0
+    },
+    {
+      "ad_id": "adv_empty_minimal",
+      "ad_text": "Tutoring.",
+      "boundary_being_tested": "Minimal content — all dimensions should score low",
+      "expected_failures": ["clarity", "value_proposition", "cta", "brand_voice", "emotional_resonance"],
+      "expected_passes": [],
+      "failure_threshold": 4.0
+    }
+  ]
+}
