@@ -7,6 +7,65 @@
 
 ---
 
+## P3-07: Veo Integration + Video Spec Extraction ✅
+
+### Plain-English Summary
+- Integrated Veo 3.1 Fast API client with rate limiting and retry
+- Video spec extraction from expanded brief — grounded in brief facts
+- 2 video variants per ad (anchor + alternative with different scene/pacing)
+- Graceful degradation: video failure never blocks ad delivery
+- Full ledger logging for checkpoint-resume
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-07
+
+### Files Changed
+- **Created:** `generate_video/` package (video_spec.py, veo_client.py, orchestrator.py)
+- **Created:** `tests/test_pipeline/test_video_generation.py` — 9 tests
+
+---
+
+## P3-06: Multi-Aspect-Ratio Batch Generation ✅
+
+### Plain-English Summary
+- Generates 1:1, 4:5, 9:16 aspect ratios for published ads' winning images
+- Uses NB2 (cost tier) for all ratio variants
+- Checkpoint-resume via skip_existing_ratios()
+- Failed ratios tracked separately — graceful inclusion of passing ratios
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-06
+
+### Files Changed
+- **Created:** `generate/aspect_ratio_batch.py` — AspectRatioResult, AspectRatioBatchResult, generate_aspect_ratios(), skip_existing_ratios(), generate_batch_aspect_ratios()
+- **Created:** `tests/test_pipeline/test_aspect_ratio_batch.py` — 8 tests
+
+---
+
+## P3-05: Multi-Model Orchestration Doc ✅
+
+### Plain-English Summary
+- Created architecture document explaining model routing across text, image, and video
+- Implemented cross-format cost reporter with USD estimation per model/format/task
+- MODEL_COST_RATES for all 5 models, per-call pricing for image/video
+- 50-ad batch cost projection: ~$15.71 (text+image), ~$84.87 (with video)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-05
+
+### Files Changed
+- **Created:** `docs/deliverables/model_orchestration.md` — full architecture doc
+- **Created:** `evaluate/cost_reporter.py` — CrossFormatCostReport, generate_cost_report(), format_cost_report()
+- **Created:** `tests/test_pipeline/test_cost_reporter.py` — 8 tests
+
+---
+
 ## P3-03: Single-Variable A/B Variants — Image ✅
 
 ### Plain-English Summary
