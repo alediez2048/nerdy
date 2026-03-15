@@ -7,6 +7,54 @@
 
 ---
 
+## P4-06: Full Marginal Analysis Engine ✅
+
+### Plain-English Summary
+- Per-ad marginal gains: score delta and tokens per regen cycle, diminishing returns detection
+- Aggregate analysis across all ads: avg gain per cycle, avg tokens per cycle
+- Per-dimension breakdown: which dimensions benefit most from regen (e.g., "VP improves +1.0 on cycle 1, +0.2 on cycle 2")
+- Auto-cap: recommends max_cycles where avg gain drops below 0.2 threshold
+- Dashboard data for Panel 6: gain curve, token spend, dimension breakdown, recommendation with reasoning
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 8 (all passing)
+- **Files:** `iterate/marginal_analysis.py`, `tests/test_pipeline/test_marginal_analysis.py`
+
+---
+
+## P4-05: Performance-Decay Exploration Trigger ✅
+
+### Plain-English Summary
+- Plateau detection: reads BatchCompleted scores, checks if improvement < 0.1 for 3+ consecutive batches
+- Strategy selection: prioritizes untested hooks, then rotates emotional angles
+- Exploration result with baseline comparison and improvement tracking
+- Pattern promotion: successful explorations (improvement > 0.2) can be promoted to proven library
+- Orchestrator: detect plateau → select strategy → explore → return result (None if no plateau)
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 8 (all passing)
+- **Files:** `iterate/explore_exploit.py`, `tests/test_pipeline/test_explore_exploit.py`
+
+---
+
+## P4-04: Cross-Campaign Transfer ✅
+
+### Plain-English Summary
+- campaign_scope classification: structural patterns (hook_type, cta_style, emotional_angle, etc.) = universal; content (claims, pricing, testimonials) = campaign-specific
+- PatternLibrary: in-memory store with add/get/save/load, filtered by scope and audience
+- Universal patterns transfer across campaigns; campaign-specific patterns isolated
+- Transfer recommendations: ranked by win rate, min sample size >= 3
+- JSON persistence for pattern library
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 8 (all passing)
+- **Files:** `iterate/campaign_transfer.py`, `tests/test_pipeline/test_campaign_transfer.py`
+
+---
+
 ## P4-03: Competitive Intelligence — Trends + Alerts ✅
 
 ### Plain-English Summary
