@@ -7,6 +7,33 @@
 
 ---
 
+## PA-10: Curation Layer + Curated Set Tab ✅
+
+### Plain-English Summary
+- Backend: Full curation CRUD API at `/sessions/{id}/curated/*`
+  - POST create set, GET set with ads, POST add ad, DELETE remove ad, PATCH update (position/annotation/edited_copy), POST batch reorder
+  - GET export → streaming ZIP with summary.json, manifest.csv, per-ad folders with copy.json + metadata.json
+  - Diff tracking: edited_copy stores `{ "field": { "original": "...", "edited": "..." } }`
+  - Per-user isolation on all endpoints
+- Frontend: Full CuratedSet tab replacing placeholder
+  - Empty state with "Create Curated Set" button
+  - Ad list with position numbers, up/down reorder arrows, annotation input, edit button, remove button
+  - Light edit modal with textarea and save/discard
+  - "Export Meta-Ready ZIP" download link
+  - Count indicator ("5 ads curated")
+- Pydantic schemas: CuratedSetCreate, CuratedAdAdd, CuratedAdUpdate, BatchReorder, responses
+- Curation API client (frontend): getCuratedSet, createCuratedSet, addAdToCurated, removeAdFromCurated, updateCuratedAd, batchReorder, getExportUrl
+- 10 backend tests: create (+ idempotent), add (+ duplicate), remove, annotate, edit diff tracking, batch reorder, per-user isolation, ZIP export
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-10
+- **Tests:** 10 (all passing, 62 total app tests)
+- **Files:** `app/api/routes/curation.py`, `app/api/schemas/curation.py`, `app/api/main.py`, `src/tabs/CuratedSet.tsx`, `src/api/curation.ts`, `src/views/SessionDetail.tsx`, `tests/test_app/test_curation.py`
+
+---
+
 ## PA-09: Session Detail — Dashboard Integration ✅
 
 ### Plain-English Summary

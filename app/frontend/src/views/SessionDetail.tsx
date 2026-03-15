@@ -102,7 +102,7 @@ export default function SessionDetail() {
         {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} />}
         {activeTab === 'competitive' && <CompetitiveIntel />}
         {activeTab === 'costs' && <TokenEconomics sessionId={sessionId!} />}
-        {activeTab === 'curated' && <CuratedSet />}
+        {activeTab === 'curated' && <CuratedSet sessionId={sessionId!} />}
         {activeTab === 'health' && <SystemHealth sessionId={sessionId!} />}
       </div>
     </div>
