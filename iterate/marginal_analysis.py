@@ -101,17 +101,29 @@ def compute_marginal_gains(ledger_path: str, ad_id: str) -> RegenEfficiency:
     total_tokens = 0
     diminishing_at: int | None = None
 
-    for i in range(1, len(eval_events)):
-        prev_score = eval_events[i - 1].get("outputs", {}).get("aggregate_score", 0.0)
-        curr_score = eval_events[i].get("outputs", {}).get("aggregate_score", 0.0)
-        tokens = eval_events[i].get("tokens_consumed", 0)
+    # Group evaluations by cycle_number, take best score per cycle
+    cycle_scores: dict[int, tuple[float, int]] = {}  # cycle -> (best_score, tokens)
+    for e in eval_events:
+        cycle = e.get("cycle_number", 0)
+        score = e.get("outputs", {}).get("aggregate_score", 0.0)
+        tokens = e.get("tokens_consumed", 0)
+        if cycle not in cycle_scores or score > cycle_scores[cycle][0]:
+            cycle_scores[cycle] = (score, tokens)
+
+    sorted_cycles = sorted(cycle_scores.keys())
+    for i in range(1, len(sorted_cycles)):
+        prev_cycle = sorted_cycles[i - 1]
+        curr_cycle = sorted_cycles[i]
+        prev_score = cycle_scores[prev_cycle][0]
+        curr_score = cycle_scores[curr_cycle][0]
+        tokens = cycle_scores[curr_cycle][1]
         total_tokens += tokens
 
         gain = round(curr_score - prev_score, 4)
         gpt = round(gain / max(tokens, 1), 6)
 
         gains.append(MarginalGain(
-            cycle=i,
+            cycle=curr_cycle,
             score_before=prev_score,
             score_after=curr_score,
             gain=gain,
@@ -120,7 +132,7 @@ def compute_marginal_gains(ledger_path: str, ad_id: str) -> RegenEfficiency:
         ))
 
         if gain < DEFAULT_MIN_GAIN and diminishing_at is None:
-            diminishing_at = i
+            diminishing_at = curr_cycle
 
     total_gain = round(sum(g.gain for g in gains), 4)
 
@@ -205,10 +217,13 @@ def compute_dimension_marginals(ledger_path: str) -> list[DimensionMarginal]:
         for i in range(1, len(eval_events)):
             prev_scores = eval_events[i - 1].get("outputs", {}).get("scores", {})
             curr_scores = eval_events[i].get("outputs", {}).get("scores", {})
+            cycle_num = eval_events[i].get("cycle_number", i)
             for dim in DIMENSIONS:
-                prev = prev_scores.get(dim, 0) if isinstance(prev_scores.get(dim), (int, float)) else 0
-                curr = curr_scores.get(dim, 0) if isinstance(curr_scores.get(dim), (int, float)) else 0
-                dim_gains[dim][i].append(curr - prev)
+                pval = prev_scores.get(dim)
+                cval = curr_scores.get(dim)
+                prev = pval.get("score", 0) if isinstance(pval, dict) else (pval if isinstance(pval, (int, float)) else 0)
+                curr = cval.get("score", 0) if isinstance(cval, dict) else (cval if isinstance(cval, (int, float)) else 0)
+                dim_gains[dim][cycle_num].append(curr - prev)
 
     results: list[DimensionMarginal] = []
     for dim in DIMENSIONS:
