@@ -1,0 +1,14 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.pytest_cache/
+.ruff_cache/
+data/ledger.jsonl
+data/ledger.jsonl.bak
+data/cache/
+output/dashboard.html
+output/dashboard_data.json
+.env
+*.log

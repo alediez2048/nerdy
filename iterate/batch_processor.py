@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -143,6 +144,17 @@ def process_batch(
                 ledger_path=ledger_path,
             )
 
+            # --- Image generation for ads that pass text triage ---
+            winning_image = None
+            if routing.decision in ("publish", "escalate"):
+                winning_image = _generate_and_select_image(
+                    ad=ad,
+                    expanded_brief=expanded,
+                    brief=brief,
+                    brief_seed=brief_seed,
+                    ledger_path=ledger_path,
+                )
+
             if routing.decision == "publish":
                 result.published += 1
                 log_event(ledger_path, {
@@ -155,7 +167,11 @@ def process_batch(
                     "model_used": "none",
                     "seed": "0",
                     "inputs": {"aggregate_score": evaluation.aggregate_score},
-                    "outputs": {"decision": "publish"},
+                    "outputs": {
+                        "decision": "publish",
+                        "has_image": winning_image is not None,
+                        "winning_image": winning_image,
+                    },
                 })
             elif routing.decision == "discard":
                 result.discarded += 1
@@ -173,8 +189,6 @@ def process_batch(
                 })
             elif routing.decision == "escalate":
                 result.regenerated += 1
-                # Regeneration would happen here in full pipeline
-                # For now, log the escalation decision
                 logger.info(
                     "Ad %s escalated for regeneration (score=%.2f)",
                     ad.ad_id, evaluation.aggregate_score,
@@ -192,6 +206,125 @@ def process_batch(
         batch_num, result.generated, result.published, result.discarded, result.regenerated,
     )
     return result
+
+
+def _generate_and_select_image(
+    ad: Any,
+    expanded_brief: Any,
+    brief: dict[str, Any],
+    brief_seed: int,
+    ledger_path: str,
+) -> str | None:
+    """Generate 3 image variants, evaluate, and select the best one.
+
+    Returns the winning image path, or None if all variants fail.
+    """
+    try:
+        from generate.visual_spec import extract_visual_spec
+        from generate.image_generator import generate_variants
+        from evaluate.image_evaluator import evaluate_image_attributes
+        from evaluate.coherence_checker import check_coherence
+        from evaluate.image_selector import ImageVariantResult, select_best_variant, compute_composite_score
+
+        # Step 1: Extract visual spec from expanded brief
+        from dataclasses import asdict
+        brief_dict = asdict(expanded_brief) if hasattr(expanded_brief, "__dataclass_fields__") else dict(expanded_brief)
+        visual_spec = extract_visual_spec(
+            expanded_brief=brief_dict,
+            campaign_goal=brief.get("campaign_goal", "conversion"),
+            audience=brief.get("audience", "parents"),
+            ad_id=ad.ad_id,
+        )
+
+        # Step 2: Generate 3 image variants
+        output_dir = "output/images"
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        variants = generate_variants(
+            visual_spec=visual_spec,
+            ad_id=ad.ad_id,
+            seed=brief_seed,
+            output_dir=output_dir,
+        )
+
+        # Step 3: Evaluate each variant (attributes + coherence)
+        variant_results: list[ImageVariantResult] = []
+        ad_copy = {
+            "headline": ad.headline,
+            "body": ad.primary_text,
+            "cta": ad.cta_button,
+        }
+        spec_dict = visual_spec.to_dict() if hasattr(visual_spec, "to_dict") else {
+            "subject": getattr(visual_spec, "subject", "student"),
+            "setting": getattr(visual_spec, "setting", "study environment"),
+        }
+
+        for variant in variants:
+            # Attribute evaluation
+            attr_result = evaluate_image_attributes(
+                image_path=variant.image_path,
+                visual_spec=spec_dict,
+                ad_id=ad.ad_id,
+                variant_type=variant.variant_type,
+            )
+
+            # Coherence check
+            coherence = check_coherence(
+                copy=ad_copy,
+                image_path=variant.image_path,
+                ad_id=ad.ad_id,
+                variant_type=variant.variant_type,
+            )
+
+            # Compute composite score
+            attr_pct = attr_result.pass_pct if hasattr(attr_result, "pass_pct") else (
+                sum(1 for v in attr_result.attributes.values() if v) / max(len(attr_result.attributes), 1)
+            )
+            coherence_avg = coherence.average if hasattr(coherence, "average") else 0.5
+            comp = compute_composite_score(attr_pct, coherence_avg / 10.0)
+
+            variant_results.append(ImageVariantResult(
+                ad_id=ad.ad_id,
+                variant_type=variant.variant_type,
+                image_path=variant.image_path,
+                attribute_pass_pct=attr_pct,
+                coherence_avg=coherence_avg,
+                composite_score=comp,
+            ))
+
+            # Log variant evaluation
+            log_event(ledger_path, {
+                "event_type": "ImageEvaluated",
+                "ad_id": ad.ad_id,
+                "brief_id": brief.get("brief_id", "unknown"),
+                "cycle_number": 0,
+                "action": f"image_eval_{variant.variant_type}",
+                "tokens_consumed": 500,
+                "model_used": "gemini-2.0-flash",
+                "seed": str(variant.seed),
+                "inputs": {"variant_type": variant.variant_type},
+                "outputs": {
+                    "attribute_pass_pct": attr_pct,
+                    "coherence_avg": coherence_avg,
+                    "composite_score": comp,
+                },
+            })
+
+        # Step 4: Select best variant
+        selection = select_best_variant(variant_results)
+        winner_path = selection.winner.image_path if selection.winner else None
+
+        logger.info(
+            "Image selection for %s: winner=%s (composite=%.3f)",
+            ad.ad_id,
+            selection.winner.variant_type if selection.winner else "none",
+            selection.winner.composite_score if selection.winner else 0,
+        )
+
+        return winner_path
+
+    except Exception as e:
+        logger.warning("Image generation failed for %s: %s — publishing text-only", ad.ad_id, e)
+        return None
 
 
 def write_batch_checkpoint(

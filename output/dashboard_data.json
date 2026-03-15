@@ -1,54 +1,38 @@
 {
-  "generated_at": "2026-03-15T20:40:04.367341+00:00",
+  "generated_at": "2026-03-15T23:00:59.438580+00:00",
   "ledger_path": "data/ledger.jsonl",
   "pipeline_summary": {
-    "total_ads_generated": 140,
-    "total_ads_published": 63,
+    "total_ads_generated": 147,
+    "total_ads_published": 66,
     "total_ads_discarded": 0,
-    "publish_rate": 0.45,
-    "total_batches": 14,
-    "total_tokens": 2841019,
-    "total_cost_usd": 28.4102,
+    "publish_rate": 0.449,
+    "total_batches": 15,
+    "total_tokens": 3009447,
+    "total_cost_usd": 30.0945,
     "avg_score": 7.1
   },
   "iteration_cycles": [
     {
-      "ad_id": "ref_vt_14",
-      "cycle": 0,
-      "score_before": 5.0,
-      "score_after": 7.91,
-      "weakest_dimension": "clarity",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "ref_vt_05_deg_brand_voice",
       "cycle": 0,
       "score_before": 4.97,
-      "score_after": 5.76,
+      "score_after": 6.05,
       "weakest_dimension": "brand_voice",
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_05_deg_value_proposition",
+      "ad_id": "ref_vt_01_deg_brand_voice",
       "cycle": 0,
-      "score_before": 3.62,
-      "score_after": 4.38,
-      "weakest_dimension": "cta",
+      "score_before": 5.67,
+      "score_after": 6.62,
+      "weakest_dimension": "brand_voice",
       "action_taken": "regenerated"
     },
     {
       "ad_id": "ref_vt_07_deg_brand_voice",
       "cycle": 0,
       "score_before": 4.93,
-      "score_after": 5.62,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_07_deg_value_proposition",
-      "cycle": 0,
-      "score_before": 5.46,
-      "score_after": 5.96,
+      "score_after": 5.64,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -56,7 +40,15 @@
       "ad_id": "ref_vt_03",
       "cycle": 0,
       "score_before": 4.63,
-      "score_after": 5.09,
+      "score_after": 5.32,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_07_deg_value_proposition",
+      "cycle": 0,
+      "score_before": 5.46,
+      "score_after": 6.12,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -77,10 +69,10 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_01_deg_brand_voice",
+      "ad_id": "adv_wrong_brand_voice",
       "cycle": 0,
-      "score_before": 5.67,
-      "score_after": 5.94,
+      "score_before": 6.02,
+      "score_after": 6.29,
       "weakest_dimension": "brand_voice",
       "action_taken": "regenerated"
     },
@@ -93,27 +85,11 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_13",
-      "cycle": 0,
-      "score_before": 7.54,
-      "score_after": 7.8,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "adv_empty_minimal",
       "cycle": 0,
       "score_before": 1.0,
       "score_after": 1.25,
       "weakest_dimension": "clarity",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_chg_05",
-      "cycle": 0,
-      "score_before": 4.6,
-      "score_after": 4.85,
-      "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
     {
@@ -139,14 +115,6 @@
       "score_after": 7.08,
       "weakest_dimension": "cta",
       "action_taken": "published"
-    },
-    {
-      "ad_id": "ref_vt_06",
-      "cycle": 0,
-      "score_before": 7.71,
-      "score_after": 7.93,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
     },
     {
       "ad_id": "ad_brief_019_c0_4152657544",
@@ -181,18 +149,18 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ad_brief_040_c0_310917777",
+      "ad_id": "ref_chg_05",
       "cycle": 0,
-      "score_before": 6.75,
-      "score_after": 6.92,
+      "score_before": 4.6,
+      "score_after": 4.79,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_02",
+      "ad_id": "ad_brief_040_c0_310917777",
       "cycle": 0,
-      "score_before": 7.33,
-      "score_after": 7.46,
+      "score_before": 6.75,
+      "score_after": 6.92,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -221,12 +189,12 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ad_brief_003_c0_1772442924",
+      "ad_id": "ref_vt_06",
       "cycle": 0,
-      "score_before": 6.92,
-      "score_after": 7.0,
+      "score_before": 7.71,
+      "score_after": 7.8,
       "weakest_dimension": "cta",
-      "action_taken": "published"
+      "action_taken": "regenerated"
     },
     {
       "ad_id": "ad_brief_012_c0_1962870880",
@@ -237,26 +205,10 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ad_brief_004_c0_3591419156",
+      "ad_id": "adv_pure_manipulation",
       "cycle": 0,
-      "score_before": 6.83,
-      "score_after": 6.9,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_01_deg_value_proposition",
-      "cycle": 0,
-      "score_before": 5.03,
-      "score_after": 5.1,
-      "weakest_dimension": "value_proposition",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_chg_01",
-      "cycle": 0,
-      "score_before": 4.52,
-      "score_after": 4.57,
+      "score_before": 4.17,
+      "score_after": 4.23,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -277,6 +229,14 @@
       "action_taken": "published"
     },
     {
+      "ad_id": "ref_vt_01",
+      "cycle": 0,
+      "score_before": 7.61,
+      "score_after": 7.65,
+      "weakest_dimension": "value_proposition",
+      "action_taken": "regenerated"
+    },
+    {
       "ad_id": "ad_brief_023_c0_846163756",
       "cycle": 0,
       "score_before": 6.71,
@@ -285,15 +245,39 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_01",
+      "ad_id": "ref_vt_05_deg_value_proposition",
       "cycle": 0,
-      "score_before": 7.61,
-      "score_after": 7.61,
-      "weakest_dimension": "value_proposition",
+      "score_before": 3.62,
+      "score_after": 3.65,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "adv_competitor_branding",
+      "cycle": 0,
+      "score_before": 7.32,
+      "score_after": 7.34,
+      "weakest_dimension": "brand_voice",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_05",
+      "cycle": 0,
+      "score_before": 7.83,
+      "score_after": 7.83,
+      "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
     {
       "ad_id": "ref_vt_08",
+      "cycle": 0,
+      "score_before": 7.33,
+      "score_after": 7.33,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_02",
       "cycle": 0,
       "score_before": 7.33,
       "score_after": 7.33,
@@ -309,19 +293,19 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_01_deg_cta",
+      "ad_id": "ref_vt_14",
       "cycle": 0,
-      "score_before": 5.39,
-      "score_after": 5.39,
-      "weakest_dimension": "cta",
+      "score_before": 5.0,
+      "score_after": 5.0,
+      "weakest_dimension": "clarity",
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_01_deg_emotional_resonance",
+      "ad_id": "ref_vt_01_deg_value_proposition",
       "cycle": 0,
-      "score_before": 7.08,
-      "score_after": 7.08,
-      "weakest_dimension": "emotional_resonance",
+      "score_before": 5.03,
+      "score_after": 5.03,
+      "weakest_dimension": "value_proposition",
       "action_taken": "regenerated"
     },
     {
@@ -341,11 +325,11 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "adv_high_clarity_zero_emotion",
+      "ad_id": "adv_aggressive_cta_no_value",
       "cycle": 0,
-      "score_before": 6.44,
-      "score_after": 6.44,
-      "weakest_dimension": "emotional_resonance",
+      "score_before": 2.7,
+      "score_after": 2.7,
+      "weakest_dimension": "value_proposition",
       "action_taken": "regenerated"
     },
     {
@@ -429,6 +413,14 @@
       "action_taken": "published"
     },
     {
+      "ad_id": "ref_vt_01_deg_cta",
+      "cycle": 0,
+      "score_before": 5.39,
+      "score_after": 5.38,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
       "ad_id": "ref_vt_05_deg_clarity",
       "cycle": 0,
       "score_before": 1.08,
@@ -437,10 +429,50 @@
       "action_taken": "regenerated"
     },
     {
+      "ad_id": "ad_brief_002_c0_7021860",
+      "cycle": 0,
+      "score_before": 7.25,
+      "score_after": 7.22,
+      "weakest_dimension": "cta",
+      "action_taken": "published"
+    },
+    {
+      "ad_id": "ref_vt_07",
+      "cycle": 0,
+      "score_before": 7.58,
+      "score_after": 7.54,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_09",
+      "cycle": 0,
+      "score_before": 5.58,
+      "score_after": 5.54,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
       "ad_id": "ad_brief_015_c0_1395998568",
       "cycle": 0,
       "score_before": 6.75,
       "score_after": 6.71,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_15",
+      "cycle": 0,
+      "score_before": 7.52,
+      "score_after": 7.46,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ad_brief_005_c0_1586594391",
+      "cycle": 0,
+      "score_before": 6.69,
+      "score_after": 6.63,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -477,6 +509,14 @@
       "action_taken": "published"
     },
     {
+      "ad_id": "ad_brief_004_c0_3591419156",
+      "cycle": 0,
+      "score_before": 6.83,
+      "score_after": 6.75,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
       "ad_id": "ad_brief_016_c0_3706570361",
       "cycle": 0,
       "score_before": 6.84,
@@ -499,6 +539,22 @@
       "score_after": 6.91,
       "weakest_dimension": "cta",
       "action_taken": "published"
+    },
+    {
+      "ad_id": "ref_vt_13",
+      "cycle": 0,
+      "score_before": 7.54,
+      "score_after": 7.43,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_chg_01",
+      "cycle": 0,
+      "score_before": 4.52,
+      "score_after": 4.4,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
     },
     {
       "ad_id": "ad_brief_039_c0_2626045506",
@@ -533,11 +589,11 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_07_deg_emotional_resonance",
+      "ad_id": "ref_vt_01_deg_clarity",
       "cycle": 0,
-      "score_before": 5.33,
-      "score_after": 5.19,
-      "weakest_dimension": "cta",
+      "score_before": 1.26,
+      "score_after": 1.13,
+      "weakest_dimension": "clarity",
       "action_taken": "regenerated"
     },
     {
@@ -549,22 +605,6 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_07",
-      "cycle": 0,
-      "score_before": 7.58,
-      "score_after": 7.43,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_01_deg_clarity",
-      "cycle": 0,
-      "score_before": 1.26,
-      "score_after": 1.1,
-      "weakest_dimension": "clarity",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "ad_brief_045_c0_381608129",
       "cycle": 0,
       "score_before": 7.08,
@@ -573,26 +613,18 @@
       "action_taken": "published"
     },
     {
+      "ad_id": "ad_brief_003_c0_1772442924",
+      "cycle": 0,
+      "score_before": 6.92,
+      "score_after": 6.75,
+      "weakest_dimension": "cta",
+      "action_taken": "published"
+    },
+    {
       "ad_id": "ref_vt_11",
       "cycle": 0,
       "score_before": 7.71,
       "score_after": 7.54,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "adv_wrong_brand_voice",
-      "cycle": 0,
-      "score_before": 6.02,
-      "score_after": 5.82,
-      "weakest_dimension": "brand_voice",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ad_brief_005_c0_1586594391",
-      "cycle": 0,
-      "score_before": 6.69,
-      "score_after": 6.49,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -629,27 +661,19 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_05",
+      "ad_id": "ref_vt_01_deg_emotional_resonance",
       "cycle": 0,
-      "score_before": 7.83,
-      "score_after": 7.57,
-      "weakest_dimension": "cta",
+      "score_before": 7.08,
+      "score_after": 6.82,
+      "weakest_dimension": "emotional_resonance",
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_15",
+      "ad_id": "adv_high_clarity_zero_emotion",
       "cycle": 0,
-      "score_before": 7.52,
-      "score_after": 7.25,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "adv_pure_manipulation",
-      "cycle": 0,
-      "score_before": 4.17,
-      "score_after": 3.9,
-      "weakest_dimension": "cta",
+      "score_before": 6.44,
+      "score_after": 6.17,
+      "weakest_dimension": "emotional_resonance",
       "action_taken": "regenerated"
     },
     {
@@ -672,41 +696,9 @@
       "ad_id": "ref_vt_04",
       "cycle": 0,
       "score_before": 4.75,
-      "score_after": 4.42,
+      "score_after": 4.4,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_09",
-      "cycle": 0,
-      "score_before": 5.58,
-      "score_after": 5.25,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "adv_competitor_branding",
-      "cycle": 0,
-      "score_before": 7.32,
-      "score_after": 6.98,
-      "weakest_dimension": "brand_voice",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "adv_compliance_violation",
-      "cycle": 0,
-      "score_before": 3.77,
-      "score_after": 3.37,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ad_brief_002_c0_7021860",
-      "cycle": 0,
-      "score_before": 7.25,
-      "score_after": 6.85,
-      "weakest_dimension": "cta",
-      "action_taken": "published"
     },
     {
       "ad_id": "test_001",
@@ -717,20 +709,28 @@
       "action_taken": "regenerated"
     },
     {
+      "ad_id": "ref_vt_07_deg_emotional_resonance",
+      "cycle": 0,
+      "score_before": 5.33,
+      "score_after": 4.89,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "adv_compliance_violation",
+      "cycle": 0,
+      "score_before": 3.77,
+      "score_after": 3.3,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
       "ad_id": "ad_brief_009_c0_4097614953",
       "cycle": 0,
       "score_before": 7.28,
       "score_after": 6.79,
       "weakest_dimension": "cta",
       "action_taken": "published"
-    },
-    {
-      "ad_id": "adv_aggressive_cta_no_value",
-      "cycle": 0,
-      "score_before": 2.7,
-      "score_after": 2.05,
-      "weakest_dimension": "value_proposition",
-      "action_taken": "regenerated"
     },
     {
       "ad_id": "ref_vt_12",
@@ -744,7 +744,7 @@
       "ad_id": "ref_vt_05_deg_emotional_resonance",
       "cycle": 0,
       "score_before": 7.0,
-      "score_after": 5.64,
+      "score_after": 5.62,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     }
@@ -758,7 +758,7 @@
         "published": 4,
         "generated": 10,
         "publish_rate": 0.4,
-        "tokens": 1455221
+        "tokens": 1532424
       },
       {
         "batch": 1,
@@ -767,7 +767,7 @@
         "published": 5,
         "generated": 10,
         "publish_rate": 0.5,
-        "tokens": 1455221
+        "tokens": 1532424
       },
       {
         "batch": 1,
@@ -776,7 +776,7 @@
         "published": 5,
         "generated": 10,
         "publish_rate": 0.5,
-        "tokens": 1455221
+        "tokens": 1532424
       },
       {
         "batch": 2,
@@ -812,7 +812,7 @@
         "published": 7,
         "generated": 10,
         "publish_rate": 0.7,
-        "tokens": 883042
+        "tokens": 974267
       },
       {
         "batch": 1,
@@ -821,7 +821,7 @@
         "published": 6,
         "generated": 10,
         "publish_rate": 0.6,
-        "tokens": 1455221
+        "tokens": 1532424
       },
       {
         "batch": 1,
@@ -830,7 +830,7 @@
         "published": 2,
         "generated": 10,
         "publish_rate": 0.2,
-        "tokens": 1455221
+        "tokens": 1532424
       },
       {
         "batch": 1,
@@ -839,7 +839,7 @@
         "published": 5,
         "generated": 10,
         "publish_rate": 0.5,
-        "tokens": 1455221
+        "tokens": 1532424
       },
       {
         "batch": 2,
@@ -875,7 +875,16 @@
         "published": 6,
         "generated": 10,
         "publish_rate": 0.6,
-        "tokens": 883042
+        "tokens": 974267
+      },
+      {
+        "batch": 1,
+        "avg_score": 7.0,
+        "threshold": 7.0,
+        "published": 2,
+        "generated": 5,
+        "publish_rate": 0.4,
+        "tokens": 1532424
       }
     ],
     "ratchet_history": [
@@ -934,18 +943,22 @@
       {
         "batch": 5,
         "threshold": 7.0
+      },
+      {
+        "batch": 1,
+        "threshold": 7.0
       }
     ],
     "score_distribution": [
       0,
-      95,
-      7,
-      33,
-      76,
-      168,
-      144,
-      378,
-      108,
+      100,
+      8,
+      35,
+      82,
+      179,
+      155,
+      397,
+      114,
       0
     ]
   },
@@ -1960,7 +1973,68 @@
         6.5,
         7.5,
         7.2,
-        7.2
+        7.2,
+        6.5,
+        8.5,
+        5.8,
+        7.2,
+        3.0,
+        1.0,
+        7.0,
+        2.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        5.0,
+        8.0,
+        8.0,
+        7.8,
+        7.8,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        7.2,
+        7.5,
+        7.5,
+        7.8,
+        7.2,
+        7.5,
+        7.5,
+        7.2,
+        5.0,
+        6.8,
+        7.5,
+        6.8,
+        6.5,
+        7.5,
+        6.5,
+        7.2,
+        6.5,
+        7.8,
+        8.1,
+        7.8,
+        1.1,
+        5.5,
+        7.5,
+        7.2,
+        7.2,
+        1.1,
+        4.5,
+        7.5,
+        6.5,
+        7.2,
+        1.1,
+        6.5,
+        7.5,
+        7.2,
+        7.2,
+        7.2,
+        8.5,
+        7.2,
+        5.8
       ],
       "value_proposition": [
         6.5,
@@ -2971,7 +3045,68 @@
         5.8,
         7.8,
         7.5,
-        6.5
+        6.5,
+        5.5,
+        6.8,
+        4.2,
+        7.5,
+        1.0,
+        1.0,
+        3.0,
+        1.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        7.5,
+        7.5,
+        7.8,
+        7.8,
+        7.8,
+        7.8,
+        6.8,
+        7.2,
+        6.8,
+        8.1,
+        6.5,
+        7.2,
+        7.8,
+        6.5,
+        5.0,
+        6.2,
+        7.8,
+        6.2,
+        5.5,
+        6.8,
+        5.5,
+        6.5,
+        5.2,
+        7.8,
+        7.8,
+        7.5,
+        1.2,
+        3.2,
+        7.8,
+        7.5,
+        6.8,
+        1.1,
+        3.2,
+        7.8,
+        7.2,
+        7.5,
+        1.1,
+        5.8,
+        7.8,
+        7.5,
+        6.5,
+        6.5,
+        6.8,
+        6.8,
+        4.2
       ],
       "cta": [
         6.2,
@@ -3982,7 +4117,68 @@
         5.2,
         3.0,
         2.0,
-        2.0
+        2.0,
+        6.0,
+        6.5,
+        1.0,
+        7.8,
+        4.0,
+        1.0,
+        1.0,
+        1.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        7.8,
+        7.2,
+        7.2,
+        6.8,
+        7.2,
+        6.8,
+        6.2,
+        7.2,
+        6.2,
+        7.5,
+        6.2,
+        7.5,
+        2.0,
+        6.2,
+        5.0,
+        6.2,
+        7.2,
+        2.0,
+        1.0,
+        2.0,
+        1.0,
+        1.0,
+        2.0,
+        7.5,
+        7.5,
+        7.2,
+        1.1,
+        6.5,
+        1.0,
+        6.5,
+        6.5,
+        1.0,
+        2.5,
+        2.0,
+        5.5,
+        2.0,
+        1.0,
+        5.5,
+        3.0,
+        2.0,
+        1.0,
+        7.2,
+        5.5,
+        6.2,
+        1.0
       ],
       "brand_voice": [
         7.2,
@@ -4993,7 +5189,68 @@
         6.8,
         7.2,
         6.5,
-        6.2
+        6.2,
+        1.5,
+        6.2,
+        6.5,
+        6.8,
+        2.0,
+        1.0,
+        2.0,
+        1.0,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        4.0,
+        7.5,
+        7.5,
+        7.5,
+        8.1,
+        8.1,
+        7.5,
+        8.1,
+        8.1,
+        7.5,
+        7.8,
+        7.8,
+        8.3,
+        7.5,
+        7.8,
+        8.1,
+        7.5,
+        5.0,
+        7.2,
+        7.5,
+        7.2,
+        6.0,
+        7.2,
+        6.0,
+        6.5,
+        6.2,
+        7.5,
+        8.3,
+        8.1,
+        1.1,
+        4.8,
+        5.5,
+        4.5,
+        6.5,
+        1.1,
+        4.0,
+        8.1,
+        3.0,
+        7.0,
+        1.1,
+        7.2,
+        7.2,
+        6.5,
+        6.2,
+        2.5,
+        6.0,
+        7.5,
+        6.5
       ],
       "emotional_resonance": [
         6.8,
@@ -6004,27 +6261,88 @@
         6.5,
         7.5,
         7.0,
-        5.5
+        5.5,
+        2.0,
+        1.0,
+        7.5,
+        6.5,
+        3.0,
+        1.0,
+        3.0,
+        1.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.5,
+        7.5,
+        7.5,
+        7.2,
+        7.5,
+        7.5,
+        7.2,
+        7.2,
+        7.2,
+        7.5,
+        7.2,
+        7.2,
+        7.5,
+        7.2,
+        5.0,
+        6.5,
+        7.2,
+        7.5,
+        5.0,
+        6.5,
+        5.0,
+        6.8,
+        6.5,
+        7.5,
+        7.8,
+        7.5,
+        1.1,
+        4.2,
+        7.0,
+        5.5,
+        7.2,
+        1.1,
+        5.8,
+        7.5,
+        6.8,
+        6.5,
+        1.1,
+        6.8,
+        7.5,
+        7.2,
+        5.5,
+        4.5,
+        1.0,
+        7.2,
+        7.8
       ]
     },
     "correlation_matrix": {
       "clarity": {
         "value_proposition": 0.895,
-        "cta": 0.568,
-        "brand_voice": 0.839,
-        "emotional_resonance": 0.787
+        "cta": 0.566,
+        "brand_voice": 0.838,
+        "emotional_resonance": 0.78
       },
       "value_proposition": {
-        "cta": 0.667,
-        "brand_voice": 0.827,
-        "emotional_resonance": 0.815
+        "cta": 0.663,
+        "brand_voice": 0.826,
+        "emotional_resonance": 0.81
       },
       "cta": {
-        "brand_voice": 0.53,
-        "emotional_resonance": 0.467
+        "brand_voice": 0.525,
+        "emotional_resonance": 0.462
       },
       "brand_voice": {
-        "emotional_resonance": 0.847
+        "emotional_resonance": 0.845
       }
     }
   },
@@ -6048,11 +6366,11 @@
       },
       "aggregate_score": 7.08,
       "rationale": {
-        "clarity": "The ad is clear and easy to understand. The hook is engaging, and the value proposition is well-defined. However, the phrase \"Unlock their full potential\" feels a bit redundant and could be more specific.",
-        "value_proposition": "The value proposition is present but not front-loaded. While it mentions personalized support and 1-on-1 tutoring, it lacks a strong differentiator or a quantifiable outcome. The reader might miss the key benefits when quickly scanning.",
-        "cta": "The CTA is generic (\"Learn More\") and lacks urgency or specificity. It doesn't provide a compelling reason for parents to take action immediately.",
-        "brand_voice": "The brand voice is generally on-brand, with empowering and approachable language. However, the phrase \"Unlock their full potential\" is a bit generic and could be more results-focused.",
-        "emotional_resonance": "The ad taps into the anxiety parents feel about the college admissions process and the desire to help their child succeed. However, the payoff/resolution could be more vivid and specific."
+        "clarity": "The message is clear and easy to understand. The analogy of a maze works well. However, the phrase 'Focused attention, better results' feels a bit redundant and could be more specific.",
+        "value_proposition": "The value proposition mentions personalized 1-on-1 expert tutoring. The differentiator is present but not front-loaded; reader might miss it scanning quickly. 'Better results' is not quantified.",
+        "cta": "CTA exists but is generic ('Learn More') with no urgency or specificity.",
+        "brand_voice": "Strong brand voice \u2013 empowering and approachable; one line slightly breaks character ('Focused attention, better results' is a bit generic).",
+        "emotional_resonance": "Good emotional hook with a real pain point (feeling lost in SAT prep); the transformation story could be more vivid. The 'clear the path' metaphor is decent but could be stronger."
       },
       "status": "published",
       "cycle_count": 1,
@@ -6069,19 +6387,19 @@
         "cta_button": "Learn More"
       },
       "scores": {
-        "clarity": 7.2,
-        "value_proposition": 6.5,
+        "clarity": 7.5,
+        "value_proposition": 6.8,
         "cta": 6.2,
-        "brand_voice": 7.5,
-        "emotional_resonance": 6.5
+        "brand_voice": 7.8,
+        "emotional_resonance": 7.2
       },
-      "aggregate_score": 6.85,
+      "aggregate_score": 7.22,
       "rationale": {
-        "clarity": "The ad clearly states the problem it solves (tricky SAT questions) and the general benefits (confidence, unlocking potential). The headline reinforces this. However, the description is very short and lacks specifics.",
-        "value_proposition": "The value proposition is present but somewhat generic. 'Break it down, build confidence, unlock your potential' are all positive outcomes, but they lack specific differentiation. The phrase 'strategies you need to succeed' is vague.",
-        "cta": "The CTA 'Learn More' is generic and doesn't create a sense of urgency or provide a clear next step. It doesn't reduce friction for the user.",
-        "brand_voice": "The tone is generally appropriate for students \u2013 relatable and motivating. The language is empowering ('unlock your potential'). It avoids being overly salesy or casual. However, it could be more results-focused.",
-        "emotional_resonance": "The ad attempts to tap into the desire for confidence and unlocking potential, but it remains at a surface level. It doesn't deeply address the anxieties and pressures associated with the SAT."
+        "clarity": "The ad clearly states the problem and offers a solution. The message is understandable and concise. The use of \"again\" in the hook helps to highlight the frustration.",
+        "value_proposition": "The value proposition is present but not front-loaded. The reader might miss the specific benefit of \"breaking down complex concepts\" and \"proven strategies\" when scanning quickly. While it mentions breaking down concepts, it doesn't specify how this is done or what makes it unique.",
+        "cta": "The CTA is generic (\"Learn More\") and lacks urgency or specificity. It doesn't provide a clear incentive to click.",
+        "brand_voice": "The brand voice is consistently on-brand throughout with strong empowerment framing. The use of \"you\" and the \ud83d\udcaa emoji creates a relatable and motivating tone. However, it could be slightly more peer-like by using more relatable student vocabulary.",
+        "emotional_resonance": "The ad taps into the frustration of being stuck on SAT questions and the desire to unlock one's potential. It creates a sense of hope and possibility. However, the transformation story could be more vivid and relatable."
       },
       "status": "published",
       "cycle_count": 1,
@@ -6098,19 +6416,19 @@
         "cta_button": "Book Now"
       },
       "scores": {
-        "clarity": 7.5,
-        "value_proposition": 6.8,
-        "cta": 6.5,
-        "brand_voice": 7.2,
-        "emotional_resonance": 7.5
+        "clarity": 7.2,
+        "value_proposition": 6.5,
+        "cta": 6.2,
+        "brand_voice": 7.5,
+        "emotional_resonance": 7.2
       },
-      "aggregate_score": 7.0,
+      "aggregate_score": 6.75,
       "rationale": {
-        "clarity": "The ad clearly states the problem (AP Calculus anxiety) and the solution (expert tutoring). The message is understandable and concise.",
-        "value_proposition": "The value proposition mentions 'expert support' and 'boost their college applications,' but it's somewhat generic. 'Personalized tutoring' is mentioned, but without specific differentiation.",
-        "cta": "The CTA 'Sign Up' is generic and doesn't offer any incentive or reduce friction.",
-        "brand_voice": "The tone is authoritative and reassuring, which aligns with the brand voice. It speaks to the emotional drivers of parents.",
-        "emotional_resonance": "The ad effectively taps into the parental anxiety surrounding college admissions and the importance of AP Calculus. It connects with the desire to provide the best opportunities for their child."
+        "clarity": "The ad clearly identifies a specific problem (AP Calculus causing stress) and offers a solution (expert support and personalized tutoring). The message is understandable and the flow is good.",
+        "value_proposition": "The value proposition mentions 'expert support' and 'personalized tutoring,' but it lacks specific differentiation. 'Proven results' is vague without further elaboration.",
+        "cta": "'Sign Up' is a generic CTA. It doesn't offer any immediate benefit or reduce friction.",
+        "brand_voice": "The tone is authoritative and reassuring, aligning with the brand's desired voice. It focuses on outcomes and addresses parental worries.",
+        "emotional_resonance": "The ad effectively taps into parental anxiety about their child's performance in AP Calculus and its impact on college admissions. It offers a solution that eases these worries."
       },
       "status": "published",
       "cycle_count": 1,
@@ -6127,19 +6445,19 @@
         "cta_button": "Sign Up"
       },
       "scores": {
-        "clarity": 7.5,
-        "value_proposition": 6.8,
-        "cta": 6.5,
-        "brand_voice": 7.2,
-        "emotional_resonance": 6.5
+        "clarity": 7.2,
+        "value_proposition": 6.5,
+        "cta": 6.2,
+        "brand_voice": 7.5,
+        "emotional_resonance": 7.2
       },
-      "aggregate_score": 6.9,
+      "aggregate_score": 6.75,
       "rationale": {
-        "clarity": "The ad clearly states the problem (feeling lost in SAT prep) and offers a solution (personalized strategies and expert tutoring). The message is easy to understand and the flow is good.",
-        "value_proposition": "The value proposition mentions personalized strategies and expert tutoring, which are good but somewhat generic. It differentiates itself slightly by mentioning 'confidence, not just cramming,' but it could be stronger.",
-        "cta": "The CTA 'Sign Up' is generic and doesn't offer any specific incentive or reduce friction. It doesn't create a sense of urgency.",
-        "brand_voice": "The brand voice is generally empowering and approachable, using language like 'unlock your potential' and 'builds confidence.' However, it could be more results-focused and less generic.",
-        "emotional_resonance": "The ad attempts to address the feeling of being 'lost' in SAT prep and aims to build confidence. However, the emotional connection is somewhat surface-level and could be deeper."
+        "clarity": "The ad is clear about addressing feeling lost in SAT prep and offering strategies. The headline reinforces this. However, the description 'Smart strategies for a smarter you' feels a bit redundant and doesn't add much to the overall message.",
+        "value_proposition": "The value proposition is present but not very specific. It mentions 'strategies to unlock your best score' but doesn't offer any proof or quantification of the benefit. It's a generic promise.",
+        "cta": "The CTA 'Sign Up' is generic and lacks urgency or specificity. It doesn't provide any incentive or reduce friction for the user to take action.",
+        "brand_voice": "The brand voice is generally on-brand, using relatable language and addressing a common student concern (feeling lost). The use of emojis adds a touch of approachability. However, it could be more results-focused.",
+        "emotional_resonance": "The ad taps into the emotional pain point of feeling lost in SAT prep and wanting to shine. It offers a solution by providing strategies. However, the transformation story could be more vivid and specific."
       },
       "status": "in_progress",
       "cycle_count": 0,
@@ -6157,18 +6475,18 @@
       },
       "scores": {
         "clarity": 6.8,
-        "value_proposition": 5.5,
+        "value_proposition": 6.2,
         "cta": 6.2,
         "brand_voice": 7.2,
         "emotional_resonance": 6.5
       },
-      "aggregate_score": 6.49,
+      "aggregate_score": 6.63,
       "rationale": {
-        "clarity": "The ad is generally clear, but the value proposition of \"Personalized expert guidance\" is vague and doesn't immediately convey what Varsity Tutors offers. The hook is decent, but the connection to the CTA could be smoother.",
-        "value_proposition": "\"Personalized expert guidance\" is a generic value proposition. It doesn't differentiate Varsity Tutors from other tutoring services or provide specific benefits.",
-        "cta": "\"Learn More\" is a very generic CTA. It doesn't create urgency or reduce friction for the user.",
-        "brand_voice": "The brand voice is generally on-brand, using empowering language and focusing on results. However, it could be more authoritative and outcome-focused, directly addressing the anxieties of parents.",
-        "emotional_resonance": "The ad attempts to tap into parental worry about college admissions with the opening question and the sad face emoji, but it doesn't deepen the emotional connection or create a strong sense of urgency."
+        "clarity": "The ad is clear about the topic (SAT prep) but the value proposition is somewhat generic. The phrase 'achieve their full potential' could be more specific. The description adds a bit more clarity with 'personalized support for college success'.",
+        "value_proposition": "The value proposition mentions 'personalized SAT prep' and 'expert guidance, real results' but lacks specific differentiation or quantified outcomes. It's a generic statement that doesn't stand out.",
+        "cta": "The CTA 'Learn More' is very generic and doesn't provide any incentive or reduce friction for the user to click.",
+        "brand_voice": "The brand voice is generally appropriate, being knowledgeable and approachable. It uses empowering language but could be more results-focused.",
+        "emotional_resonance": "The ad attempts to tap into the emotional angle of college admissions anxiety, but it's fairly surface-level. Mentioning 'college is on the horizon' is a start, but it doesn't deepen the pain point."
       },
       "status": "in_progress",
       "cycle_count": 0,
@@ -7482,18 +7800,18 @@
   ],
   "token_economics": {
     "by_stage": {
-      "generation": 311544,
-      "evaluation": 2529475,
+      "generation": 326973,
+      "evaluation": 2682474,
       "routing": 0,
       "publish": 0,
       "batch": 0
     },
     "by_model": {
-      "gemini-2.0-flash": 2841019,
+      "gemini-2.0-flash": 3009447,
       "gemini-2.0-pro": 0,
       "none": 0
     },
-    "cost_per_published": 45095.54,
+    "cost_per_published": 45597.68,
     "marginal_analysis": {
       "gain_curve": {},
       "token_spend": {},
@@ -7552,6 +7870,7 @@
         7.0,
         7.0,
         7.0,
+        7.0,
         7.0
       ],
       "ucl": 7.02,
@@ -7560,18 +7879,18 @@
       "breach_indices": []
     },
     "confidence_stats": {
-      "autonomous_count": 760,
+      "autonomous_count": 806,
       "flagged_count": 0,
       "human_required_count": 0,
-      "brand_safety_count": 249,
-      "total": 1009,
-      "autonomous_pct": 75.3,
+      "brand_safety_count": 266,
+      "total": 1072,
+      "autonomous_pct": 75.2,
       "flagged_pct": 0.0,
       "human_required_pct": 0.0
     },
     "compliance_stats": {
-      "total_checked": 63,
-      "passed": 63,
+      "total_checked": 67,
+      "passed": 67,
       "failed": 0,
       "pass_rate": 1.0
     }
@@ -7590,6 +7909,13 @@
       "aspiration": 7.5
     },
     "strategy_radar": {
+      "Varsity Tutors": {
+        "statistic": 20.0,
+        "question": 30.0,
+        "aspiration": 20.0,
+        "direct_offer": 20.0,
+        "fear_based": 10.0
+      },
       "Chegg": {
         "direct_offer": 20.0,
         "statistic": 10.0,
@@ -7600,6 +7926,12 @@
         "social_proof": 10.0,
         "pattern_interrupt": 10.0
       },
+      "Wyzant": {
+        "social_proof": 20.0,
+        "direct_offer": 60.0,
+        "statistic": 10.0,
+        "question": 10.0
+      },
       "Kaplan": {
         "statistic": 20.0,
         "pattern_interrupt": 10.0,
@@ -7608,32 +7940,9 @@
         "pain_point": 10.0,
         "direct_offer": 10.0,
         "aspiration": 10.0
-      },
-      "Varsity Tutors": {
-        "statistic": 20.0,
-        "question": 30.0,
-        "aspiration": 20.0,
-        "direct_offer": 20.0,
-        "fear_based": 10.0
-      },
-      "Wyzant": {
-        "social_proof": 20.0,
-        "direct_offer": 60.0,
-        "statistic": 10.0,
-        "question": 10.0
       }
     },
     "gap_analysis": [
-      {
-        "hook_type": "pain_point",
-        "coverage_pct": 5.0,
-        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
-      },
-      {
-        "hook_type": "metaphor",
-        "coverage_pct": 5.0,
-        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
-      },
       {
         "hook_type": "aspiration",
         "coverage_pct": 7.5,
@@ -7650,12 +7959,22 @@
         "opportunity": "Low competitor usage (12%) \u2014 potential differentiation"
       },
       {
+        "hook_type": "fear_based",
+        "coverage_pct": 5.0,
+        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
+      },
+      {
+        "hook_type": "pain_point",
+        "coverage_pct": 5.0,
+        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
+      },
+      {
         "hook_type": "pattern_interrupt",
         "coverage_pct": 5.0,
         "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
       },
       {
-        "hook_type": "fear_based",
+        "hook_type": "metaphor",
         "coverage_pct": 5.0,
         "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
       }
