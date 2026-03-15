@@ -1,8 +1,11 @@
-"""Image cost tracking + unified cost metrics (P1-19, R1-Q7).
+"""Image cost tracking + unified cost metrics (P1-19, P3-01, R1-Q7).
 
 Extends the token attribution engine (P1-11) to track image pipeline costs:
 per-image, per-variant, per-regen, per-aspect-ratio. Computes unified
 cost-per-publishable-ad across text + image. Tracks variant win rates.
+
+P3-01 additions: per-model cost breakdown (Pro vs Flash tokens),
+get_cost_per_model() for model-level aggregation.
 """
 
 from __future__ import annotations
@@ -11,6 +14,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 
+from generate.image_generator import MODEL_NANO_BANANA_2, MODEL_NANO_BANANA_PRO
 from iterate.ledger import log_event, read_events, read_events_filtered
 
 logger = logging.getLogger(__name__)
@@ -30,6 +34,8 @@ class ImageCostBreakdown:
     evaluation_tokens: int
     regen_tokens: int
     total_image_tokens: int
+    pro_tokens: int = 0
+    flash_tokens: int = 0
 
 
 @dataclass
@@ -58,10 +64,13 @@ def get_image_cost_breakdown(ad_id: str, ledger_path: str) -> ImageCostBreakdown
     generation_tokens = 0
     evaluation_tokens = 0
     regen_tokens = 0
+    pro_tokens = 0
+    flash_tokens = 0
 
     for event in ad_events:
         event_type = event.get("event_type", "")
         tokens = event.get("tokens_consumed", 0)
+        model = event.get("model_used", "")
 
         if event_type in _IMAGE_GEN_EVENTS:
             action = event.get("action", "")
@@ -69,6 +78,11 @@ def get_image_cost_breakdown(ad_id: str, ledger_path: str) -> ImageCostBreakdown
                 regen_tokens += tokens
             else:
                 generation_tokens += tokens
+            # Per-model attribution
+            if model == MODEL_NANO_BANANA_2:
+                flash_tokens += tokens
+            elif model == MODEL_NANO_BANANA_PRO or model == "":
+                pro_tokens += tokens
         elif event_type in _IMAGE_EVAL_EVENTS:
             evaluation_tokens += tokens
 
@@ -80,6 +94,8 @@ def get_image_cost_breakdown(ad_id: str, ledger_path: str) -> ImageCostBreakdown
         evaluation_tokens=evaluation_tokens,
         regen_tokens=regen_tokens,
         total_image_tokens=total,
+        pro_tokens=pro_tokens,
+        flash_tokens=flash_tokens,
     )
 
 
@@ -178,3 +194,27 @@ def get_variant_win_rates(ledger_path: str) -> dict[str, float]:
             )
 
     return rates
+
+
+def get_cost_per_model(ledger_path: str) -> dict[str, int]:
+    """Aggregate image generation token costs grouped by model_used.
+
+    Args:
+        ledger_path: Path to the JSONL ledger.
+
+    Returns:
+        Dict mapping model identifier to total tokens consumed.
+    """
+    events = read_events(ledger_path)
+    image_events = [e for e in events if e.get("event_type") in _IMAGE_GEN_EVENTS]
+
+    if not image_events:
+        return {}
+
+    costs: dict[str, int] = defaultdict(int)
+    for event in image_events:
+        model = event.get("model_used", "unknown")
+        tokens = event.get("tokens_consumed", 0)
+        costs[model] += tokens
+
+    return dict(costs)

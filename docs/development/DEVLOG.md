@@ -7,6 +7,31 @@
 
 ---
 
+## P3-01: Nano Banana 2 Cost-Tier Image Model ✅
+
+### Plain-English Summary
+- Added Nano Banana 2 (Gemini 3.1 Flash Image) as a cost-tier alternative to Nano Banana Pro for image generation
+- Implemented model routing: anchor variants → Pro (quality-critical), tone_shift/composition_shift → NB2 (60-85% cheaper)
+- Budget override: when remaining budget < $2.00, all variants forced to NB2
+- Extended cost tracker with per-model token attribution (pro_tokens, flash_tokens)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-01
+
+### Files Changed
+- **Modified:** `generate/image_generator.py` — added MODEL_NANO_BANANA_2 constant, select_image_model(), generate_image_routed(), generate_variants_routed()
+- **Modified:** `evaluate/image_cost_tracker.py` — added pro_tokens/flash_tokens to ImageCostBreakdown, get_cost_per_model()
+- **Created:** `tests/test_pipeline/test_image_model_routing.py` — 12 tests covering routing, generation, cost tracking
+
+### Key Decisions
+- Budget threshold set at $2.00 — below this, all variants use NB2 regardless of type
+- Anchor → Pro by default because anchor is the quality-critical "hero" variant
+- Existing `_call_image_api()` reused for both models (same API interface, different model string)
+
+---
+
 ## P1 Post-Completion: Quality Tuning & Bug Fixes ✅
 
 ### Plain-English Summary
