@@ -7,6 +7,57 @@
 
 ---
 
+## P1 Post-Completion: Quality Tuning & Bug Fixes ✅
+
+### Plain-English Summary
+- Fixed critical bug where `primary_text` and `description` were not logged to the ledger (only `primary_text_len` was stored). Published ads now include full copy in ledger events.
+- Fixed structural diversity: all ads were identical ("Ace the SAT...") because atom selection returned same top-N patterns for same audience/goal. Added seed-based shuffling, hook-type deduplication, and stronger prompt instructions against generic patterns.
+- Fixed evaluator score clustering: all ads scored exactly 7.0/6.0/8.0/7.0/7.0 because calibration examples only had coarse anchors (3,5,7,9). Added granular mid-range examples (6.2–8.3), explicit decimal score instruction, increased temperature from 0.2→0.4.
+- Added `run_pipeline.py` CLI entry point with --max-ads, --resume, --dry-run flags.
+- Added utility scripts: `scripts/check_ledger.py`, `scripts/show_published_ads.py`.
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P1 post-completion tuning (not a numbered ticket)
+
+### Results: Before vs After
+
+| Metric | Before Fixes | After Fixes |
+|--------|-------------|-------------|
+| Publish rate | 18% (9/50) | 40% (4/10) |
+| Primary text | "N/A" on all ads | Full scroll-stopping copy |
+| Score diversity | All identical 7.05 | Range: 7.08–7.28 |
+| Dimension scores | All 7.0/6.0/8.0/7.0/7.0 | Varied: 6.2–7.8 per dimension |
+| Headlines | All "Ace the SAT..." | Diverse: questions, pain-points, aspirational |
+| Ad structure | Identical across all ads | Different hooks, body patterns, tone |
+
+### Key Achievements
+- Pipeline produces diverse, readable ads with differentiated scores
+- Evaluator discriminates between ad quality levels with decimal granularity
+- Full ad copy (primary_text, headline, description, CTA) captured in ledger
+- 296 tests passing, lint clean
+
+### Files Changed
+- **Modified:** `generate/ad_generator.py` — fixed primary_text/description logging, seed-based atom diversity, stronger prompt instructions
+- **Modified:** `evaluate/evaluator.py` — granular calibration examples, decimal score instruction, temperature 0.2→0.4, prompt version bumped to p1-04-v2
+- **Modified:** `iterate/batch_processor.py` — per-brief seed passed to atom selection
+- **Created:** `run_pipeline.py` — CLI entry point for pipeline
+- **Created:** `scripts/check_ledger.py` — ledger event type summary
+- **Created:** `scripts/show_published_ads.py` — display published ads with scores
+
+### Issues Identified (Not Yet Fixed)
+- CTA still defaults to "Learn More" for most ads — needs more variety
+- Value proposition stays generic (~6.8) — needs specific outcomes like "200+ point improvement"
+- No ads scoring 8.0+ yet — regen loop could push harder
+- `test_evaluator_calibration` is flaky (depends on LLM API variance, ~77-80%)
+
+### Next Steps
+- P2 (Testing & Validation) or P5 (Dashboard & Docs) depending on priority
+- CTA and value prop improvements can be iterative prompt tuning
+
+---
+
 ## P1-04: Chain-of-Thought Evaluator ✅
 
 ### Plain-English Summary

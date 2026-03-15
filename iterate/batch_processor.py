@@ -116,9 +116,12 @@ def process_batch(
             from generate.brief_expansion import expand_brief
             expanded = expand_brief(brief)
 
-            # Stage 2: Generate ad copy
+            # Stage 2: Generate ad copy (per-brief seed for structural diversity)
             from generate.ad_generator import generate_ad
-            ad = generate_ad(expanded)
+            from generate.seeds import get_ad_seed, load_global_seed
+            global_seed = load_global_seed()
+            brief_seed = get_ad_seed(global_seed, brief_id, 0)
+            ad = generate_ad(expanded, seed=brief_seed)
             result.generated += 1
 
             # Stage 3: Evaluate (cache-aware)

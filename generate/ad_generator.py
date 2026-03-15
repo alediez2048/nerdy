@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import random
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -77,29 +78,51 @@ def _select_structural_atoms(
     campaign_goal: str,
     audience: str,
     top_n: int = 3,
+    ad_seed: int | None = None,
 ) -> list[dict[str, Any]]:
     """Select 2-3 diverse structural atoms from pattern database.
 
     Queries by audience and optionally campaign_goal. Patterns may not have
     awareness/conversion in tags, so falls back to audience-only if empty.
+
+    Uses ad_seed to shuffle candidates so different briefs with the same
+    audience/goal get different atoms.  Deduplicates by hook_type to ensure
+    structural diversity (at most 1 pattern per hook_type).
     """
     aud = _get_audience_for_patterns(audience)
-    patterns = query_patterns(audience=aud, campaign_goal=campaign_goal, top_n=top_n)
+    # Fetch a broader pool so we have enough after dedup
+    pool_size = max(top_n * 3, 10)
+    patterns = query_patterns(audience=aud, campaign_goal=campaign_goal, top_n=pool_size)
     if not patterns:
-        patterns = query_patterns(audience=aud, top_n=top_n)
+        patterns = query_patterns(audience=aud, top_n=pool_size)
     if not patterns:
-        patterns = query_patterns(top_n=top_n)
+        patterns = query_patterns(top_n=pool_size)
 
+    # Seed-based shuffle so each brief gets a different ordering
+    if ad_seed is not None:
+        rng = random.Random(ad_seed)
+        patterns = list(patterns)
+        rng.shuffle(patterns)
+
+    # Deduplicate by hook_type — at most 1 pattern per hook_type
+    seen_hooks: set[str] = set()
     atoms: list[dict[str, Any]] = []
-    for p in patterns[:top_n]:
+    for p in patterns:
+        hook = p.get("hook_type", "")
+        if hook in seen_hooks and hook:
+            continue
+        if hook:
+            seen_hooks.add(hook)
         atoms.append({
             "pattern_id": p.get("pattern_id", ""),
-            "hook_type": p.get("hook_type", ""),
+            "hook_type": hook,
             "body_pattern": p.get("body_pattern", ""),
             "cta_style": p.get("cta_style", ""),
             "emotional_register": p.get("emotional_register", ""),
             "hook_text": (p.get("hook_text") or p.get("ad_text", ""))[:100],
         })
+        if len(atoms) >= top_n:
+            break
     return atoms
 
 
@@ -122,7 +145,12 @@ def _build_generation_prompt(
     differentiators = ", ".join(expanded_brief.key_differentiators[:3]) if expanded_brief.key_differentiators else "N/A"
     constraints = "; ".join(expanded_brief.constraints[:3]) if expanded_brief.constraints else "None"
 
-    cta_hint = "Learn More, Get Started" if campaign_goal == "awareness" else "Sign Up, Start Free Practice Test, Book Now"
+    cta_options = {
+        "awareness": ["Learn More", "Get Started"],
+        "conversion": ["Sign Up", "Start Free Practice Test", "Book Now"],
+    }
+    goal_ctas = cta_options.get(campaign_goal, list(VALID_CTAS))
+    cta_hint = ", ".join(goal_ctas)
 
     return f"""You are writing a Meta (Facebook/Instagram) ad for Varsity Tutors SAT test prep. Use the reference-decompose-recombine approach: draw from the proven structural patterns below, but adapt and recombine — do NOT copy verbatim.
 
@@ -137,11 +165,17 @@ def _build_generation_prompt(
 ## Proven Structural Patterns (draw from these, recombine creatively)
 {atoms_block}
 
+IMPORTANT: Use the FIRST structural pattern listed as your primary structure. Do NOT default to generic SAT prep messaging.
+
+## Structural Variation Rules
+- Your headline must use a different structure than a simple "Ace the [subject]" format. Try: a question, a statistic, a testimonial quote, or a fear-based hook.
+- Select your CTA button based on the campaign goal from the options below — do NOT always default to "Start Free Practice Test".
+
 ## Meta Ad Format
 - Primary text: Main copy above image — scroll-stopping hook in first line, ~125 chars visible. Can be longer.
 - Headline: 5-8 words, benefit-driven
 - Description: Often truncated on mobile — keep concise
-- CTA button: One of {cta_hint}
+- CTA button: Select the best fit for the campaign goal from: {cta_hint}
 
 {get_voice_for_prompt(audience)}
 
@@ -266,7 +300,7 @@ def generate_ad(
 
     ad_id = f"ad_{brief_id}_c{cycle_number}_{actual_seed}"
 
-    atoms = _select_structural_atoms(campaign_goal, audience)
+    atoms = _select_structural_atoms(campaign_goal, audience, ad_seed=actual_seed)
     prompt = _build_generation_prompt(expanded_brief, atoms)
 
     def _do_call() -> str:
@@ -305,8 +339,10 @@ def generate_ad(
                 "voice_profile_audience": audience,
             },
             "outputs": {
+                "primary_text": result.primary_text,
                 "primary_text_len": len(result.primary_text),
                 "headline": result.headline,
+                "description": result.description,
                 "cta_button": result.cta_button,
             },
         },

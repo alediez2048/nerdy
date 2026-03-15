@@ -31,9 +31,7 @@ DIMENSIONS = (
 )
 
 # P1-05: Campaign-goal-adaptive weighting (replaces P0-06 equal weights)
-from evaluate.dimensions import (
-    evaluate_with_weights,
-)
+from evaluate.dimensions import evaluate_with_weights  # noqa: E402
 # Backward compat: equal weights still used by _compute_aggregate fallback
 EQUAL_WEIGHTS = {d: 0.2 for d in DIMENSIONS}
 
@@ -41,7 +39,7 @@ CLARITY_FLOOR = 6.0
 BRAND_VOICE_FLOOR = 5.0
 QUALITY_THRESHOLD = 7.0
 
-EVALUATOR_PROMPT_VERSION = "p1-04-v1"
+EVALUATOR_PROMPT_VERSION = "p1-04-v2"
 
 _DEFAULT_CONFIG = "data/config.yaml"
 
@@ -86,7 +84,10 @@ CTA BUTTON: {cta}
 
 {voice_rubric}
 
-CRITICAL SCORING CALIBRATION — use these anchors:
+IMPORTANT: Use decimal scores (6.2, 7.4, 8.1) — not just whole numbers. Each ad is unique; scores of exactly 7.0 across multiple ads are almost certainly wrong. Differentiate based on specific strengths and weaknesses.
+If two dimensions have different strengths, they MUST have different scores. A clear ad with a weak value prop should NOT score 7.0 on both Clarity and Value Proposition.
+
+CRITICAL SCORING CALIBRATION — use these anchors AND the mid-range examples:
 
 SCORE 9-10 (Exceptional — rare):
   Example: "Is your child's SAT score holding them back from their dream school? College admissions are more competitive than ever. Varsity Tutors pairs your student with expert 1-on-1 tutors who adapt to how they learn. See the difference personalized prep can make." [CTA: Start Free Practice Test]
@@ -103,6 +104,53 @@ SCORE 5-6 (Mediocre — competent but forgettable):
 SCORE 3-4 (Weak — clear problems):
   Example: "SAT prep. We do it. Online. With tutors. Sometimes it works. Try us."
   WHY 3-4: No hook, no value prop, undermines credibility, zero brand personality, no emotional engagement.
+
+MID-RANGE GRANULAR EXAMPLES (use these to avoid clustering at whole numbers):
+
+  Clarity:
+    6.2: Main message is present but buried after a long preamble; reader has to work to find the point.
+    6.5: Message is understandable but takes a second read; one competing idea dilutes the main point.
+    6.8: Clear main message but the supporting detail introduces slight ambiguity about what's being offered.
+    7.2: Strong single message with a decent hook, but one sentence feels redundant.
+    7.5: Clear and concise with good flow; minor word choice issue softens the impact slightly.
+    7.8: Crystal clear main message with a strong hook, but the transition to CTA could be smoother.
+    8.3: Immediately clear, well-structured, with a compelling hook — only a tiny polish away from perfect.
+
+  Value Proposition:
+    6.2: Mentions a benefit but stays generic ("great tutoring") without specific differentiation.
+    6.5: Has one specific element (e.g., "1-on-1") but no proof point or quantified outcome.
+    6.8: Differentiator is present but not front-loaded; reader might miss it scanning quickly.
+    7.2: Solid differentiator with a hint of proof, but doesn't fully quantify the benefit.
+    7.5: Clear differentiator with a specific mechanism (e.g., "adaptive learning"), but no social proof.
+    7.8: Strong specific benefit with a proof point, but the competitive advantage could be sharper.
+    8.3: Specific, quantified, and differentiated — nearly unbeatable value framing.
+
+  CTA:
+    6.2: CTA exists but is generic ("Learn More") with no urgency or specificity.
+    6.5: Slightly specific CTA but still feels like a template; no friction reduction.
+    6.8: Reasonable CTA with some specificity, but the action feels bigger than it needs to.
+    7.2: Good specific CTA but could reduce perceived commitment further.
+    7.5: Clear, specific, low-friction CTA; minor improvement possible in urgency framing.
+    7.8: Strong CTA with specificity and low friction, just missing a small urgency element.
+    8.3: Highly specific, low-friction, with natural urgency — almost perfect conversion path.
+
+  Brand Voice:
+    6.2: On-brand in topic but tone feels corporate/stiff rather than empowering and approachable.
+    6.5: Generally appropriate tone but missing the "knowledgeable insider" quality the brand needs.
+    6.8: Mostly on-brand but one phrase feels too salesy or too casual for the brand personality.
+    7.2: Good brand alignment with empowering language, but could be more results-focused.
+    7.5: Strong brand voice — empowering and approachable; one line slightly breaks character.
+    7.8: Consistently on-brand throughout with strong empowerment framing; tiny tonal inconsistency.
+    8.3: Exemplary brand voice — every sentence feels authentically Varsity Tutors.
+
+  Emotional Resonance:
+    6.2: Attempts an emotional angle but it feels surface-level or cliched ("every parent wants the best").
+    6.5: Identifies a real pain point but doesn't deepen it enough to create urgency.
+    6.8: Taps a genuine emotion but the payoff/resolution feels generic rather than vivid.
+    7.2: Good emotional hook with a real pain point; the transformation story could be more vivid.
+    7.5: Strong emotional connection — parent can see themselves in the scenario; resolution is solid.
+    7.8: Vivid emotional journey from problem to solution; just needs a slightly more specific payoff.
+    8.3: Deeply resonant — specific, vivid scenario with a transformation that feels achievable and real.
 
 COMPLIANCE FAILURES (automatic score penalties):
   - "Guaranteed 1500+" → Brand Voice capped at 3
@@ -171,7 +219,7 @@ def _call_gemini(prompt: str, ad_id: str) -> dict[str, Any]:
             model="gemini-2.0-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
-                temperature=0.2,
+                temperature=0.4,
                 max_output_tokens=2048,
             ),
         )
