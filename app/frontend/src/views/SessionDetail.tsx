@@ -4,6 +4,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { colors, font } from '../design/tokens'
 import { getSession } from '../api/sessions'
 import { StatusBadge } from '../components/Badge'
+import ShareButton from '../components/ShareButton'
 import type { SessionDetail as SessionDetailType } from '../types/session'
 
 import Overview from '../tabs/Overview'
@@ -71,7 +72,7 @@ export default function SessionDetail() {
 
       {/* Session header */}
       <div style={s.header}>
-        <div>
+        <div style={{ flex: 1 }}>
           <h1 style={s.title}>{session.name || session.session_id}</h1>
           <div style={s.meta}>
             <StatusBadge status={session.status} />
@@ -80,6 +81,7 @@ export default function SessionDetail() {
             </span>
           </div>
         </div>
+        <ShareButton sessionId={sessionId!} />
       </div>
 
       {/* Tab navigation */}

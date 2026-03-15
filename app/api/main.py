@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import auth, curation, dashboard, progress, sessions
+from app.api.routes import auth, curation, dashboard, progress, sessions, share
 from app.db import init_db
 
 
@@ -36,4 +36,6 @@ app.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
 app.include_router(progress.router, prefix="/sessions", tags=["progress"])
 app.include_router(dashboard.router, prefix="/sessions", tags=["dashboard"])
 app.include_router(curation.router, prefix="/sessions", tags=["curation"])
+app.include_router(share.router, prefix="/sessions", tags=["share"])
+app.include_router(share.shared_router, prefix="/shared", tags=["shared"])
 app.include_router(dashboard.competitive_router, prefix="/competitive", tags=["competitive"])

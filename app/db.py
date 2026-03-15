@@ -9,6 +9,7 @@ from app.models.base import Base
 import app.models.user  # noqa: F401
 import app.models.session  # noqa: F401
 import app.models.curation  # noqa: F401
+import app.models.share_token  # noqa: F401
 
 engine = create_engine(settings.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

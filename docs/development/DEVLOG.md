@@ -7,6 +7,51 @@
 
 ---
 
+## PA-11: Share Session Link ✅
+
+### Plain-English Summary
+- `app/models/share_token.py`: ShareToken model with token, session FK, created_by, expires_at (7 days), is_revoked
+- `app/api/routes/share.py`: `POST /sessions/{id}/share` (create/return existing), `DELETE /sessions/{id}/share` (revoke), `GET /shared/{token}` (public read-only access)
+- Idempotent share creation — returns existing active token if one exists
+- Expired and revoked tokens return 404
+- Per-user isolation — only session owner can create/revoke share links
+- Frontend: `ShareButton` component on session detail page — click → modal with share URL, copy-to-clipboard, expiry date, revoke button
+- Frontend: `SharedSession` view at `/shared/:token` — read-only banner, session summary metrics, error page for invalid/expired/revoked links
+- 7 tests: create (URL + idempotent), other user 404, shared access, invalid token, revoke, expiry
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-11
+- **Tests:** 7 (all passing, 69 total)
+- **Files:** `app/models/share_token.py`, `app/api/routes/share.py`, `app/db.py`, `app/api/main.py`, `src/components/ShareButton.tsx`, `src/views/SharedSession.tsx`, `src/App.tsx`, `tests/test_app/test_share.py`
+
+---
+
+## PA-08: Watch Live Progress View ✅
+
+### Plain-English Summary
+- `WatchLive` view at `/sessions/:id/live` — SSE-powered real-time dashboard using `useSessionProgress` hook
+- 6 live elements in responsive 2x3 grid:
+  1. **CycleIndicator**: current cycle number with status
+  2. **AdCountBar**: generated/target + published/generated progress bars with animated fills
+  3. **ScoreFeed**: scrolling list of evaluated ads with color-coded pass/improve/fail badges
+  4. **CostAccumulator**: running total cost + cost per published ad
+  5. **QualityTrend**: SVG line chart of score averages with 7.0 threshold reference line
+  6. **LatestAdPreview**: most recent evaluated ad with score and pass/fail badge
+- Connection status indicator (connected/reconnecting/disconnected)
+- Auto-redirect to session detail on `pipeline_complete` event
+- Error state display for `pipeline_error` events
+- App router updated: `/sessions/:id/live` → real WatchLive
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-08
+- **Files:** `src/views/WatchLive.tsx`, `src/components/progress/CycleIndicator.tsx`, `src/components/progress/AdCountBar.tsx`, `src/components/progress/ScoreFeed.tsx`, `src/components/progress/CostAccumulator.tsx`, `src/components/progress/QualityTrend.tsx`, `src/components/progress/LatestAdPreview.tsx`, `src/App.tsx`
+
+---
+
 ## PA-10: Curation Layer + Curated Set Tab ✅
 
 ### Plain-English Summary
