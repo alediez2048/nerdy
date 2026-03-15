@@ -7,6 +7,67 @@
 
 ---
 
+## P3-10: Video Pareto Selection + Regen Loop ✅
+
+### Plain-English Summary
+- Composite scoring for video: attribute_pass_pct * 0.4 + coherence_avg * 0.6
+- Best variant selected only if all Required attributes pass AND coherence >= 6
+- Targeted regen with diagnostics: identifies weakest attributes/dimensions
+- Budget cap: max 3 videos per ad (2 initial + 1 regen, ~$2.70 max)
+- Graceful degradation: video failure → image-only fallback, never blocks delivery
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-10
+
+### Files Changed
+- **Created:** `generate_video/selector.py` — compute_video_composite_score(), select_best_video()
+- **Created:** `generate_video/regen.py` — VideoDiagnostic, diagnose_video_failure(), MAX_VIDEOS_PER_AD
+- **Created:** `generate_video/degradation.py` — DegradationResult, handle_video_failure()
+- **Created:** `tests/test_pipeline/test_video_selection.py` — 9 tests
+
+---
+
+## P3-09: Script-Video Coherence Checker ✅
+
+### Plain-English Summary
+- 4-dimension coherence scoring for ad copy + video pairs
+- Dimensions: message_alignment, audience_match, emotional_consistency, narrative_flow
+- Below 6 on any dimension = incoherent, surfaces diagnostics for targeted regen
+- Same structure as text-image coherence (P1-16)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-09
+
+### Files Changed
+- **Created:** `evaluate/video_coherence.py` — VideoCoherenceResult, check_video_coherence(), is_coherent()
+- **Created:** `tests/test_pipeline/test_video_coherence.py` — 8 tests
+
+---
+
+## P3-08: Video Attribute Evaluator ✅
+
+### Plain-English Summary
+- 10-attribute checklist for video evaluation (hook_timing, ugc_authenticity, pacing, text_legibility, brand_safety, subject_clarity, aspect_ratio_compliance, visual_continuity, emotional_tone_match, audio_appropriateness)
+- 4 Required attributes must all pass; non-required failures are warnings
+- Frame extraction utility for multimodal evaluation (4 key frames per video)
+- Diagnostic notes on each failure feed the regen loop
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-08
+
+### Files Changed
+- **Created:** `evaluate/video_attributes.py` — 10-attribute checklist, VideoAttributeResult, is_video_acceptable()
+- **Created:** `evaluate/frame_extractor.py` — extract_key_frames()
+- **Created:** `tests/test_pipeline/test_video_attributes.py` — 9 tests
+
+---
+
 ## P3-07: Veo Integration + Video Spec Extraction ✅
 
 ### Plain-English Summary
