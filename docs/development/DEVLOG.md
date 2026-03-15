@@ -7,6 +7,30 @@
 
 ---
 
+## P3-02: Single-Variable A/B Variants — Copy ✅
+
+### Plain-English Summary
+- Implemented single-variable A/B copy variant generation: 1 control + 3 variants per ad
+- Each variant changes exactly ONE element (hook_type, emotional_angle, or cta_style) for causal attribution
+- Variant comparison identifies winner, winning element, and lift over control
+- Segment pattern tracker aggregates win rates per audience per element for structural learning
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 14, 2026
+- **Ticket:** P3-02
+
+### Files Changed
+- **Created:** `generate/ab_variants.py` — CopyVariant, VariantComparison, generate_copy_variants(), compare_variants(), track_variant_win(), get_segment_patterns()
+- **Created:** `tests/test_generation/test_ab_copy_variants.py` — 12 tests
+
+### Key Decisions
+- Element alternatives are deterministic (first non-matching option from predefined set)
+- Win patterns tracked per audience segment to enable per-segment optimization in future briefs
+- Lift = winner_score - control_score (0.0 when control wins)
+
+---
+
 ## P3-01: Nano Banana 2 Cost-Tier Image Model ✅
 
 ### Plain-English Summary
