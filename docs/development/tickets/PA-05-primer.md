@@ -3,30 +3,30 @@
 **For:** New Cursor Agent session
 **Project:** Ad-Ops-Autopilot — Autonomous Content Generation System for FB/IG
 **Date:** March 2026
-**Previous work:** PA-01 (FastAPI scaffold), PA-02 (database schema), PA-03 (Google SSO), PA-04 (Session CRUD API) must be complete. See `docs/DEVLOG.md`.
+**Previous work:** PA-04 (Session CRUD API) must be complete — `POST /sessions` with validated `SessionConfig`. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-PA-05 builds the **React brief configuration form** — the primary entry point for users to start a new ad generation session. The form uses progressive disclosure: required fields up front, advanced settings behind an accordion. A "Clone from previous" button lets power users duplicate a prior session's config.
+PA-05 builds the **React brief configuration form** — the "New Session" page where users configure a pipeline run. Uses progressive disclosure (R5-Q3): required fields always visible, advanced settings in an accordion.
 
 ### Why It Matters
 
-- **The Tool Is the Product** (Pillar 9): The form is the first thing users interact with — it must be fast, intuitive, and forgiving
-- Progressive disclosure (R5-Q3) makes it fast for repeat users (3 fields) while deep for power users (8+ fields)
-- Clone-from-previous reduces friction for iterative workflows — the most common usage pattern
-- Client-side validation prevents bad requests and wasted API calls
-- This form drives `POST /sessions` which triggers the entire pipeline
+- **The Reviewer Is a User, Too** (Pillar 8): The form is the first touchpoint — it must be intuitive
+- Progressive disclosure prevents overwhelming new users while giving power users full control
+- Clone-from-previous saves time for repeat users running similar campaigns
+- This is the first React component — it establishes the frontend project structure
 
 ---
 
 ## What Was Already Done
 
-- PA-01: FastAPI scaffold with Docker Compose (Vite dev server on port 5173)
-- PA-02: Session model with config JSONB schema
-- PA-03: Google SSO authentication (JWT tokens)
-- PA-04: `POST /sessions` endpoint accepts brief config and triggers Celery pipeline
+- PA-04: `POST /sessions` with `SessionConfig` validation (audience, campaign_goal, ad_count + advanced fields)
+- PA-03: Google SSO auth — JWT token available for API calls
+- PRD Section 4.7.10: Full frontend component spec with design tokens
+
+**No frontend code exists yet.** This ticket bootstraps the React app.
 
 ---
 
@@ -34,78 +34,72 @@ PA-05 builds the **React brief configuration form** — the primary entry point 
 
 ### Goal
 
-Build a single-page React form with progressive disclosure for brief configuration. Required fields are always visible; advanced fields hide behind an accordion. Clone-from-previous pre-fills all fields from a selected prior session.
+Set up the React (Vite) project and build the brief configuration form with progressive disclosure, validation, and clone-from-previous.
 
 ### Deliverables Checklist
 
-#### A. Brief Configuration Form (`app/frontend/src/components/BriefForm.tsx`)
+#### A. React Project Setup (`app/frontend/`)
 
-- [ ] **Required Fields (always visible)**
-  - `audience` — dropdown or text input (e.g., "Parents of SAT students", "High school juniors")
-  - `campaign_goal` — radio buttons: "Awareness" or "Conversion"
-  - `ad_count` — number input (min 1, max 100, default 10)
-  - `name` — text input (optional, placeholder: "Auto-generated if blank")
+- [ ] `npm create vite@latest` with React + TypeScript template
+- [ ] Install dependencies: `react-router-dom`, `axios` (or `fetch` wrapper)
+- [ ] Configure Vite proxy to `localhost:8000` for API calls
+- [ ] Design system tokens file from PRD Section 4.7.10:
+  - `src/design/tokens.ts` — colors (ink, surface, cyan, mint, etc.), font (Poppins), radii (24px cards, 100px buttons)
+- [ ] Base layout component with Nerdy branding
 
-- [ ] **Advanced Settings (accordion, collapsed by default)**
-  - `threshold` — number input (default 7.0, step 0.1, min 5.0, max 10.0)
-  - `weights` — 5 sliders for dimension weights (Clarity, Value Prop, CTA, Brand Voice, Emotional Resonance), must sum to 1.0
-  - `model_tier` — radio: "Flash (fast/cheap)" or "Pro (quality/expensive)"
-  - `budget_cap` — number input in dollars (optional)
-  - `image_settings` — toggle for image generation on/off, aspect ratio selector
+#### B. API Client (`src/api/sessions.ts`)
 
-- [ ] **Accordion behavior**
-  - Collapsed by default with "Advanced Settings" label and chevron
-  - Click to expand/collapse
-  - Shows count of non-default advanced settings when collapsed (e.g., "2 customized")
+- [ ] `createSession(config: SessionConfig): Promise<SessionDetail>`
+- [ ] `listSessions(filters?): Promise<SessionSummary[]>`
+- [ ] `getSession(sessionId: string): Promise<SessionDetail>`
+- [ ] Attach `Authorization: Bearer <jwt>` header from stored token
+- [ ] Error handling with typed error responses
 
-#### B. Form Validation
+#### C. Brief Form Component (`src/views/NewSessionForm.tsx`)
 
-- [ ] Client-side validation before submit
-  - `audience` — required, non-empty
-  - `campaign_goal` — required, must be "awareness" or "conversion"
-  - `ad_count` — required, integer, 1–100
-  - `threshold` — if provided, must be 5.0–10.0
-  - `weights` — if provided, must sum to 1.0 (±0.01 tolerance)
-  - `budget_cap` — if provided, must be positive number
-- [ ] Inline error messages next to invalid fields
-- [ ] Submit button disabled while validation errors exist
-- [ ] Clear visual distinction between required and optional fields
+- [ ] **Required fields (always visible):**
+  - Audience selector: "Parents" / "Students" (radio or toggle)
+  - Campaign Goal selector: "Awareness" / "Conversion" (radio or toggle)
+  - Ad Count: number input (default 50, min 1, max 200)
+- [ ] **Advanced settings (accordion/collapsible):**
+  - Cycle count (1–10, default 3)
+  - Quality threshold override (5.0–10.0, default 7.0)
+  - Dimension weights preset: "Awareness Profile" / "Conversion Profile" / "Equal"
+  - Model tier: "Standard" / "Premium"
+  - Budget cap (USD)
+  - Image generation toggle (default on)
+  - Aspect ratios: checkboxes for 1:1, 4:5, 9:16
+- [ ] **Clone-from-previous button:**
+  - Shows recent sessions dropdown
+  - Populates all form fields from selected session's config
+  - User can modify before submitting
+- [ ] **Submit button:**
+  - Calls `POST /sessions` with form data
+  - Shows loading state during submission
+  - On success: redirect to session detail or Watch Live view
+  - On error: display validation errors inline
 
-#### C. Clone-from-Previous
+#### D. Form Validation
 
-- [ ] "Clone from previous session" button above the form
-- [ ] Opens a dropdown/modal listing recent sessions (fetches `GET /sessions?limit=10`)
-- [ ] Selecting a session pre-fills ALL form fields from that session's config
-- [ ] User can modify any pre-filled field before submitting
-- [ ] Clear indication that fields were cloned (e.g., "Cloned from: Session Name")
+- [ ] Client-side validation matching `SessionConfig` schema from PA-04
+- [ ] Required field indicators
+- [ ] Inline error messages
+- [ ] Disable submit until required fields are filled
 
-#### D. Form Submission
+#### E. Types (`src/types/session.ts`)
 
-- [ ] Submit sends POST to `/sessions` with JSON body matching `SessionCreate` schema
-- [ ] Includes JWT token in Authorization header
-- [ ] On success (201): redirect to session list or session detail page
-- [ ] On error (400/422): display server validation errors
-- [ ] On error (401): redirect to login
-- [ ] Loading state on submit button (prevent double-submit)
+- [ ] `SessionConfig` — matches backend schema
+- [ ] `SessionSummary`, `SessionDetail` — matches API responses
+- [ ] `ProgressSummary` — for running sessions
 
-#### E. API Integration (`app/frontend/src/api/sessions.ts`)
+#### F. Tests
 
-- [ ] `createSession(config: BriefConfig): Promise<Session>` — POST /sessions
-- [ ] `listSessions(params?: ListParams): Promise<SessionListResponse>` — GET /sessions
-- [ ] Axios or fetch with JWT interceptor
-- [ ] Type definitions matching Pydantic schemas
-
-#### F. Tests (`app/frontend/src/components/__tests__/BriefForm.test.tsx`)
-
-- [ ] TDD first
-- [ ] Test required fields show validation errors when empty
-- [ ] Test form submits with valid required fields only
+- [ ] Test required fields render and are interactive
 - [ ] Test advanced accordion expands/collapses
-- [ ] Test weight sliders enforce sum-to-1.0 constraint
-- [ ] Test clone pre-fills all fields from selected session
-- [ ] Test submit button disabled during loading
-- [ ] Test server error displayed on 400 response
-- [ ] Minimum: 7+ tests
+- [ ] Test form validation prevents invalid submission
+- [ ] Test clone-from-previous populates fields
+- [ ] Test submit calls API with correct payload
+- [ ] Minimum: 5+ tests
 
 #### G. Documentation
 
@@ -113,65 +107,70 @@ Build a single-page React form with progressive disclosure for brief configurati
 
 ---
 
-## Branch & Merge Workflow
-
-```bash
-git switch main && git pull
-git switch -c feature/PA-05-brief-config-form
-```
-
----
-
 ## Important Context
+
+### Design System (PRD Section 4.7.10)
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| ink | #202344 | Primary background |
+| surface | #161c2c | Card backgrounds |
+| cyan | #17e2ea | Hero color, CTAs, active states |
+| mint | #35dd8b | Success states |
+| yellow | #ffcb19 | Warning, cost metrics |
+| red | #ff4e00 | Danger states |
+| Font | Poppins | All UI text |
+| Card radius | 24px | All cards |
+| Button radius | 100px | All pill buttons |
 
 ### Architectural Decisions
 
 | Decision | Reference | Summary |
 |----------|-----------|---------|
-| Progressive disclosure | R5-Q3 | Required fields always visible. Advanced behind accordion. Fast for repeat users, deep for power users. |
-| Clone-from-previous | R5-Q3 | Most sessions are variations on a previous run. Clone reduces friction to ~2 clicks. |
-| Client-side validation | R5-Q3 | Prevent bad requests. Inline errors. Submit disabled until valid. |
-| React + Vite | R5-Q7 | Frontend stack matches Nerdy's existing tooling. |
+| Progressive disclosure | R5-Q3 | Required fields visible, advanced in accordion |
+| Clone-from-previous | R5-Q3 | Repeat users pre-fill from prior sessions |
+| React + Vite | R5-Q7 | Matches Nerdy's existing frontend stack |
 
 ### Files to Create
 
 | File | Why |
 |------|-----|
-| `app/frontend/src/components/BriefForm.tsx` | Brief configuration form component |
-| `app/frontend/src/api/sessions.ts` | API client for session endpoints |
-| `app/frontend/src/types/session.ts` | TypeScript type definitions |
-| `app/frontend/src/components/__tests__/BriefForm.test.tsx` | Form tests |
+| `app/frontend/` | Entire React project (Vite scaffold) |
+| `src/design/tokens.ts` | Design system tokens |
+| `src/views/NewSessionForm.tsx` | Brief configuration form |
+| `src/api/sessions.ts` | Session API client |
+| `src/types/session.ts` | TypeScript types |
+| `src/App.tsx` | Router setup |
 
 ### Files You Should READ for Context
 
 | File | Why |
 |------|-----|
-| `app/api/schemas/session.py` | Pydantic schemas defining expected request body (PA-04) |
-| `app/api/routes/sessions.py` | Session endpoints this form submits to (PA-04) |
-| `docs/reference/prd.md` (Section 4.7) | Progressive disclosure and brief config spec |
+| `docs/reference/prd.md` (Section 4.7.4) | Brief configuration form spec |
+| `docs/reference/prd.md` (Section 4.7.10) | Frontend implementation spec + design tokens |
+| `app/api/schemas/session.py` | `SessionConfig` schema — form must match |
+| `app/api/routes/sessions.py` | API endpoints the form calls |
 
 ---
 
 ## Definition of Done
 
-- [ ] Form submits to POST /sessions successfully
-- [ ] Clone pre-fills all fields from a previous session
-- [ ] Form validates before submit (client-side)
-- [ ] Required vs. advanced fields properly separated
-- [ ] Advanced accordion shows count of customized settings
-- [ ] Loading state prevents double-submit
-- [ ] Error handling for 400/401/422 responses
+- [ ] Vite React project bootstrapped in `app/frontend/`
+- [ ] Form with progressive disclosure: required fields visible, advanced in accordion
+- [ ] Clone-from-previous populates form from prior session config
+- [ ] Form submits to `POST /sessions` with valid payload
+- [ ] Validation errors shown inline
+- [ ] Design tokens match PRD Section 4.7.10
 - [ ] Tests pass
 - [ ] Lint clean
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
 
 ---
 
-## Estimated Time: 60–90 minutes
+## Estimated Time: 90–120 minutes
 
 ---
 
 ## After This Ticket: What Comes Next
 
-**PA-06 (Session list UI)** builds the React session list page showing all user sessions as cards with metadata, filters, and search. It depends on the API client and type definitions from this ticket.
+**PA-06 (Session List UI)** builds the home screen that shows all sessions as cards. It uses the same API client and design tokens established here.

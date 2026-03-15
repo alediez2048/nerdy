@@ -3,28 +3,28 @@
 **For:** New Cursor Agent session
 **Project:** Ad-Ops-Autopilot — Autonomous Content Generation System for FB/IG
 **Date:** March 2026
-**Previous work:** PA-09 (session detail dashboard), PA-03 (Google SSO auth) must be complete. See `docs/DEVLOG.md`.
+**Previous work:** PA-09 (Dashboard Integration) must be complete. PA-03 (Auth) must be complete. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-PA-11 implements **shareable read-only session links**. Users can generate a time-limited URL for any session that grants read-only access to the session dashboard without requiring authentication. Shared viewers see the full dashboard (all tabs including the curated set) but cannot modify curation, start new sessions, or access other sessions.
+PA-11 implements **shareable session links** — read-only URLs with time-limited tokens so users can share session results with stakeholders without requiring them to log in (R5-Q5, Section 4.7.8).
 
 ### Why It Matters
 
-- **The Reviewer Is a User, Too** (Pillar 8): Stakeholders, managers, and clients need to see results without creating accounts or navigating the full application
-- Frictionless sharing accelerates review cycles — one link, no login required
-- Time-limited tokens (7-day expiry) balance convenience with security
-- Read-only mode prevents accidental modifications by non-owners
+- Stakeholders (managers, clients) need to review ad output without having `@nerdy.com` accounts
+- Time-limited tokens (7-day expiry) prevent stale links from becoming security holes
+- Read-only access ensures shared viewers can't modify curation or trigger new runs
+- This is a common pattern for internal tools: share a link, get feedback
 
 ---
 
 ## What Was Already Done
 
-- PA-03: Google SSO authentication with JWT session tokens and @nerdy.com domain restriction
-- PA-09: Session detail page with 5-tab dashboard (+ PA-10 curated set tab)
-- PA-04: Session CRUD API with per-user session isolation
+- PA-03: JWT-based auth with `get_current_user()` dependency
+- PA-09: Session detail page with 7-tab dashboard
+- PA-04: Per-user session isolation
 
 ---
 
@@ -32,79 +32,74 @@ PA-11 implements **shareable read-only session links**. Users can generate a tim
 
 ### Goal
 
-Enable authenticated users to generate a read-only shareable URL for any session they own, with a 7-day time-limited token that grants unauthenticated dashboard access.
+Add a "Share" button to sessions that generates a read-only, time-limited URL. Anyone with the link can view the session dashboard without logging in.
 
 ### Deliverables Checklist
 
 #### A. Share Token Model (`app/models/share_token.py`)
 
-- [ ] `ShareToken` model:
-  - `id` (UUID primary key)
-  - `session_id` (FK to sessions)
-  - `token` (unique, URL-safe string — use `secrets.token_urlsafe(32)`)
-  - `created_by` (FK to users — the session owner)
-  - `expires_at` (DateTime — 7 days from creation)
-  - `created_at` (DateTime)
-  - `revoked` (Boolean, default False)
-- [ ] Database migration
+- [ ] `ShareToken` SQLAlchemy model:
+  - `id` (integer, primary key)
+  - `token` (string, unique, indexed) — random URL-safe token
+  - `session_id` (foreign key to sessions)
+  - `created_by` (foreign key to users)
+  - `expires_at` (DateTime with timezone) — 7 days from creation
+  - `created_at` (DateTime with timezone)
+  - `is_revoked` (boolean, default false)
+- [ ] Add migration
 
 #### B. Share API (`app/api/routes/share.py`)
 
-- [ ] `POST /sessions/{sessionId}/share` — generates a share token (auth required, must own session)
-  - Returns `{ token, url, expires_at }`
-  - URL format: `{base_url}/shared/{token}`
-  - If active (non-expired, non-revoked) token already exists, return existing one
-- [ ] `DELETE /sessions/{sessionId}/share` — revokes active share token (auth required, must own session)
-  - Sets `revoked = True` on active token
-- [ ] `GET /shared/{token}` — validates token and returns session dashboard data
-  - Returns 404 if token doesn't exist
-  - Returns 410 (Gone) if token is expired or revoked
-  - Returns session detail + dashboard data (same as `GET /sessions/{sessionId}/dashboard`)
-  - No authentication required
+- [ ] `POST /sessions/{session_id}/share` — generate share token
+  - Only session owner can share (per-user isolation)
+  - Returns `{ "share_url": "https://host/shared/{token}", "expires_at": "..." }`
+  - If an active (non-expired, non-revoked) token already exists, return it instead of creating new
+- [ ] `DELETE /sessions/{session_id}/share` — revoke share token
+  - Sets `is_revoked = true`
+  - Returns 204
+- [ ] `GET /shared/{token}` — validate token, return session data
+  - Check token exists, not expired, not revoked
+  - Return session detail + dashboard data (same as PA-09 endpoints but no auth required)
+  - Return 404 if token invalid/expired/revoked
+- [ ] Register router in `app/api/main.py`
 
-#### C. Share Token Middleware (`app/middleware/share_auth.py`)
+#### C. Shared Session Middleware
 
-- [ ] Middleware or dependency that checks for share token in shared routes
-- [ ] Shared routes bypass normal JWT authentication
-- [ ] Shared context is read-only — any mutation endpoint returns 403 if accessed via share token
-- [ ] Share token grants access to exactly one session — no enumeration of other sessions
+- [ ] Dashboard API endpoints must work in two modes:
+  1. **Authenticated:** Normal JWT auth, per-user isolation
+  2. **Shared:** Token-based, read-only, no auth required
+- [ ] Add optional `share_token` query param to dashboard endpoints
+- [ ] When `share_token` is present: validate token, skip JWT auth, return read-only data
+- [ ] Shared access: all dashboard tabs visible, but no curation, no delete, no new session
 
-#### D. Frontend — Share Button (`frontend/src/components/ShareButton.tsx`)
+#### D. Frontend — Share Button (`src/components/ShareButton.tsx`)
 
-- [ ] "Share" button on session detail page header (visible only to session owner)
-- [ ] Click generates share link via `POST /sessions/{sessionId}/share`
-- [ ] Copy-to-clipboard with success toast
-- [ ] Shows expiry date: "Link expires on {date}"
-- [ ] "Revoke Link" button if active share token exists
-- [ ] Confirmation dialog before revoking
+- [ ] Share button on session detail page (top right)
+- [ ] On click: calls `POST /sessions/{session_id}/share`
+- [ ] Shows modal with share URL + copy-to-clipboard button
+- [ ] Shows expiry date
+- [ ] "Revoke" button to invalidate the link
 
-#### E. Frontend — Shared View (`frontend/src/pages/SharedSession.tsx`)
+#### E. Frontend — Shared Session View (`src/views/SharedSession.tsx`)
 
 - [ ] Route: `/shared/{token}`
-- [ ] No login required — no auth header sent
-- [ ] Renders session detail + dashboard (same layout as PA-09)
-- [ ] Read-only indicators:
-  - No "New Session" button in nav
-  - No session list access
-  - Curated Set tab visible but all controls disabled (no select, reorder, edit, export)
-  - No "Share" button
-  - Banner: "You're viewing a shared session — read-only access"
-- [ ] Expired/revoked token: show "This link has expired" page with prompt to request a new one
+- [ ] Fetches session data via `GET /shared/{token}`
+- [ ] Renders same 7-tab dashboard as session detail
+- [ ] No navigation to other sessions, no curation, no edit actions
+- [ ] "Shared view" banner indicating read-only mode
+- [ ] Expired/revoked token → error page with message
 
 #### F. Tests (`tests/test_app/test_share.py`)
 
 - [ ] TDD first
-- [ ] Test token generation returns valid URL and 7-day expiry
-- [ ] Test duplicate generation returns existing active token
-- [ ] Test token validation succeeds for valid, non-expired token
-- [ ] Test expired token returns 410
-- [ ] Test revoked token returns 410
-- [ ] Test nonexistent token returns 404
-- [ ] Test shared route returns session dashboard data
-- [ ] Test shared route blocks mutation endpoints (403)
-- [ ] Test only session owner can generate share tokens
-- [ ] Test token grants access to exactly one session (no enumeration)
-- [ ] Minimum: 10+ tests
+- [ ] Test create share token returns URL and expiry
+- [ ] Test duplicate share returns existing token
+- [ ] Test shared link returns session data without auth
+- [ ] Test expired token returns 404
+- [ ] Test revoked token returns 404
+- [ ] Test only session owner can create share link
+- [ ] Test shared view is read-only (no curation endpoints accessible)
+- [ ] Minimum: 7+ tests
 
 #### G. Documentation
 
@@ -112,145 +107,80 @@ Enable authenticated users to generate a read-only shareable URL for any session
 
 ---
 
-## Branch & Merge Workflow
-
-```bash
-git switch main && git pull
-git switch -c feature/PA-11-share-session
-```
-
----
-
 ## Important Context
+
+### Auth Spec (PRD Section 4.7.8)
+
+> Share session via read-only time-limited link.
+
+### Share Flow
+
+```
+Owner                        Backend                     Viewer
+  │                             │                           │
+  │  1. Click "Share"           │                           │
+  │  ───────────────────>       │                           │
+  │                             │  2. Generate token         │
+  │  <───────────────────       │     (7-day expiry)        │
+  │  3. Copy URL                │                           │
+  │                             │                           │
+  │  4. Send URL to viewer      │                           │
+  │  ─────────────────────────────────────────────────>     │
+  │                             │                           │
+  │                             │  5. GET /shared/{token}   │
+  │                             │  <───────────────────     │
+  │                             │  6. Validate + return     │
+  │                             │  ───────────────────>     │
+  │                             │     session dashboard     │
+```
 
 ### Architectural Decisions
 
 | Decision | Reference | Summary |
 |----------|-----------|---------|
-| Shareable links | R5-Q5 | Read-only URL with time-limited token; no auth required for viewers; 7-day expiry |
-| Per-user isolation | R5-Q5 | Share tokens are scoped to exactly one session; no access to other sessions or user data |
-| Confidence-gated autonomy | R2-Q5 | Read-only sharing is the lowest autonomy tier — viewers can observe but not modify |
+| Time-limited tokens | R5-Q5 | 7-day expiry. No permanent links. |
+| Read-only | R5-Q5 | Shared viewers cannot modify anything. |
+| No auth required for shared | R5-Q5 | Token is the credential for shared views. |
 
 ### Files to Create
 
 | File | Why |
 |------|-----|
-| `app/models/share_token.py` | ShareToken data model |
-| `app/api/routes/share.py` | Share token CRUD + shared access endpoints |
-| `app/middleware/share_auth.py` | Share token authentication middleware |
-| `frontend/src/components/ShareButton.tsx` | Share link generation UI |
-| `frontend/src/pages/SharedSession.tsx` | Read-only shared session view |
-| `tests/test_app/test_share.py` | Share feature tests |
-
-### Files to Modify
-
-| File | Action |
-|------|--------|
-| `frontend/src/App.tsx` | Add `/shared/:token` route |
-| `frontend/src/pages/SessionDetail.tsx` | Add Share button to header |
-| `app/api/main.py` | Register share router |
-| `docs/DEVLOG.md` | Add ticket entry |
-
-### Files You Should NOT Modify
-
-- Authentication middleware (PA-03) — share tokens bypass auth, not replace it
-- Session CRUD endpoints — shared access uses its own route, not the authenticated one
-- Dashboard components — they render the same in shared and authenticated contexts
+| `app/models/share_token.py` | ShareToken model |
+| `app/api/routes/share.py` | Share API endpoints |
+| `app/api/schemas/share.py` | Share Pydantic schemas |
+| `src/components/ShareButton.tsx` | Share UI |
+| `src/views/SharedSession.tsx` | Shared session view |
+| `tests/test_app/test_share.py` | Share tests |
 
 ### Files You Should READ for Context
 
 | File | Why |
 |------|-----|
-| PA-03 primer | Authentication system — share tokens must coexist with JWT auth |
-| PA-09 primer | Session detail page structure |
-| PA-10 primer | Curated Set tab — must be read-only in shared view |
-| `interviews.md` (R5-Q5) | Full rationale for sharing and access control |
-
----
-
-## Suggested Implementation Pattern
-
-```python
-# app/api/routes/share.py
-@router.post("/sessions/{session_id}/share")
-async def create_share_link(session_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    session = db.query(PipelineSession).get(session_id)
-    if not session or session.user_id != user.id:
-        raise HTTPException(403)
-
-    # Return existing active token if one exists
-    existing = db.query(ShareToken).filter(
-        ShareToken.session_id == session_id,
-        ShareToken.revoked == False,
-        ShareToken.expires_at > datetime.utcnow()
-    ).first()
-    if existing:
-        return {"token": existing.token, "url": f"{settings.BASE_URL}/shared/{existing.token}", "expires_at": existing.expires_at}
-
-    token = ShareToken(
-        session_id=session_id,
-        token=secrets.token_urlsafe(32),
-        created_by=user.id,
-        expires_at=datetime.utcnow() + timedelta(days=7)
-    )
-    db.add(token)
-    db.commit()
-    return {"token": token.token, "url": f"{settings.BASE_URL}/shared/{token.token}", "expires_at": token.expires_at}
-
-
-@router.get("/shared/{token}")
-async def get_shared_session(token: str, db: Session = Depends(get_db)):
-    share = db.query(ShareToken).filter(ShareToken.token == token).first()
-    if not share:
-        raise HTTPException(404)
-    if share.revoked or share.expires_at < datetime.utcnow():
-        raise HTTPException(410, detail="This share link has expired")
-
-    return await get_session_dashboard(share.session_id, db)
-```
-
----
-
-## Edge Cases to Handle
-
-1. Session owner generates link, then deletes their account — token should be invalidated (cascade or check)
-2. Token expires while viewer has the page open — next API call returns 410; frontend shows expiry notice
-3. Multiple share links requested — return existing active token, don't create duplicates
-4. Revoke then re-share — new token generated with fresh 7-day expiry
-5. Shared viewer tries to access other sessions by guessing URLs — token is scoped; returns 403/404
-6. Token in URL is case-sensitive — `token_urlsafe` generates URL-safe base64; preserve case in routing
+| `docs/reference/prd.md` (Section 4.7.8) | Auth + sharing spec |
+| `app/api/routes/dashboard.py` | Dashboard endpoints to extend with share_token support |
+| `app/api/deps.py` | Auth dependency to bypass for shared access |
+| `src/views/SessionDetail.tsx` | Session detail page to add Share button |
 
 ---
 
 ## Definition of Done
 
-- [ ] Shared link opens session detail in read-only mode
-- [ ] No authentication required for shared viewers
-- [ ] Token expires after 7 days
-- [ ] Expired/revoked tokens show appropriate error page
-- [ ] Read-only mode: no curation controls, no new sessions, no share button
-- [ ] Session owner can generate and revoke share links
-- [ ] Tests pass (`python -m pytest tests/ -v`)
-- [ ] Lint clean (`ruff check . --fix`)
+- [ ] Share button generates time-limited URL (7-day expiry)
+- [ ] Shared link opens read-only session dashboard without login
+- [ ] Expired/revoked tokens return appropriate error
+- [ ] Only session owner can create/revoke share links
+- [ ] Shared view shows all dashboard tabs but no edit actions
+- [ ] Tests pass
+- [ ] Lint clean
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
 
 ---
 
-## Estimated Time
-
-| Task | Estimate |
-|------|----------|
-| ShareToken model + migration | 15 min |
-| Share API endpoints | 25 min |
-| Share auth middleware | 15 min |
-| ShareButton component | 15 min |
-| SharedSession page (read-only view) | 25 min |
-| Tests | 30 min |
-| DEVLOG update | 5–10 min |
+## Estimated Time: 60–90 minutes
 
 ---
 
 ## After This Ticket: What Comes Next
 
-**PA-12 (Docker Compose production deployment)** packages the entire application — FastAPI, React, PostgreSQL, Celery, Redis — into a production-ready Docker Compose setup with Nginx reverse proxy and auto-HTTPS. This is the final application layer ticket.
+**PA-12 (Docker Compose Production Deployment)** is the final ticket — it wraps everything in a production-ready Docker Compose setup with Nginx, HTTPS, and static React builds.

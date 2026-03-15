@@ -3,29 +3,30 @@
 **For:** New Cursor Agent session
 **Project:** Ad-Ops-Autopilot — Autonomous Content Generation System for FB/IG
 **Date:** March 2026
-**Previous work:** PA-01 (FastAPI scaffold) must be complete. See `docs/DEVLOG.md`.
+**Previous work:** PA-01 (FastAPI scaffold) is complete. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-PA-02 defines the **PostgreSQL database schema** for the application layer: users (Google SSO), sessions (one pipeline run = one session), and curated sets (per-session curation state). This is the data model that every subsequent PA ticket reads from and writes to.
+PA-02 defines the **PostgreSQL database schema** for the application layer: users, sessions, and curated sets. These three tables underpin every PA ticket that follows — authentication, session management, curation, and sharing.
 
 ### Why It Matters
 
-- **State Is Sacred** (Pillar 5): Sessions are immutable records of pipeline runs — once created, config never changes
-- **The Tool Is the Product** (Pillar 9): Multi-user session management requires proper data isolation (R5-Q5)
-- The session model is one of the PRD's five load-bearing components (Section 4.7.2)
-- Per-user isolation ensures users see only their own sessions
-- Every API endpoint in PA-04 depends on these models being correct
+- **State Is Sacred** (Pillar 5): Session data and curation state must be durable and well-structured
+- The session model (PRD Section 4.7.2) is the application's core entity — one session = one pipeline run, immutable after completion
+- PA-03 (Google SSO) requires the User model to exist
+- PA-10 (curation) requires the CuratedSet/CuratedAd models to exist
+- Proper schema design now prevents costly migrations later
 
 ---
 
 ## What Was Already Done
 
-- PA-01: FastAPI scaffold with SQLAlchemy base, Alembic, Docker Compose
-- PRD Section 4.7.2 defines the session model structure
-- PRD Section 4.7 specifies immutable sessions and Google SSO fields
+- PA-01: FastAPI scaffold with SQLAlchemy engine, `SessionLocal`, `init_db()`, and `Base`
+- `app/models/session.py`: Session model exists with `id`, `session_id`, `user_id`, `config` (JSON), `status`, `celery_task_id`, `results_summary` (JSON), `created_at`
+- `app/db.py`: `create_engine`, `sessionmaker`, `init_db()` using `Base.metadata.create_all()`
+- No Alembic — currently using `create_all()` for speed
 
 ---
 
@@ -33,86 +34,69 @@ PA-02 defines the **PostgreSQL database schema** for the application layer: user
 
 ### Goal
 
-Create PostgreSQL tables for users, sessions, and curated_sets. Generate Alembic migrations. Schema must match the PRD's Section 4.7.2 session model.
+Complete the database schema by adding the User model, extending the Session model to match PRD Section 4.7.2, adding CuratedSet/CuratedAd models, and initializing Alembic for migrations.
 
 ### Deliverables Checklist
 
-#### A. Users Model (`app/models/user.py`)
+#### A. User Model (`app/models/user.py`)
 
-- [ ] `id` — UUID primary key
-- [ ] `email` — unique, indexed (Google SSO email, must be @nerdy.com)
-- [ ] `name` — display name from Google profile
-- [ ] `picture_url` — Google profile avatar URL
-- [ ] `google_id` — unique Google OAuth subject identifier
-- [ ] `created_at` — timestamp with timezone
-- [ ] `last_login_at` — timestamp with timezone, updated on each login
+- [ ] `User` SQLAlchemy model with:
+  - `id` (integer, primary key)
+  - `google_id` (string, unique, indexed) — from Google SSO
+  - `email` (string, unique, indexed) — must be `@nerdy.com`
+  - `name` (string) — display name from Google profile
+  - `picture_url` (string, nullable) — Google profile picture
+  - `last_login_at` (DateTime with timezone)
+  - `created_at` (DateTime with timezone, server_default)
+- [ ] Add relationship: User has many Sessions
 
-#### B. Sessions Model (`app/models/session.py`)
+#### B. Extend Session Model (`app/models/session.py`)
 
-- [ ] `id` — UUID primary key
-- [ ] `user_id` — foreign key to users, indexed
-- [ ] `name` — user-provided or auto-generated session name
-- [ ] `status` — enum: `pending`, `running`, `completed`, `failed`, `cancelled`
-- [ ] `config` — JSONB column storing the full brief configuration:
-  - `audience` (required): target audience segment
-  - `campaign_goal` (required): awareness or conversion
-  - `ad_count` (required): number of ads to generate
-  - `threshold` (optional): quality threshold override
-  - `weights` (optional): dimension weight overrides
-  - `model_tier` (optional): flash or pro
-  - `budget_cap` (optional): max token spend
-  - `image_settings` (optional): image generation config
-- [ ] `results_summary` — JSONB column storing aggregated results:
-  - `total_generated`, `total_published`, `avg_score`, `avg_visual_score`
-  - `cost_total`, `cost_per_ad`
-  - `cycle_count`, `quality_trend` (array of per-cycle averages)
-- [ ] `celery_task_id` — string, nullable (for tracking/cancelling the background job)
-- [ ] `ledger_path` — string (path to this session's JSONL ledger file)
-- [ ] `created_at` — timestamp with timezone
-- [ ] `updated_at` — timestamp with timezone, auto-updated
-- [ ] `completed_at` — timestamp with timezone, nullable
+- [ ] Add missing fields from PRD Section 4.7.2:
+  - `name` (string, nullable) — user-facing session name (e.g., "SAT Parents Conversion March")
+  - `updated_at` (DateTime with timezone, onupdate)
+  - `completed_at` (DateTime with timezone, nullable)
+  - `ledger_path` (string, nullable) — path to session-scoped ledger
+  - `output_path` (string, nullable) — path to session output directory
+- [ ] Add foreign key: `user_id` references `users.id` (currently just a string)
+- [ ] Ensure `config` JSON matches PRD schema: `product`, `audience`, `campaign_goal`, `ad_count`, `cycle_count`, `quality_threshold`, `dimension_weights`, `model_tier`, `budget_cap_usd`, `image_enabled`, `aspect_ratios`
 
-#### C. Curated Sets Model (`app/models/curated_set.py`)
+#### C. CuratedSet and CuratedAd Models (`app/models/curation.py`)
 
-- [ ] `id` — UUID primary key
-- [ ] `session_id` — foreign key to sessions, unique (one curated set per session)
-- [ ] `selections` — JSONB array of selected ad_ids with order
-- [ ] `annotations` — JSONB map of ad_id → annotation text
-- [ ] `edits` — JSONB map of ad_id → `{original: ..., edited: ..., diff: ...}`
-- [ ] `created_at` — timestamp with timezone
-- [ ] `updated_at` — timestamp with timezone, auto-updated
+- [ ] `CuratedSet` model:
+  - `id` (integer, primary key)
+  - `session_id` (foreign key to sessions)
+  - `name` (string) — curated set name
+  - `created_at`, `updated_at` (DateTime)
+- [ ] `CuratedAd` model:
+  - `id` (integer, primary key)
+  - `curated_set_id` (foreign key to curated_sets)
+  - `ad_id` (string) — references ad in the JSONL ledger
+  - `position` (integer) — ordering within set
+  - `annotation` (text, nullable) — user notes
+  - `edited_copy` (JSON, nullable) — light edits with before/after
+  - `created_at` (DateTime)
 
-#### D. Alembic Migration
+#### D. Alembic Initialization
 
-- [ ] Generate migration from models: `alembic revision --autogenerate -m "create users sessions curated_sets"`
-- [ ] Verify migration runs cleanly: `alembic upgrade head`
-- [ ] Verify downgrade works: `alembic downgrade -1`
-- [ ] Status enum created as PostgreSQL enum type
+- [ ] `alembic init app/alembic`
+- [ ] Configure `alembic.ini` and `env.py` to use `app.config.settings.DATABASE_URL`
+- [ ] Generate initial migration from existing models
+- [ ] Verify `alembic upgrade head` creates all tables
 
 #### E. Tests (`tests/test_app/test_models.py`)
 
 - [ ] TDD first
-- [ ] Test user creation with all fields
-- [ ] Test session creation with config JSONB
-- [ ] Test session belongs to user (foreign key)
-- [ ] Test curated_set belongs to session (foreign key, unique constraint)
-- [ ] Test status enum values accepted
-- [ ] Test invalid status rejected
-- [ ] Test results_summary JSONB stores and retrieves correctly
-- [ ] Minimum: 7+ tests
+- [ ] Test User model creation with all required fields
+- [ ] Test Session model creation with extended fields
+- [ ] Test User → Session relationship
+- [ ] Test CuratedSet → CuratedAd relationship
+- [ ] Test `@nerdy.com` email constraint (if enforced at model level)
+- [ ] Minimum: 5+ tests
 
 #### F. Documentation
 
 - [ ] Add PA-02 entry in `docs/DEVLOG.md`
-
----
-
-## Branch & Merge Workflow
-
-```bash
-git switch main && git pull
-git switch -c feature/PA-02-db-schema
-```
 
 ---
 
@@ -122,49 +106,48 @@ git switch -c feature/PA-02-db-schema
 
 | Decision | Reference | Summary |
 |----------|-----------|---------|
-| Session = immutable pipeline run | R5-Q1 | One session = one pipeline execution. Config is frozen at creation. Results accumulate. |
-| Per-user isolation | R5-Q5 | Users see only their own sessions. Foreign key + query filter enforced. |
-| JSONB for config + results | Section 4.7.2 | Flexible schema for brief config and aggregated results without rigid columns. |
-| Curation separation | R5-Q6 | Curated set is a separate table — dashboard metrics always read from immutable session data. |
+| Session = one pipeline run | R5-Q1, Section 4.7.2 | Immutable after completion. Config captures all parameters. |
+| Per-user isolation | R5-Q5 | Every session belongs to a user. Users only see their own sessions. |
+| Curation is mutable, generation is not | R5-Q6 | CuratedAd stores edits separately. Dashboard always shows original scores. |
 
-### Files to Create
+### Files to Modify/Create
 
-| File | Why |
-|------|-----|
-| `app/models/user.py` | User model (Google SSO fields) |
-| `app/models/session.py` | Session model (config, status, results) |
-| `app/models/curated_set.py` | Curated set model (selections, annotations, edits) |
-| `alembic/versions/xxxx_create_users_sessions_curated_sets.py` | Migration |
-| `tests/test_app/test_models.py` | Model tests |
+| File | Action |
+|------|--------|
+| `app/models/user.py` | Create — User model |
+| `app/models/session.py` | Modify — extend with missing fields, add FK to users |
+| `app/models/curation.py` | Create — CuratedSet + CuratedAd models |
+| `app/db.py` | Modify — import all models so `create_all` picks them up |
+| `tests/test_app/test_models.py` | Create — model tests |
 
 ### Files You Should READ for Context
 
 | File | Why |
 |------|-----|
-| `app/models/base.py` | SQLAlchemy base from PA-01 |
-| `docs/reference/prd.md` (Section 4.7) | Application layer architecture, session model spec |
-| `alembic.ini` | Alembic configuration from PA-01 |
+| `docs/reference/prd.md` (Section 4.7.2) | Session model schema |
+| `docs/reference/prd.md` (Section 4.7.7) | Curation layer design |
+| `docs/reference/prd.md` (Section 4.7.8) | Auth & user model requirements |
+| `app/models/session.py` | Existing Session model to extend |
+| `app/db.py` | Current database setup |
 
 ---
 
 ## Definition of Done
 
-- [ ] Migrations run cleanly (`alembic upgrade head`)
-- [ ] Schema matches Section 4.7.2 session model
-- [ ] All three tables created with correct columns and types
-- [ ] Foreign keys and constraints enforced
-- [ ] JSONB columns store and retrieve correctly
+- [ ] User, Session (extended), CuratedSet, CuratedAd models all defined
+- [ ] Relationships: User → Sessions, Session → CuratedSets, CuratedSet → CuratedAds
+- [ ] Alembic initialized with baseline migration
+- [ ] `alembic upgrade head` creates all tables cleanly
 - [ ] Tests pass
 - [ ] Lint clean
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
 
 ---
 
-## Estimated Time: 30–45 minutes
+## Estimated Time: 45–60 minutes
 
 ---
 
 ## After This Ticket: What Comes Next
 
-**PA-03 (Google SSO authentication)** implements Google OAuth 2.0 login using the users table from this ticket. It depends on the user model and database being ready.
+**PA-03 (Google SSO Authentication)** uses the User model to create/lookup users on login. It depends on the User table and the email field for `@nerdy.com` domain restriction.

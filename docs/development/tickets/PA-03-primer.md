@@ -3,29 +3,29 @@
 **For:** New Cursor Agent session
 **Project:** Ad-Ops-Autopilot — Autonomous Content Generation System for FB/IG
 **Date:** March 2026
-**Previous work:** PA-01 (FastAPI scaffold), PA-02 (database schema) must be complete. See `docs/DEVLOG.md`.
+**Previous work:** PA-02 (database schema) must be complete — User model required. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-PA-03 implements **Google OAuth 2.0 authentication** with `@nerdy.com` domain restriction. Users sign in with their corporate Google account, receive a JWT session token, and can only access their own sessions.
+PA-03 implements **Google OAuth 2.0 authentication** with `@nerdy.com` domain restriction and JWT tokens. This replaces the mock auth in `app/api/deps.py` and enables per-user session isolation across the entire application.
 
 ### Why It Matters
 
-- **The Tool Is the Product** (Pillar 9): An internal tool requires authentication — no anonymous access
-- `@nerdy.com` domain lock ensures only Nerdy employees can access the system (R5-Q5)
-- Per-user session isolation is a hard requirement — users must never see each other's data
-- JWT tokens enable stateless API authentication without server-side session storage
-- Every subsequent API endpoint depends on `get_current_user()` being available
+- **The Tool Is the Product** (Pillar 9): Internal tools need real auth — Nerdy employees sign in with their Google accounts
+- Domain restriction (`@nerdy.com` only) is a hard security boundary (R5-Q5)
+- Per-user isolation ensures users only see their own sessions
+- Every subsequent PA ticket uses `get_current_user()` — getting auth right here means all routes are protected
 
 ---
 
 ## What Was Already Done
 
-- PA-01: FastAPI scaffold with config (`GOOGLE_CLIENT_ID`, `SECRET_KEY` in `.env`)
-- PA-02: Users table with `email`, `google_id`, `name`, `picture_url`, `last_login_at`
-- Docker Compose running API + DB
+- PA-01: FastAPI scaffold with CORS, health check
+- PA-02: User model with `google_id`, `email`, `name`, `picture_url`, `last_login_at`
+- `app/api/deps.py`: Mock auth — `get_current_user()` reads `X-User-Id` header or returns `"test-user"`
+- `app/config.py`: Pydantic Settings (needs `GOOGLE_CLIENT_ID`, `SECRET_KEY` added)
 
 ---
 
@@ -33,70 +33,61 @@ PA-03 implements **Google OAuth 2.0 authentication** with `@nerdy.com` domain re
 
 ### Goal
 
-Implement Google OAuth 2.0 login flow, domain-restricted to `@nerdy.com`, with JWT session tokens and a `get_current_user` dependency for per-user isolation.
+Implement Google SSO login flow, JWT token issuance, and replace the mock `get_current_user()` with real token validation. Only `@nerdy.com` emails allowed.
 
 ### Deliverables Checklist
 
-#### A. Auth Routes (`app/api/routes/auth.py`)
+#### A. Configuration (`app/config.py`)
 
-- [ ] `POST /auth/google` — accepts Google OAuth ID token from frontend
-  - Verifies token with Google's public keys
-  - Extracts email, name, picture, Google subject ID
-  - Rejects non-`@nerdy.com` emails with 403 Forbidden
-  - Creates user record on first login (upsert by `google_id`)
-  - Updates `last_login_at` on every login
-  - Returns JWT access token
+- [ ] Add `GOOGLE_CLIENT_ID: str` — from Google Cloud Console
+- [ ] Add `SECRET_KEY: str` — for JWT signing (HS256)
+- [ ] Add `JWT_EXPIRY_HOURS: int = 24` — token lifetime
+- [ ] Update `.env.example` with `GOOGLE_CLIENT_ID` and `SECRET_KEY` placeholders
+
+#### B. Auth Routes (`app/api/routes/auth.py`)
+
+- [ ] `POST /auth/google` — receives Google OAuth `id_token` from frontend
+  - Verifies token with Google (`google.oauth2.id_token.verify_oauth2_token` or `google.auth.transport.requests`)
+  - Extracts `email`, `name`, `picture`, `sub` (Google ID)
+  - Rejects if email domain is not `@nerdy.com` (403)
+  - Creates or updates User in database (upsert on `google_id`)
+  - Updates `last_login_at`
+  - Issues JWT containing `user_id`, `email`, `name`
+  - Returns `{"access_token": "<jwt>", "token_type": "bearer", "user": {...}}`
 - [ ] `GET /auth/me` — returns current user profile from JWT
-- [ ] `POST /auth/logout` — client-side only (JWT is stateless), returns 200
+- [ ] Register router in `app/api/main.py`
 
-#### B. JWT Token Management (`app/api/auth.py`)
+#### C. Auth Dependency (`app/api/deps.py`)
 
-- [ ] `create_access_token(user_id: str, email: str) -> str`
-  - Signs JWT with `SECRET_KEY` from config
-  - Includes `sub` (user_id), `email`, `exp` (expiration, default 24h)
-- [ ] `get_current_user(token: str) -> User`
-  - FastAPI dependency (uses `Depends` with `OAuth2PasswordBearer` or custom header scheme)
-  - Decodes and validates JWT
-  - Returns User model instance from database
-  - Raises 401 Unauthorized on invalid/expired token
-- [ ] Token expiration configurable via environment variable
+- [ ] Replace mock `get_current_user()` with real JWT validation:
+  - Extract `Authorization: Bearer <token>` header
+  - Decode and validate JWT (check expiry, signature)
+  - Lookup user in database by `user_id` from token
+  - Return user dict with `user_id`, `email`, `name`
+  - Raise 401 if token missing, expired, or invalid
+- [ ] Keep a `DEV_MODE` escape hatch: if `GOOGLE_CLIENT_ID` is empty, fall back to mock auth (for local dev without Google credentials)
 
-#### C. Domain Restriction
+#### D. Dependencies
 
-- [ ] Validate email domain is exactly `@nerdy.com` (case-insensitive)
-- [ ] Return clear error message: "Only @nerdy.com accounts can access this application"
-- [ ] Log rejected login attempts (email + timestamp, NOT the token)
-
-#### D. Per-User Isolation Pattern
-
-- [ ] Document the pattern: every query that returns sessions must filter by `user_id = current_user.id`
-- [ ] Create helper: `get_user_sessions_query(user: User) -> Query` that pre-filters
-- [ ] This pattern will be enforced in PA-04 endpoints
+- [ ] Add `google-auth>=2.0.0` to `app/requirements.txt` (already in main requirements)
+- [ ] Add `python-jose[cryptography]>=3.3.0` to `app/requirements.txt` for JWT
 
 #### E. Tests (`tests/test_app/test_auth.py`)
 
 - [ ] TDD first
-- [ ] Test valid @nerdy.com Google token → returns JWT + creates user
-- [ ] Test non-@nerdy.com email → 403 Forbidden
-- [ ] Test valid JWT → `get_current_user` returns correct user
-- [ ] Test expired JWT → 401 Unauthorized
-- [ ] Test invalid JWT → 401 Unauthorized
-- [ ] Test repeat login updates `last_login_at` (upsert, not duplicate)
-- [ ] Test `GET /auth/me` returns user profile
-- [ ] Minimum: 7+ tests
+- [ ] Test `@nerdy.com` email accepted
+- [ ] Test non-`@nerdy.com` email rejected with 403
+- [ ] Test valid JWT returns user from `/auth/me`
+- [ ] Test expired JWT returns 401
+- [ ] Test missing Authorization header returns 401
+- [ ] Test user created on first login (upsert)
+- [ ] Test user updated on subsequent login (`last_login_at` changes)
+- [ ] Test DEV_MODE fallback works when `GOOGLE_CLIENT_ID` is empty
+- [ ] Minimum: 8+ tests
 
 #### F. Documentation
 
 - [ ] Add PA-03 entry in `docs/DEVLOG.md`
-
----
-
-## Branch & Merge Workflow
-
-```bash
-git switch main && git pull
-git switch -c feature/PA-03-google-sso
-```
 
 ---
 
@@ -106,48 +97,75 @@ git switch -c feature/PA-03-google-sso
 
 | Decision | Reference | Summary |
 |----------|-----------|---------|
-| Google SSO only | R5-Q5 | No email/password auth. Google OAuth 2.0 with corporate domain restriction. |
-| @nerdy.com lock | R5-Q5 | Domain-level access control. Only corporate accounts allowed. |
-| JWT tokens | R5-Q5 | Stateless authentication. No server-side session store needed. |
-| Per-user isolation | R5-Q5 | Every database query filters by authenticated user. No cross-user data leakage. |
+| Google SSO only | R5-Q5 | Single sign-on via Google. No username/password. |
+| @nerdy.com restriction | R5-Q5 | Hard domain check. Reject all other domains. |
+| JWT tokens | R5-Q5 | Stateless auth. No server-side session store. |
+| Per-user isolation | R5-Q5 | Users see only their own sessions. Filter at query level. |
 
-### Files to Create
+### Auth Flow
 
-| File | Why |
-|------|-----|
-| `app/api/routes/auth.py` | Auth endpoints (Google login, me, logout) |
-| `app/api/auth.py` | JWT creation, validation, get_current_user dependency |
-| `tests/test_app/test_auth.py` | Auth tests |
+```
+Frontend                    Backend                     Google
+   │                           │                           │
+   │  1. Google Sign-In        │                           │
+   │  ─────────────────────>   │                           │
+   │                           │  2. Verify id_token       │
+   │                           │  ─────────────────────>   │
+   │                           │  <─────────────────────   │
+   │                           │  3. Check @nerdy.com      │
+   │                           │  4. Upsert User           │
+   │                           │  5. Issue JWT              │
+   │  <─────────────────────   │                           │
+   │  6. Store JWT in client   │                           │
+   │                           │                           │
+   │  7. API call + Bearer     │                           │
+   │  ─────────────────────>   │                           │
+   │                           │  8. Validate JWT           │
+   │  <─────────────────────   │  9. Return data            │
+```
+
+### Files to Modify/Create
+
+| File | Action |
+|------|--------|
+| `app/api/routes/auth.py` | Create — Google SSO + JWT endpoints |
+| `app/api/deps.py` | Modify — replace mock with real JWT validation |
+| `app/config.py` | Modify — add GOOGLE_CLIENT_ID, SECRET_KEY, JWT_EXPIRY_HOURS |
+| `app/api/main.py` | Modify — register auth router |
+| `app/requirements.txt` | Modify — add python-jose |
+| `.env.example` | Modify — add GOOGLE_CLIENT_ID, SECRET_KEY |
+| `tests/test_app/test_auth.py` | Create — auth tests |
 
 ### Files You Should READ for Context
 
 | File | Why |
 |------|-----|
-| `app/models/user.py` | User model fields (PA-02) |
-| `app/config.py` | Environment config with GOOGLE_CLIENT_ID, SECRET_KEY |
-| `app/api/main.py` | FastAPI app to register auth routes |
+| `docs/reference/prd.md` (Section 4.7.8) | Auth architecture spec |
+| `app/api/deps.py` | Current mock auth to replace |
+| `app/models/user.py` | User model fields (from PA-02) |
+| `app/api/routes/sessions.py` | Uses `get_current_user` — must stay compatible |
+| `app/api/routes/progress.py` | Uses `get_current_user` — must stay compatible |
 
 ---
 
 ## Definition of Done
 
-- [ ] Only @nerdy.com emails can sign in
-- [ ] Non-@nerdy.com emails receive 403 with clear message
-- [ ] JWT token issued on successful login
-- [ ] `get_current_user` dependency works for protected routes
-- [ ] Users see only their own sessions (isolation pattern documented)
-- [ ] First login creates user; repeat login updates `last_login_at`
+- [ ] `POST /auth/google` accepts Google id_token, returns JWT
+- [ ] Non-`@nerdy.com` emails rejected with 403
+- [ ] `get_current_user()` validates JWT on all protected routes
+- [ ] `GET /auth/me` returns current user profile
+- [ ] DEV_MODE fallback for local development without Google credentials
+- [ ] User upserted in database on login
 - [ ] Tests pass
 - [ ] Lint clean
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
 
 ---
 
-## Estimated Time: 45–60 minutes
+## Estimated Time: 60–90 minutes
 
 ---
 
 ## After This Ticket: What Comes Next
 
-**PA-04 (Session CRUD API)** builds the REST endpoints for creating, listing, and viewing sessions. It depends on `get_current_user` from this ticket for every protected endpoint.
+**PA-04 (Session CRUD API)** needs to be updated to enforce per-user isolation — filtering sessions by the authenticated user's ID. The real `get_current_user()` from this ticket makes that possible.

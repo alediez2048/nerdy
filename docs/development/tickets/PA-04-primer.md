@@ -3,29 +3,36 @@
 **For:** New Cursor Agent session
 **Project:** Ad-Ops-Autopilot — Autonomous Content Generation System for FB/IG
 **Date:** March 2026
-**Previous work:** PA-01 (FastAPI scaffold), PA-02 (database schema), PA-03 (Google SSO) must be complete. See `docs/DEVLOG.md`.
+**Previous work:** PA-03 (Google SSO) must be complete — real auth required. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-PA-04 implements the **REST API endpoints** for creating, listing, and viewing ad generation sessions. Creating a session triggers a Celery background job to execute the pipeline. This is the bridge between the frontend brief config form and the backend pipeline.
+PA-04 completes the **Session CRUD API** — creating sessions that trigger pipeline jobs, listing sessions with filtering/pagination, and retrieving session detail. The routes already exist but need per-user isolation, proper input validation, and filtering.
 
 ### Why It Matters
 
-- **The Tool Is the Product** (Pillar 9): Sessions are the primary unit of work — every interaction starts with creating or viewing a session
-- Session creation must be fast (return immediately, run pipeline in background) (R5-Q1)
-- List endpoint must support filtering and sorting for power users (R5-Q2)
-- Detail endpoint must return full results for the dashboard integration (R5-Q8)
-- Per-user isolation (R5-Q5) enforced on every query
+- Sessions are the core entity of the application — every user interaction starts with creating or viewing a session
+- Per-user isolation (R5-Q5) ensures users only see their own data
+- Proper config validation catches bad input before it reaches the Celery pipeline
+- The session list is the home screen (Section 4.7.3) — it must support filtering and sorting
 
 ---
 
 ## What Was Already Done
 
-- PA-01: FastAPI scaffold with Celery worker
-- PA-02: Sessions model with config JSONB, status enum, results_summary
-- PA-03: `get_current_user` dependency for authentication
+- `app/api/routes/sessions.py`: Three routes exist:
+  - `POST /sessions` — creates session, triggers `run_pipeline_session.delay(session_id)`, returns 201
+  - `GET /sessions` — lists ALL sessions (no user filtering), reverse chronological
+  - `GET /sessions/{session_id}` — gets session detail by ID
+- `app/api/schemas/session.py`: Pydantic schemas exist:
+  - `SessionCreate` — accepts `config: dict` (no validation)
+  - `SessionSummary` — list item with `progress_summary`
+  - `SessionDetail` — full session fields
+  - `ProgressSummary` — running session progress from Redis
+- `app/workers/tasks/pipeline_task.py`: Simulated pipeline task with progress publishing
+- `app/api/deps.py`: `get_current_user()` (mock in PA-01, replaced with real JWT in PA-03)
 
 ---
 
@@ -33,101 +40,72 @@ PA-04 implements the **REST API endpoints** for creating, listing, and viewing a
 
 ### Goal
 
-Build three REST endpoints for session management: create (with Celery pipeline trigger), list (with filters/sort), and detail (with full results).
+Harden the Session CRUD API with per-user isolation, input validation on `SessionCreate`, filtering/pagination on the list endpoint, and a `DELETE` endpoint.
 
 ### Deliverables Checklist
 
-#### A. Session Routes (`app/api/routes/sessions.py`)
+#### A. Per-User Isolation
 
-- [ ] `POST /sessions` — Create a new session
-  - Requires authentication (`get_current_user`)
-  - Accepts brief config JSON body (audience, campaign_goal, ad_count + optional advanced fields)
-  - Validates required fields; rejects invalid config
-  - Creates session record with status `pending`
-  - Generates unique ledger path: `output/sessions/{session_id}/ledger.jsonl`
-  - Dispatches Celery task to execute pipeline
-  - Stores `celery_task_id` on session record
-  - Updates status to `running`
-  - Returns session object with 201 Created (does NOT wait for pipeline to finish)
+- [ ] `POST /sessions`: Set `user_id` from authenticated user (not from request body)
+- [ ] `GET /sessions`: Filter by `user_id` from authenticated user — users NEVER see other users' sessions
+- [ ] `GET /sessions/{session_id}`: Return 404 if session belongs to a different user
+- [ ] `DELETE /sessions/{session_id}`: Only owner can delete. Return 404 for other users.
 
-- [ ] `GET /sessions` — List user's sessions
-  - Requires authentication; returns only current user's sessions
-  - Default sort: reverse chronological (`created_at` DESC)
-  - Query parameters for filtering:
-    - `audience` — filter by audience segment
-    - `campaign_goal` — filter by awareness/conversion
-    - `status` — filter by session status
-    - `search` — search by session name (case-insensitive LIKE)
-  - Query parameters for sorting:
-    - `sort_by` — `created_at`, `avg_score`, `ad_count`, `cost_total` (default: `created_at`)
-    - `sort_order` — `asc` or `desc` (default: `desc`)
-  - Pagination: `offset` + `limit` (default limit: 20)
-  - Returns list of session summaries (not full results — keep payload light)
+#### B. Input Validation (`app/api/schemas/session.py`)
 
-- [ ] `GET /sessions/{session_id}` — Session detail
-  - Requires authentication; 404 if session belongs to different user
-  - Returns full session object including:
-    - Complete config
-    - Full results_summary
-    - Status + timestamps
-    - Celery task status (if running)
+- [ ] Replace `config: dict` with a typed `SessionConfig` schema:
+  - `audience` (required, enum: "parents", "students")
+  - `campaign_goal` (required, enum: "awareness", "conversion")
+  - `ad_count` (required, int, default 50, min 1, max 200)
+  - `name` (optional, string) — user-facing session name
+  - `cycle_count` (optional, int, default 3, min 1, max 10)
+  - `quality_threshold` (optional, float, default 7.0, min 5.0, max 10.0)
+  - `dimension_weights` (optional, enum: "awareness_profile", "conversion_profile", "equal")
+  - `model_tier` (optional, enum: "standard", "premium")
+  - `budget_cap_usd` (optional, float, min 1.0)
+  - `image_enabled` (optional, bool, default true)
+  - `aspect_ratios` (optional, list of enum: "1:1", "4:5", "9:16")
+- [ ] Return 422 with clear messages for invalid input
 
-#### B. Pydantic Schemas (`app/api/schemas/session.py`)
+#### C. Filtering & Pagination on `GET /sessions`
 
-- [ ] `SessionCreate` — request body for POST
-  - `audience: str` (required)
-  - `campaign_goal: Literal["awareness", "conversion"]` (required)
-  - `ad_count: int` (required, min 1, max 100)
-  - `name: str | None` (optional, auto-generated if not provided)
-  - `threshold: float | None` (optional, default 7.0)
-  - `weights: dict | None` (optional)
-  - `model_tier: Literal["flash", "pro"] | None` (optional)
-  - `budget_cap: float | None` (optional)
-  - `image_settings: dict | None` (optional)
-- [ ] `SessionSummary` — response for list endpoint (lightweight)
-- [ ] `SessionDetail` — response for detail endpoint (full data)
-- [ ] `SessionListResponse` — paginated list wrapper with total count
+- [ ] Query parameters:
+  - `?audience=parents` — filter by audience
+  - `?campaign_goal=conversion` — filter by campaign goal
+  - `?status=completed` — filter by status (pending, running, completed, failed)
+  - `?sort_by=created_at` (default) or `sort_by=score`
+  - `?offset=0&limit=20` — pagination
+- [ ] Return total count in response for pagination UI
+- [ ] Include `config` summary fields (audience, campaign_goal, ad_count) in `SessionSummary`
 
-#### C. Celery Pipeline Task (`app/workers/tasks/pipeline.py`)
+#### D. Delete Endpoint
 
-- [ ] `run_pipeline_session(session_id: str)` — Celery task
-  - Loads session config from database
-  - Sets up session-specific ledger path
-  - Calls the existing pipeline with the session's config
-  - Updates session status to `completed` or `failed` on finish
-  - Populates `results_summary` from ledger data on completion
-  - Catches exceptions and updates status to `failed` with error info
-- [ ] Task registered with Celery autodiscovery
+- [ ] `DELETE /sessions/{session_id}` — soft delete or hard delete
+- [ ] Cancel Celery task if session is still running
+- [ ] Return 204 on success
 
-#### D. Tests (`tests/test_app/test_sessions.py`)
+#### E. Session Name Generation
+
+- [ ] Auto-generate a human-readable name if not provided: e.g., "SAT Parents Conversion — Mar 15"
+- [ ] Store in `Session.name` field (added in PA-02)
+
+#### F. Tests (`tests/test_app/test_sessions.py`)
 
 - [ ] TDD first
-- [ ] Test POST /sessions creates session with status `pending` → `running`
-- [ ] Test POST /sessions returns 201 immediately (does not block)
-- [ ] Test POST /sessions validates required fields (400 on missing audience)
-- [ ] Test GET /sessions returns only current user's sessions
-- [ ] Test GET /sessions filters by audience
-- [ ] Test GET /sessions filters by campaign_goal
-- [ ] Test GET /sessions filters by status
-- [ ] Test GET /sessions search by name
-- [ ] Test GET /sessions sorts by created_at desc (default)
-- [ ] Test GET /sessions/{id} returns full detail
-- [ ] Test GET /sessions/{id} returns 404 for other user's session
-- [ ] Test session creation triggers Celery task
-- [ ] Minimum: 10+ tests
+- [ ] Test create session with valid config returns 201
+- [ ] Test create session with invalid config returns 422
+- [ ] Test list sessions returns only current user's sessions
+- [ ] Test list sessions with audience filter
+- [ ] Test list sessions with status filter
+- [ ] Test list sessions with pagination (offset + limit)
+- [ ] Test get session returns 404 for another user's session
+- [ ] Test delete session returns 204
+- [ ] Test delete returns 404 for another user's session
+- [ ] Minimum: 9+ tests
 
-#### E. Documentation
+#### G. Documentation
 
 - [ ] Add PA-04 entry in `docs/DEVLOG.md`
-
----
-
-## Branch & Merge Workflow
-
-```bash
-git switch main && git pull
-git switch -c feature/PA-04-session-crud
-```
 
 ---
 
@@ -137,44 +115,42 @@ git switch -c feature/PA-04-session-crud
 
 | Decision | Reference | Summary |
 |----------|-----------|---------|
-| Session = one pipeline run | R5-Q1 | Immutable config. Create session → run pipeline → results accumulate. |
-| Flat list, not folders | R5-Q2 | Reverse-chronological card list. Filters + sort + search instead of hierarchy. |
-| Background execution | R5-Q1, R5-Q4 | POST returns immediately. Pipeline runs in Celery worker. Status tracked via DB. |
-| Per-user isolation | R5-Q5 | Every query filters by user_id. 404 (not 403) for other users' sessions. |
+| Session = one pipeline run | R5-Q1 | Immutable after completion. Config locked on creation. |
+| Per-user isolation | R5-Q5 | Filter at query level. Never leak cross-user data. |
+| Session list as home screen | R5-Q2, Section 4.7.3 | Reverse-chronological cards with filters and badges |
+| Session config from PRD | Section 4.7.2 | Full config schema with required and optional fields |
 
-### Files to Create
+### Files to Modify/Create
 
-| File | Why |
-|------|-----|
-| `app/api/routes/sessions.py` | Session CRUD endpoints |
-| `app/api/schemas/session.py` | Pydantic request/response schemas |
-| `app/workers/tasks/pipeline.py` | Celery pipeline execution task |
-| `tests/test_app/test_sessions.py` | Session API tests |
+| File | Action |
+|------|--------|
+| `app/api/routes/sessions.py` | Modify — add user filtering, delete, pagination |
+| `app/api/schemas/session.py` | Modify — typed SessionConfig, extend SessionSummary |
+| `tests/test_app/test_sessions.py` | Create — CRUD tests |
 
 ### Files You Should READ for Context
 
 | File | Why |
 |------|-----|
-| `app/models/session.py` | Session model from PA-02 |
-| `app/api/auth.py` | `get_current_user` dependency from PA-03 |
-| `app/workers/celery_app.py` | Celery configuration from PA-01 |
-| `docs/reference/prd.md` (Section 4.7) | Session model spec and application architecture |
+| `docs/reference/prd.md` (Section 4.7.2) | Session config schema |
+| `docs/reference/prd.md` (Section 4.7.3) | Session list spec |
+| `app/api/routes/sessions.py` | Existing routes to extend |
+| `app/api/schemas/session.py` | Existing schemas to extend |
+| `app/api/deps.py` | `get_current_user()` — now returns real user from PA-03 |
+| `app/workers/tasks/pipeline_task.py` | Pipeline task triggered by create |
 
 ---
 
 ## Definition of Done
 
-- [ ] Session creation triggers Celery pipeline job
-- [ ] List supports filter by audience, goal, status
-- [ ] List supports search by name
-- [ ] List supports sort by created_at, avg_score, ad_count, cost_total
-- [ ] Detail returns full config + results_summary
-- [ ] Per-user isolation enforced (404 for other users' sessions)
-- [ ] Pydantic schemas validate all inputs
+- [ ] Users only see their own sessions (per-user isolation enforced)
+- [ ] `SessionCreate` validates config fields with proper types and constraints
+- [ ] `GET /sessions` supports filtering by audience, goal, status + pagination
+- [ ] `DELETE /sessions/{session_id}` works with ownership check
+- [ ] Auto-generated session names
 - [ ] Tests pass
 - [ ] Lint clean
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
 
 ---
 
@@ -184,4 +160,4 @@ git switch -c feature/PA-04-session-crud
 
 ## After This Ticket: What Comes Next
 
-**PA-05 (Brief configuration form)** builds the React frontend form that submits to `POST /sessions`. It depends on these API endpoints being functional.
+**PA-05 (Brief Configuration Form)** builds the React form that submits to `POST /sessions`. The `SessionConfig` schema from this ticket defines exactly what fields the form must collect.

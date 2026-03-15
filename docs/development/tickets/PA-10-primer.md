@@ -3,29 +3,29 @@
 **For:** New Cursor Agent session
 **Project:** Ad-Ops-Autopilot — Autonomous Content Generation System for FB/IG
 **Date:** March 2026
-**Previous work:** PA-09 (session detail dashboard), PA-02 (database schema with curated_sets table) must be complete. See `docs/DEVLOG.md`.
+**Previous work:** PA-09 (Dashboard Integration) must be complete — session detail with 7 tabs. PA-02 provided CuratedSet/CuratedAd models. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-PA-10 adds the **curation layer** — a 6th dashboard tab where users select, reorder, annotate, and lightly edit generated ads before export. The curation state lives in its own database table (separate from the immutable session/ledger data) to preserve metric integrity. Edits are tracked with before/after diffs. The curated set can be exported as a Meta-ready zip containing ad copy JSON and images.
+PA-10 builds the **curation layer** — the 7th dashboard tab where users select, reorder, annotate, lightly edit, and export their best ads as a Meta-ready zip (R5-Q6, Section 4.7.7).
 
 ### Why It Matters
 
-- **The Reviewer Is a User, Too** (Pillar 8): The curated showcase tells the quality story — raw pipeline output needs human refinement before presentation
-- Curation is where autonomous generation meets human judgment — the last mile before Meta Ad Manager
-- Strict separation between generated metrics and curated edits ensures dashboard data stays honest
-- Export as a zip with Meta-ready formatting makes the output immediately actionable
+- **The Reviewer Is a User, Too** (Pillar 8): Curation is where human judgment meets system output
+- Immutable generation + mutable curation: edits are tracked separately, dashboard metrics always show original scores
+- The export zip is the final deliverable — what actually gets uploaded to Meta Ads Manager
+- Diff tracking on edits creates an audit trail
 
 ---
 
 ## What Was Already Done
 
-- PA-02: Database schema includes `curated_sets` table (per-session curation state)
-- PA-09: Session detail page with 5-tab dashboard shell
-- P5-04: Ad Library tab (panel 5) — filterable ad browser that this tab extends
-- P1-18: Full ad assembly + export (Meta-ready file naming, copy JSON + images)
+- PA-02: `CuratedSet` and `CuratedAd` models in `app/models/curation.py`
+- PA-09: Session detail page with "Curated Set" tab placeholder
+- PA-09: `GET /sessions/{session_id}/ads` returns all ads for the session
+- P5-10: `output/export_ad_library.py` — exports ads to JSON/CSV (reference for export logic)
 
 ---
 
@@ -33,218 +33,143 @@ PA-10 adds the **curation layer** — a 6th dashboard tab where users select, re
 
 ### Goal
 
-Build a 6th dashboard tab for ad curation with select/deselect, reorder, annotate, light edit with diff tracking, and zip export — all persisted in the `curated_sets` database table.
+Build curation API endpoints, the Curated Set tab UI, and the Meta-ready zip export.
 
 ### Deliverables Checklist
 
 #### A. Curation API (`app/api/routes/curation.py`)
 
-- [ ] `GET /sessions/{sessionId}/curated` — returns current curated set (selected ads, order, annotations, edits)
-- [ ] `PUT /sessions/{sessionId}/curated` — updates curated set (batch update: selections, order, annotations)
-- [ ] `PATCH /sessions/{sessionId}/curated/{adId}` — update single ad curation (select/deselect, annotate, edit)
-- [ ] `POST /sessions/{sessionId}/curated/export` — generates and returns zip file
-- [ ] All curation state stored in `curated_sets` table, never in the ledger or session data
-- [ ] Edit tracking: store `original_text` and `edited_text` with timestamp for every field change
+- [ ] `POST /sessions/{session_id}/curated` — create curated set for session
+- [ ] `GET /sessions/{session_id}/curated` — get curated set with all curated ads
+- [ ] `POST /sessions/{session_id}/curated/ads` — add ad to curated set
+  - Body: `{ "ad_id": "...", "position": 1 }`
+- [ ] `DELETE /sessions/{session_id}/curated/ads/{ad_id}` — remove ad from curated set
+- [ ] `PATCH /sessions/{session_id}/curated/ads/{ad_id}` — update ad in curated set
+  - Reorder: `{ "position": 3 }`
+  - Annotate: `{ "annotation": "Great hook, needs shorter CTA" }`
+  - Edit: `{ "edited_copy": { "primary_text": "new text..." } }`
+- [ ] `POST /sessions/{session_id}/curated/reorder` — batch reorder: `{ "ad_ids": ["id1", "id2", ...] }`
+- [ ] `GET /sessions/{session_id}/curated/export` — download Meta-ready zip
+- [ ] Register router in `app/api/main.py`
+- [ ] Per-user isolation on all endpoints
 
-#### B. Curation Data Model (`app/models/curation.py`)
+#### B. Edit Diff Tracking
 
-- [ ] `CuratedAd` model:
-  - `session_id`, `ad_id`, `selected: bool`, `sort_order: int`
-  - `annotation: str | None` (user notes)
-  - `edits: JSON` — list of `{ field, original, edited, edited_at }`
-  - `created_at`, `updated_at`
-- [ ] Database migration for `curated_ads` table (extends PA-02 schema)
+- [ ] When `edited_copy` is provided, store both original and edited versions
+- [ ] `CuratedAd.edited_copy` JSON format: `{ "field": { "original": "...", "edited": "..." } }`
+- [ ] Dashboard metrics always use original scores, never recalculate from edits
 
-#### C. Curated Set Tab (`frontend/src/components/dashboard/CuratedSetTab.tsx`)
+#### C. Meta-Ready Zip Export
 
-- [ ] 6th tab in the dashboard: "Curated Set"
-- [ ] Two-panel layout: left = available ads (from Ad Library), right = curated set (selected + ordered)
-- [ ] **Select/Deselect:** Checkbox or click-to-add on available ads; click-to-remove on curated set
-- [ ] **Reorder:** Drag-and-drop reordering within curated set (use a library like `@dnd-kit/core`)
-- [ ] **Annotate:** Inline text field on each curated ad for user notes
-- [ ] **Light Edit:** Click-to-edit on ad copy fields (primary text, headline, description, CTA)
-  - Edited fields visually marked (e.g., yellow highlight or "edited" badge)
-  - "View diff" toggle shows before/after for each edited field
-  - Edits auto-save on blur
-- [ ] **Export button:** "Export Curated Set" triggers zip download
-- [ ] **Clear labels:** "As Generated" vs "As Edited" clearly distinguished throughout
+- [ ] ZIP structure:
+  ```
+  curated_export/
+  ├── manifest.csv          (one row per ad: position, headline, primary_text, description, cta, score)
+  ├── ads/
+  │   ├── 01_ad_<id>/
+  │   │   ├── copy.json     (primary_text, headline, description, cta — edited version if edited)
+  │   │   ├── metadata.json (scores, status, original copy if edited)
+  │   │   └── image.png     (winning image if available)
+  │   ├── 02_ad_<id>/
+  │   │   └── ...
+  └── summary.json          (total ads, avg score, export timestamp)
+  ```
+- [ ] Return as streaming ZIP response
+- [ ] Use edited copy in export if edits exist, original otherwise
 
-#### D. Zip Export (`app/services/export.py`)
+#### D. Curated Set Tab (`src/tabs/CuratedSet.tsx`)
 
-- [ ] Generate zip containing:
-  - `ads/` folder with one subfolder per ad (named by ad_id)
-  - Each ad folder: `copy.json` (Meta-formatted fields), image files (if available), `metadata.json` (scores, rationales, edit history)
-  - `manifest.json` at root: ordered list of ads with summary metadata
-  - `annotations.json`: all user annotations keyed by ad_id
-- [ ] Use edited text (not original) in `copy.json` if edits exist
-- [ ] Include edit history in `metadata.json` for audit trail
-- [ ] Meta-ready formatting: primary_text, headline, description, call_to_action fields
+- [ ] **Empty state:** "No curated ads yet. Browse the Ad Library tab and select ads to curate."
+- [ ] **Selection mode:** In Ad Library tab, each ad gets a "Add to Curated Set" button
+- [ ] **Curated list view:**
+  - Drag-and-drop reorder (or up/down arrows)
+  - Each ad shows: position number, copy preview, scores, status badges
+  - Inline annotation field
+  - "Edit" button opens light edit modal
+- [ ] **Light edit modal:**
+  - Editable fields: primary_text, headline, description
+  - Side-by-side diff view (original vs edited)
+  - Save / discard buttons
+- [ ] **Export button:** "Export Meta-Ready ZIP" → triggers download
+- [ ] **Counter:** "5 ads curated" in tab header
 
 #### E. Tests (`tests/test_app/test_curation.py`)
 
 - [ ] TDD first
-- [ ] Test select/deselect persists in database
-- [ ] Test reorder updates sort_order correctly
-- [ ] Test annotation saves and retrieves
-- [ ] Test edit tracking stores original and edited text with timestamp
+- [ ] Test create curated set
+- [ ] Test add ad to curated set
+- [ ] Test remove ad from curated set
+- [ ] Test reorder ads
+- [ ] Test annotate ad
+- [ ] Test edit ad with diff tracking (original preserved)
 - [ ] Test export zip contains correct structure
-- [ ] Test export uses edited text, not original, when edits exist
-- [ ] Test curation data is isolated from session/ledger data (no cross-contamination)
-- [ ] Test curated set for nonexistent session returns 404
+- [ ] Test per-user isolation
 - [ ] Minimum: 8+ tests
 
-#### F. Frontend Tests (`tests/test_frontend/test_curated_set.test.tsx`)
-
-- [ ] Test tab renders in dashboard
-- [ ] Test select/deselect toggles ad in curated set
-- [ ] Test drag-and-drop reorder updates order
-- [ ] Test edit mode shows diff view
-- [ ] Test export button triggers download
-- [ ] Minimum: 5+ tests
-
-#### G. Documentation
+#### F. Documentation
 
 - [ ] Add PA-10 entry in `docs/DEVLOG.md`
 
 ---
 
-## Branch & Merge Workflow
-
-```bash
-git switch main && git pull
-git switch -c feature/PA-10-curation-layer
-```
-
----
-
 ## Important Context
+
+### Curation Spec (PRD Section 4.7.7)
+
+> Immutable generation + mutable curation:
+> 1. Select ads for curated set
+> 2. Reorder within curated set
+> 3. Annotate — add notes per ad
+> 4. Light edit — minor copy polish with before/after diff tracking
+> 5. Export curated set as Meta-ready zip
+>
+> Dashboard metrics always reflect original pipeline output, never curated edits.
 
 ### Architectural Decisions
 
 | Decision | Reference | Summary |
 |----------|-----------|---------|
-| Curation layer | R5-Q6 | 6th tab: select, reorder, annotate, light edit with diff tracking, export as zip |
-| Data isolation | Risk Register | Curation lives in its own DB table; dashboard metrics always read from immutable session data; curated edits never pollute generated metrics |
-| Export format | P1-18 | Meta-ready file naming and copy JSON structure |
+| Immutable generation | R5-Q6 | Pipeline output never modified. Curation is a separate layer. |
+| Diff tracking | R5-Q6 | Edits stored as original → edited pairs. Full audit trail. |
+| Dashboard shows originals | R5-Q6 | Metrics always reflect pipeline output, not curated edits. |
 
 ### Files to Create
 
 | File | Why |
 |------|-----|
-| `app/api/routes/curation.py` | Curation CRUD + export API |
-| `app/models/curation.py` | CuratedAd data model |
-| `app/services/export.py` | Zip export service |
-| `frontend/src/components/dashboard/CuratedSetTab.tsx` | Curated Set tab component |
-| `tests/test_app/test_curation.py` | Backend tests |
-| `tests/test_frontend/test_curated_set.test.tsx` | Frontend tests |
-
-### Files to Modify
-
-| File | Action |
-|------|--------|
-| `frontend/src/components/Dashboard.tsx` | Add 6th "Curated Set" tab |
-| `app/api/main.py` | Register curation router |
-| `docs/DEVLOG.md` | Add ticket entry |
-
-### Files You Should NOT Modify
-
-- Session ledger files — curation state is strictly separate
-- Dashboard panels 1-5 — they must continue to show unedited generated data
-- `export_dashboard.py` — this is for dashboard data, not curated exports
+| `app/api/routes/curation.py` | Curation CRUD + export endpoints |
+| `app/api/schemas/curation.py` | Curation Pydantic schemas |
+| `src/tabs/CuratedSet.tsx` | Curated Set tab (replace placeholder from PA-09) |
+| `tests/test_app/test_curation.py` | Curation tests |
 
 ### Files You Should READ for Context
 
 | File | Why |
 |------|-----|
-| PA-02 primer | Database schema including `curated_sets` table |
-| PA-09 primer | Dashboard shell and tab structure |
-| P5-04 primer | Ad Library tab — curation source data |
-| P1-18 primer | Full ad assembly and Meta-ready export format |
-| `interviews.md` (R5-Q6) | Full rationale for curation layer design |
-
----
-
-## Suggested Implementation Pattern
-
-```python
-# app/models/curation.py
-class CuratedAd(Base):
-    __tablename__ = "curated_ads"
-    id = Column(UUID, primary_key=True, default=uuid4)
-    session_id = Column(UUID, ForeignKey("sessions.id"), nullable=False)
-    ad_id = Column(String, nullable=False)
-    selected = Column(Boolean, default=True)
-    sort_order = Column(Integer, nullable=False)
-    annotation = Column(Text, nullable=True)
-    edits = Column(JSON, default=list)  # [{"field": "headline", "original": "...", "edited": "...", "edited_at": "..."}]
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())
-```
-
-```tsx
-// frontend/src/components/dashboard/CuratedSetTab.tsx (simplified)
-function CuratedSetTab({ sessionId }) {
-  const { data: curated, mutate } = useCuratedSet(sessionId);
-  const { data: allAds } = useSessionAds(sessionId);
-
-  const handleSelect = (adId) => mutate({ adId, selected: true });
-  const handleRemove = (adId) => mutate({ adId, selected: false });
-  const handleReorder = (newOrder) => mutate({ reorder: newOrder });
-
-  return (
-    <DndContext onDragEnd={handleReorder}>
-      <div className="two-panel">
-        <AvailableAds ads={allAds} onSelect={handleSelect} />
-        <CuratedList ads={curated} onRemove={handleRemove} onEdit={handleEdit} />
-      </div>
-      <ExportButton sessionId={sessionId} />
-    </DndContext>
-  );
-}
-```
-
----
-
-## Edge Cases to Handle
-
-1. No ads published yet — tab shows "No ads available for curation" with explanation
-2. User edits an ad, then the pipeline regenerates it — curated edits reference the original ad_id; regenerated versions are separate entries
-3. Export with zero ads selected — show validation error, don't generate empty zip
-4. Concurrent edits (two tabs open) — last-write-wins with `updated_at` timestamp; no real-time collaboration needed for v1
-5. Very large curated set (50+ ads) — drag-and-drop must remain performant; virtualize list if needed
-6. Ad has images but image files are missing on disk — export includes copy.json with note about missing images
+| `docs/reference/prd.md` (Section 4.7.7) | Curation layer spec |
+| `app/models/curation.py` | CuratedSet/CuratedAd models from PA-02 |
+| `output/export_ad_library.py` | Reference for ad export logic |
+| `output/exporter.py` | Reference for file export structure |
 
 ---
 
 ## Definition of Done
 
-- [ ] Curated selections persist across page reloads
-- [ ] Edits tracked with before/after diff for every changed field
-- [ ] Export produces Meta-ready zip with correct structure
-- [ ] Dashboard metrics (tabs 1-5) remain unaffected by curation edits
-- [ ] "As Generated" vs "As Edited" clearly labeled
-- [ ] Tests pass (`python -m pytest tests/ -v`)
-- [ ] Lint clean (`ruff check . --fix`)
+- [ ] Curation CRUD API: create, add, remove, reorder, annotate, edit
+- [ ] Diff tracking preserves original copy alongside edits
+- [ ] Meta-ready ZIP export with manifest, copy, metadata, images
+- [ ] Curated Set tab with drag-and-drop reorder, annotation, light edit modal
+- [ ] Dashboard metrics always show original pipeline scores
+- [ ] Tests pass
+- [ ] Lint clean
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
 
 ---
 
-## Estimated Time
-
-| Task | Estimate |
-|------|----------|
-| Curation data model + migration | 15 min |
-| Curation API endpoints | 30 min |
-| Zip export service | 25 min |
-| CuratedSetTab component (select, reorder, annotate) | 40 min |
-| Edit mode + diff tracking UI | 30 min |
-| Backend tests | 25 min |
-| Frontend tests | 20 min |
-| DEVLOG update | 5–10 min |
+## Estimated Time: 90–120 minutes
 
 ---
 
 ## After This Ticket: What Comes Next
 
-**PA-11 (Share session link)** adds read-only sharing for session dashboards. Shared viewers see the full dashboard (including the curated set) but cannot modify curation or start new sessions.
+**PA-11 (Share Session Link)** adds the ability to share a read-only session link with a time-limited token.

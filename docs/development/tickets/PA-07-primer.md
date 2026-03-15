@@ -3,29 +3,29 @@
 **For:** New Cursor Agent session
 **Project:** Ad-Ops-Autopilot — Autonomous Content Generation System for FB/IG
 **Date:** March 2026
-**Previous work:** PA-04 (Session CRUD API), PA-01 (FastAPI + Celery + Redis scaffold) must be complete. See `docs/DEVLOG.md`.
+**Previous work:** PA-04 (Session CRUD) must be complete. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-PA-07 implements **real-time progress reporting** from the Celery background worker to the frontend. During a pipeline run, the Celery worker publishes structured progress events to a Redis pub/sub channel. A FastAPI SSE (Server-Sent Events) endpoint subscribes to that channel and streams updates to connected browser clients. The session list (PA-06) also polls every 30 seconds so users can see progress without clicking into a session.
+PA-07 completes the **progress reporting infrastructure** — Celery worker publishes events to Redis pub/sub, FastAPI streams them via SSE, and the frontend hooks into the stream. The backend is largely built; this ticket closes the remaining gaps.
 
 ### Why It Matters
 
-- **Visible Reasoning Is a First-Class Output** (Pillar 7): Users must see what the system is doing, not just the final result
-- Pipeline runs take minutes — without live progress, users assume the system is broken
-- SSE is lightweight and unidirectional — perfect for progress streaming without WebSocket complexity
-- Polling fallback on the session list ensures progress is visible even if SSE drops
+- **Visible Reasoning Is a First-Class Output** (Pillar 7): Users must see the pipeline working in real time
+- The hybrid progress model (Section 4.7.5): background polling (30s) for the session list + SSE for Watch Live
+- Without progress reporting, users stare at a loading spinner for minutes with no feedback
 
 ---
 
 ## What Was Already Done
 
-- PA-01: FastAPI backend with Celery + Redis running via Docker Compose
-- PA-04: Session CRUD API with Celery pipeline job trigger
-- PA-06: Session list UI with card layout and status badges
-- P0-08: Checkpoint-resume infrastructure (pipeline state detection)
+- `app/workers/progress.py`: `publish_progress()` publishes to Redis pub/sub + caches summary. Event types: `CYCLE_START`, `BATCH_START`, `AD_GENERATED`, `AD_EVALUATED`, `AD_PUBLISHED`, `BATCH_COMPLETE`, `CYCLE_COMPLETE`, `PIPELINE_COMPLETE`, `PIPELINE_ERROR`
+- `app/api/routes/progress.py`: SSE endpoint `GET /sessions/{session_id}/progress` — streams events from Redis with 15s heartbeat
+- `app/workers/tasks/pipeline_task.py`: Simulated pipeline task publishes progress at every stage boundary
+- `app/api/schemas/session.py`: `ProgressSummary` schema for running session cards
+- `app/api/routes/sessions.py`: Session list includes `ProgressSummary` for running sessions (from Redis cache)
 
 ---
 
@@ -33,52 +33,48 @@ PA-07 implements **real-time progress reporting** from the Celery background wor
 
 ### Goal
 
-Wire Celery worker progress events through Redis pub/sub to a FastAPI SSE endpoint, and update the session list UI with real-time status via polling.
+Close the remaining gaps: frontend SSE hook, Last-Event-ID reconnection support, and integration test coverage.
 
 ### Deliverables Checklist
 
-#### A. Celery Progress Publisher (`app/workers/progress.py`)
+#### A. Frontend SSE Hook (`src/hooks/useSessionProgress.ts`)
 
-- [ ] `publish_progress(session_id: str, event: ProgressEvent) -> None`
-  - Publishes structured JSON to Redis channel `session:{session_id}:progress`
-  - Event schema: `{ type, cycle, batch, ads_generated, ads_evaluated, ads_published, current_score_avg, cost_so_far, timestamp }`
-- [ ] Event types: `cycle_start`, `batch_start`, `ad_generated`, `ad_evaluated`, `ad_published`, `batch_complete`, `cycle_complete`, `pipeline_complete`, `pipeline_error`
-- [ ] Integrate progress calls into the Celery pipeline task at each stage boundary
-- [ ] On pipeline error, publish `pipeline_error` event with diagnostics before raising
+- [ ] `useSessionProgress(sessionId: string)` custom React hook
+- [ ] Connects to `GET /sessions/{session_id}/progress` via `EventSource`
+- [ ] Parses incoming `progress` events into typed `ProgressEvent` objects
+- [ ] Handles `heartbeat` events (no-op, keeps connection alive)
+- [ ] Auto-reconnects on connection drop (exponential backoff, max 3 retries)
+- [ ] Returns: `{ progress: ProgressEvent | null, connected: boolean, error: string | null }`
+- [ ] Cleans up EventSource on unmount
 
-#### B. FastAPI SSE Endpoint (`app/api/routes/progress.py`)
+#### B. SSE API Helper (`src/api/sse.ts`)
 
-- [ ] `GET /sessions/{session_id}/progress` — SSE endpoint
-  - Subscribes to Redis channel `session:{session_id}:progress`
-  - Streams events as `text/event-stream` with proper SSE formatting (`data:`, `event:`, `id:`)
-  - Sends heartbeat every 15 seconds to keep connection alive
-  - Returns 404 if session does not exist
-  - Gracefully closes on client disconnect
-- [ ] Include `Last-Event-ID` support for reconnection (client can resume from missed events)
+- [ ] `createProgressStream(sessionId: string): EventSource`
+- [ ] Attaches JWT token via query param (EventSource doesn't support headers): `?token=<jwt>`
+- [ ] Backend must accept token from query param for SSE endpoint (update `app/api/routes/progress.py`)
 
-#### C. Session List Polling (`app/api/routes/sessions.py`)
+#### C. Last-Event-ID Support (Backend)
 
-- [ ] `GET /sessions` response includes `progress_summary` for running sessions
-  - Fields: `current_cycle`, `ads_generated`, `ads_published`, `current_score_avg`, `cost_so_far`
-- [ ] Summary is read from Redis (latest cached progress), not computed on every request
-- [ ] Frontend session list polls this endpoint every 30 seconds for running sessions
+- [ ] `app/api/routes/progress.py`: Read `Last-Event-ID` header on reconnection
+- [ ] Buffer recent events in Redis (last 50 per session, TTL 5 min)
+- [ ] On reconnect, replay missed events from buffer before streaming live
 
-#### D. Frontend Integration (`frontend/src/hooks/useSessionProgress.ts`)
+#### D. Wire Pipeline Task to Real Pipeline
 
-- [ ] `useSessionProgress(sessionId)` hook that opens EventSource to SSE endpoint
-- [ ] Auto-reconnect with exponential backoff on connection drop
-- [ ] Parse incoming events and expose structured progress state to components
-- [ ] Session list component uses 30-second polling interval for card status updates
+- [ ] Update `app/workers/tasks/pipeline_task.py` to call the real `iterate/pipeline_runner.py` (or at least structure progress events to match real pipeline stages)
+- [ ] Map pipeline stages to progress event types
+- [ ] Capture real metrics (scores, costs, ads counts) from pipeline output
+- [ ] On completion: update `session.results_summary` with real metrics
 
 #### E. Tests (`tests/test_app/test_progress.py`)
 
 - [ ] TDD first
-- [ ] Test progress publisher writes correct JSON to Redis channel
-- [ ] Test SSE endpoint streams events to connected client
-- [ ] Test SSE endpoint sends heartbeat within timeout
-- [ ] Test SSE endpoint returns 404 for nonexistent session
-- [ ] Test session list includes progress_summary for running sessions
-- [ ] Test reconnection with Last-Event-ID resumes correctly
+- [ ] Test SSE endpoint streams events for valid session
+- [ ] Test SSE endpoint returns 404 for non-existent session
+- [ ] Test heartbeat is sent when no events for 15s
+- [ ] Test progress summary cached in Redis
+- [ ] Test `publish_progress()` publishes to correct channel
+- [ ] Test pipeline task updates session status to "completed" with results_summary
 - [ ] Minimum: 6+ tests
 
 #### F. Documentation
@@ -87,123 +83,70 @@ Wire Celery worker progress events through Redis pub/sub to a FastAPI SSE endpoi
 
 ---
 
-## Branch & Merge Workflow
-
-```bash
-git switch main && git pull
-git switch -c feature/PA-07-progress-reporting
-```
-
----
-
 ## Important Context
 
-### Architectural Decisions
+### Progress Event Schema
 
-| Decision | Reference | Summary |
-|----------|-----------|---------|
-| Progress reporting | R5-Q4 | Celery worker writes progress to Redis pub/sub; FastAPI SSE streams to frontend; session list polls every 30s |
-| Checkpoint-resume | R3-Q2 | Progress events align with checkpoint boundaries — every stage that writes a checkpoint also publishes progress |
+```json
+{
+  "type": "ad_evaluated",
+  "cycle": 2,
+  "batch": 3,
+  "ads_generated": 25,
+  "ads_evaluated": 24,
+  "ads_published": 15,
+  "current_score_avg": 7.65,
+  "cost_so_far": 3.42,
+  "timestamp": 1710345600.123
+}
+```
 
-### Files to Create
+### Hybrid Progress Model (PRD Section 4.7.5)
 
-| File | Why |
-|------|-----|
-| `app/workers/progress.py` | Redis pub/sub progress publisher for Celery tasks |
-| `app/api/routes/progress.py` | FastAPI SSE endpoint for streaming progress |
-| `frontend/src/hooks/useSessionProgress.ts` | React hook for consuming SSE progress stream |
-| `tests/test_app/test_progress.py` | Progress reporting tests |
+| Mode | Mechanism | Where Used |
+|------|-----------|------------|
+| Background | Session list polls `GET /sessions` every 30s. Progress from Redis cache. | PA-06 Session List |
+| Watch Live | SSE stream from `GET /sessions/{id}/progress`. Real-time. | PA-08 Watch Live |
+| On completion | Status flips to "completed". Session card updates with final metrics. | Both |
 
-### Files to Modify
+### Files to Modify/Create
 
 | File | Action |
 |------|--------|
-| `app/workers/pipeline_task.py` | Add progress publishing calls at each stage boundary |
-| `app/api/routes/sessions.py` | Add `progress_summary` to session list response for running sessions |
-| `frontend/src/components/SessionList.tsx` | Add 30-second polling for running session status |
-| `docs/DEVLOG.md` | Add ticket entry |
+| `src/hooks/useSessionProgress.ts` | Create — React SSE hook |
+| `src/api/sse.ts` | Create — SSE connection helper |
+| `app/api/routes/progress.py` | Modify — add Last-Event-ID, token-from-query-param |
+| `app/workers/tasks/pipeline_task.py` | Modify — wire to real pipeline |
+| `tests/test_app/test_progress.py` | Create — progress tests |
 
 ### Files You Should READ for Context
 
 | File | Why |
 |------|-----|
-| PA-01 primer | FastAPI + Celery + Redis scaffold structure |
-| PA-04 primer | Session CRUD API and Celery job trigger |
-| PA-06 primer | Session list UI component structure |
-| `interviews.md` (R5-Q4) | Full rationale for progress reporting design |
-
----
-
-## Suggested Implementation Pattern
-
-```python
-# app/workers/progress.py
-import redis, json, time
-
-def publish_progress(session_id: str, event: dict) -> None:
-    r = redis.from_url(settings.REDIS_URL)
-    event["timestamp"] = time.time()
-    r.publish(f"session:{session_id}:progress", json.dumps(event))
-    # Cache latest summary for polling
-    r.set(f"session:{session_id}:progress_summary", json.dumps(event), ex=3600)
-```
-
-```python
-# app/api/routes/progress.py
-from sse_starlette.sse import EventSourceResponse
-
-@router.get("/sessions/{session_id}/progress")
-async def stream_progress(session_id: str):
-    async def event_generator():
-        pubsub = redis.pubsub()
-        pubsub.subscribe(f"session:{session_id}:progress")
-        while True:
-            message = pubsub.get_message(timeout=15)
-            if message and message["type"] == "message":
-                yield {"data": message["data"]}
-            else:
-                yield {"event": "heartbeat", "data": ""}
-    return EventSourceResponse(event_generator())
-```
-
----
-
-## Edge Cases to Handle
-
-1. SSE connection drops mid-pipeline — frontend must auto-reconnect and not miss events
-2. Multiple browser tabs open to the same session — each gets its own SSE subscription
-3. Pipeline completes while no client is connected — session list polling still shows final state
-4. Redis pub/sub message lost — cached summary provides fallback; no critical data lost (ledger is source of truth)
-5. Session does not exist or is already complete — SSE endpoint should return appropriate status
+| `docs/reference/prd.md` (Section 4.7.5) | Progress monitoring spec |
+| `app/workers/progress.py` | Existing progress publisher |
+| `app/api/routes/progress.py` | Existing SSE endpoint |
+| `app/workers/tasks/pipeline_task.py` | Existing pipeline task |
+| `iterate/pipeline_runner.py` | Real pipeline to integrate |
 
 ---
 
 ## Definition of Done
 
-- [ ] Running sessions update in real time via SSE
-- [ ] Progress visible in session list without clicking in (30-second polling)
-- [ ] SSE heartbeat keeps connection alive
-- [ ] Auto-reconnect on connection drop
-- [ ] Tests pass (`python -m pytest tests/ -v`)
-- [ ] Lint clean (`ruff check . --fix`)
+- [ ] Frontend `useSessionProgress` hook connects to SSE, parses events, auto-reconnects
+- [ ] SSE endpoint supports JWT via query param (for EventSource)
+- [ ] Last-Event-ID reconnection replays missed events
+- [ ] Pipeline task wired to real pipeline (or realistic simulation)
+- [ ] Tests pass
+- [ ] Lint clean
 - [ ] DEVLOG updated
-- [ ] Feature branch pushed
 
 ---
 
-## Estimated Time
-
-| Task | Estimate |
-|------|----------|
-| Redis pub/sub publisher + Celery integration | 30 min |
-| FastAPI SSE endpoint | 30 min |
-| Session list polling + progress summary | 20 min |
-| Frontend hook + reconnect logic | 30 min |
-| Tests | 30 min |
-| DEVLOG update | 5–10 min |
+## Estimated Time: 60–90 minutes
 
 ---
 
 ## After This Ticket: What Comes Next
 
-**PA-08 (Watch Live progress view)** builds the dedicated progress dashboard that consumes the SSE stream established here. PA-07 provides the data transport layer; PA-08 provides the rich visualization.
+**PA-08 (Watch Live Progress View)** builds the real-time dashboard that consumes the `useSessionProgress` hook from this ticket. It renders cycle indicators, score feeds, and cost accumulators from the SSE stream.
