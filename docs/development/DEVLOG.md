@@ -7,6 +7,56 @@
 
 ---
 
+## P4-03: Competitive Intelligence — Trends + Alerts ✅
+
+### Plain-English Summary
+- Temporal awareness for competitive patterns: each pattern gets an `observed_date`
+- Trend analysis: computes hook type distribution shift between old and new periods
+- Rising/falling/stable classification for each hook type (>5% change = directional)
+- Strategy shift alerts: >15% distribution change fires warning, >30% fires action alert
+- Refresh workflow: merges new observations, deduplicates by (competitor, source_url)
+- Dashboard data for Panel 8: hook distribution, strategy radar, gap analysis, temporal trends
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 8 (all passing)
+- **Files:** `generate/competitive_trends.py`, `tests/test_generation/test_competitive_trends.py`
+
+---
+
+## P4-02: Self-Healing Feedback Loop ✅
+
+### Plain-English Summary
+- SPC drift detection with ±2σ control limits: detects mean shift (3+ consecutive), trends (5+ monotonic), outliers
+- Integrates existing brief mutation engine (P1-08): diagnoses weakest dimension, prescribes targeted mutation
+- Integrates existing quality ratchet (P1-10): rolling high-water mark, never decreases below 7.0
+- Self-healing orchestrator: SPC check → diagnose → prescribe mutation → log HealingAction
+- Returns None when system is in control (no unnecessary intervention)
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 12 (all passing)
+- **Files:** `iterate/spc.py`, `iterate/self_healing.py`, `tests/test_pipeline/test_self_healing.py`
+
+---
+
+## P4-01: Agentic Orchestration Layer ✅
+
+### Plain-English Summary
+- Four agents: Researcher → Writer → Evaluator → Editor with bounded contracts
+- Each agent has `execute(input) -> AgentResult` with try/except error boundary
+- AgentResult: success, output, error, diagnostics (timing, agent name)
+- Pipeline orchestrator: sequential agent chain with per-stage diagnostic logging
+- Error containment: agent failure returns failure result, does NOT cascade
+- EditorAgent: publish (score meets threshold) / regenerate (below threshold) / discard (max cycles or floor violations)
+
+### Metadata
+- **Status:** Complete
+- **Tests:** 13 (all passing)
+- **Files:** `iterate/agents.py`, `tests/test_pipeline/test_agents.py`
+
+---
+
 ## P3-13: 10-Ad Video Pilot Run Config ✅
 
 ### Plain-English Summary
