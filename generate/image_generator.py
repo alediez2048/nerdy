@@ -19,9 +19,9 @@ from iterate.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
-# Model constants
-MODEL_NANO_BANANA_PRO = "gemini-2.0-flash-preview-image-generation"
-MODEL_NANO_BANANA_2 = "gemini-3.1-flash-image"
+# Model constants — updated to available models
+MODEL_NANO_BANANA_PRO = "imagen-4.0-fast-generate-001"
+MODEL_NANO_BANANA_2 = "gemini-2.5-flash-image"
 
 # Budget threshold: below this, all variants use NB2 regardless of type
 _BUDGET_THRESHOLD = 2.0
@@ -71,17 +71,35 @@ def _call_image_api(
 
     def _do_call() -> str:
         client = genai.Client(api_key=api_key)
+
+        # Save image from response
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Try Imagen API first (generate_images), fall back to generateContent
+        try:
+            response = client.models.generate_images(
+                model=MODEL_NANO_BANANA_PRO,
+                prompt=prompt,
+                config=types.GenerateImagesConfig(
+                    number_of_images=1,
+                ),
+            )
+            if response.generated_images:
+                image = response.generated_images[0]
+                image.image.save(str(path))
+                return str(path)
+        except (AttributeError, Exception) as e:
+            logger.debug("Imagen API not available (%s), trying generateContent", e)
+
+        # Fallback: use generateContent with image modality
         response = client.models.generate_content(
-            model="gemini-2.0-flash-preview-image-generation",
+            model=MODEL_NANO_BANANA_2,
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["IMAGE", "TEXT"],
             ),
         )
-
-        # Save image from response
-        path = Path(output_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
 
         for part in response.candidates[0].content.parts:
             if part.inline_data is not None:
