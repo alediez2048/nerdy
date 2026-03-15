@@ -7,6 +7,27 @@
 
 ---
 
+## PA-02: Database Schema — Users & Sessions ✅
+
+### Plain-English Summary
+- Created `app/models/base.py` — extracted `Base` from session.py for clean multi-model imports
+- Created `app/models/user.py` — User model with google_id, email, name, picture_url, last_login_at
+- Extended `app/models/session.py` — added name, ledger_path, output_path, updated_at, completed_at
+- Created `app/models/curation.py` — CuratedSet (per session) + CuratedAd (with position, annotation, edited_copy JSON for diff tracking)
+- Initialized Alembic (`app/alembic/`) with initial migration creating all 4 tables
+- Session.user_id remains String for dev compatibility — FK to users deferred to PA-03
+- Updated `app/db.py` to import all models from base.py
+- 8 model tests using in-memory SQLite: user creation, email uniqueness, session extended fields, curated set/ad CRUD, relationships
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 15, 2026
+- **Ticket:** PA-02
+- **Tests:** 8 (all passing)
+- **Files:** `app/models/base.py`, `app/models/user.py`, `app/models/session.py`, `app/models/curation.py`, `app/db.py`, `app/requirements.txt`, `alembic.ini`, `app/alembic/env.py`, `app/alembic/versions/dfdf9e56fd7a_*.py`, `tests/test_app/test_models.py`
+
+---
+
 ## PA-01: FastAPI Backend Scaffold ✅
 
 ### Plain-English Summary
