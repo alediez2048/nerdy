@@ -19,8 +19,8 @@ from iterate.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
-# Model constants — updated to available models
-MODEL_NANO_BANANA_PRO = "imagen-4.0-fast-generate-001"
+# Model constants — Nano Banana Pro for quality, NB2 for cost-tier variants
+MODEL_NANO_BANANA_PRO = "nano-banana-pro-preview"
 MODEL_NANO_BANANA_2 = "gemini-2.5-flash-image"
 
 # Budget threshold: below this, all variants use NB2 regardless of type
@@ -76,25 +76,9 @@ def _call_image_api(
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Try Imagen API first (generate_images), fall back to generateContent
-        try:
-            response = client.models.generate_images(
-                model=MODEL_NANO_BANANA_PRO,
-                prompt=prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                ),
-            )
-            if response.generated_images:
-                image = response.generated_images[0]
-                image.image.save(str(path))
-                return str(path)
-        except (AttributeError, Exception) as e:
-            logger.debug("Imagen API not available (%s), trying generateContent", e)
-
-        # Fallback: use generateContent with image modality
+        # Use Nano Banana Pro (generateContent with image modality)
         response = client.models.generate_content(
-            model=MODEL_NANO_BANANA_2,
+            model=MODEL_NANO_BANANA_PRO,
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["IMAGE", "TEXT"],
