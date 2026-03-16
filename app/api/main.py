@@ -1,8 +1,10 @@
 # Ad-Ops-Autopilot — FastAPI application
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import auth, curation, dashboard, progress, sessions, share
 from app.db import init_db
@@ -39,3 +41,8 @@ app.include_router(curation.router, prefix="/sessions", tags=["curation"])
 app.include_router(share.router, prefix="/sessions", tags=["share"])
 app.include_router(share.shared_router, prefix="/shared", tags=["shared"])
 app.include_router(dashboard.competitive_router, prefix="/competitive", tags=["competitive"])
+
+# Serve generated images as static files
+_images_dir = Path("output/images")
+_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/images", StaticFiles(directory=str(_images_dir)), name="images")

@@ -11,6 +11,8 @@ interface Ad {
   aggregate_score: number
   status: string
   cycle_count: number
+  image_path: string | null
+  image_url: string | null
 }
 
 export default function AdLibrary({ sessionId }: { sessionId: string }) {
@@ -65,6 +67,15 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
               </div>
               <p style={s.copy}>{ad.copy?.primary_text || ad.copy?.headline || '—'}</p>
 
+              {ad.image_url && (
+                <img
+                  src={`/api${ad.image_url}`}
+                  alt={`Ad ${ad.ad_id}`}
+                  style={s.adImage}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+              )}
+
               {expanded === ad.ad_id && (
                 <div style={s.expanded}>
                   {ad.copy?.headline && <p><strong>Headline:</strong> {ad.copy.headline}</p>}
@@ -107,6 +118,7 @@ const s: Record<string, React.CSSProperties> = {
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' },
   adId: { fontSize: '12px', color: colors.muted },
   copy: { fontSize: '14px', color: colors.white, margin: 0, lineHeight: 1.4 },
+  adImage: { width: '100%', maxHeight: '220px', objectFit: 'cover' as const, borderRadius: radii.input, marginTop: '10px' },
   expanded: { marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.muted}20`, fontSize: '13px', color: colors.white },
   scoreGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginTop: '8px' },
   scoreItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },

@@ -16,7 +16,7 @@ function relativeTime(dateStr: string): string {
   return `${days}d ago`
 }
 
-export default function SessionCard({ session }: { session: SessionSummary }) {
+export default function SessionCard({ session, onDelete }: { session: SessionSummary; onDelete?: (id: string) => void }) {
   const navigate = useNavigate()
   const config = session.config || {}
   const results = (session as unknown as Record<string, unknown>).results_summary as Record<string, unknown> | null
@@ -81,18 +81,33 @@ export default function SessionCard({ session }: { session: SessionSummary }) {
         </div>
       )}
 
-      {/* Watch Live button for running */}
-      {isRunning && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate(`/sessions/${session.session_id}/live`)
-          }}
-          style={s.watchLive}
-        >
-          Watch Live →
-        </button>
-      )}
+      {/* Action buttons */}
+      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+        {isRunning && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/sessions/${session.session_id}/live`)
+            }}
+            style={s.watchLive}
+          >
+            Watch Live →
+          </button>
+        )}
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (window.confirm(`Delete session "${session.name || session.session_id}"?`)) {
+                onDelete(session.session_id)
+              }
+            }}
+            style={s.deleteBtn}
+          >
+            Delete
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -132,12 +147,22 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center',
   },
   watchLive: {
-    marginTop: '12px',
     padding: '6px 16px',
     borderRadius: radii.button,
     border: 'none',
     background: `${colors.cyan}20`,
     color: colors.cyan,
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 600,
+    fontFamily: font.family,
+  },
+  deleteBtn: {
+    padding: '6px 16px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.red}40`,
+    background: 'transparent',
+    color: colors.red,
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: 600,

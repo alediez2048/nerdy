@@ -232,15 +232,14 @@ def _build_dimension_deep_dive(events: list[dict]) -> dict:
 
 def _build_ad_library(events: list[dict]) -> list[dict]:
     """Panel 5: All ads with copy, scores, rationales."""
-    # Find all unique ad_ids from AdGenerated events
+    # Find all unique ad_ids from any ad event (not just AdGenerated)
     ad_ids: list[str] = []
     seen: set[str] = set()
     for e in events:
-        if e.get("event_type") == "AdGenerated":
-            aid = e["ad_id"]
-            if aid not in seen:
-                ad_ids.append(aid)
-                seen.add(aid)
+        aid = e.get("ad_id")
+        if aid and aid not in seen and not aid.startswith("batch_"):
+            ad_ids.append(aid)
+            seen.add(aid)
 
     # Status map
     status_map: dict[str, str] = {}
@@ -283,6 +282,17 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
         aggregate = latest_eval.get("outputs", {}).get("aggregate_score", 0.0) if latest_eval else 0.0
         cycle_count = max((e.get("cycle_number", 0) for e in ad_events), default=1)
 
+        # Extract winning image from AdPublished event
+        pub_event = next((e for e in ad_events if e.get("event_type") == "AdPublished"), None)
+        image_path = None
+        image_url = None
+        if pub_event:
+            winning = pub_event.get("outputs", {}).get("winning_image")
+            if winning:
+                image_path = winning
+                filename = Path(winning).name
+                image_url = f"/images/{filename}"
+
         library.append({
             "ad_id": ad_id,
             "brief_id": gen.get("brief_id", "") if gen else "",
@@ -292,7 +302,8 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
             "rationale": rationale,
             "status": status_map.get(ad_id, "in_progress"),
             "cycle_count": cycle_count,
-            "image_path": None,
+            "image_path": image_path,
+            "image_url": image_url,
         })
 
     return library

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { colors, radii, font } from '../design/tokens'
-import { listSessions } from '../api/sessions'
+import { listSessions, deleteSession } from '../api/sessions'
 import SessionCard from '../components/SessionCard'
 import SessionFilters, { type Filters } from '../components/SessionFilters'
 import type { SessionSummary } from '../types/session'
@@ -64,6 +64,16 @@ export default function SessionList() {
     }
   }, [sessions, fetchSessions])
 
+  const handleDelete = async (sessionId: string) => {
+    try {
+      await deleteSession(sessionId)
+      setSessions((prev) => prev.filter((s) => s.session_id !== sessionId))
+      setTotal((prev) => prev - 1)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete session')
+    }
+  }
+
   const hasMore = offset + PAGE_SIZE < total
 
   return (
@@ -100,7 +110,7 @@ export default function SessionList() {
           <>
             <div style={s.grid}>
               {sessions.map((session) => (
-                <SessionCard key={session.session_id} session={session} />
+                <SessionCard key={session.session_id} session={session} onDelete={handleDelete} />
               ))}
             </div>
 

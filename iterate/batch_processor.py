@@ -125,6 +125,25 @@ def process_batch(
             ad = generate_ad(expanded, seed=brief_seed)
             result.generated += 1
 
+            # Log AdGenerated to session ledger (copy data for dashboard)
+            log_event(ledger_path, {
+                "event_type": "AdGenerated",
+                "ad_id": ad.ad_id,
+                "brief_id": brief_id,
+                "cycle_number": 0,
+                "action": "generation",
+                "tokens_consumed": 0,
+                "model_used": "gemini-2.0-flash",
+                "seed": str(brief_seed),
+                "inputs": {"brief_id": brief_id},
+                "outputs": {
+                    "primary_text": ad.primary_text,
+                    "headline": ad.headline,
+                    "description": ad.description,
+                    "cta_button": ad.cta_button,
+                },
+            })
+
             # Stage 3: Evaluate (cache-aware)
             from evaluate.evaluator import evaluate_ad
             evaluation = evaluate_ad(
@@ -146,7 +165,7 @@ def process_batch(
 
             # --- Image generation for ads that pass text triage ---
             winning_image = None
-            if routing.decision in ("publish", "escalate"):
+            if routing.decision in ("publish", "escalate") and config.get("image_enabled", True):
                 winning_image = _generate_and_select_image(
                     ad=ad,
                     expanded_brief=expanded,

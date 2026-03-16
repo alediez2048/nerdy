@@ -63,6 +63,8 @@ def create_session(
         user_id=user["user_id"],
         config=config_dict,
         status="pending",
+        ledger_path=f"data/sessions/{sid}/ledger.jsonl",
+        output_path=f"output/sessions/{sid}",
     )
     db.add(session_row)
     db.commit()
