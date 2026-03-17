@@ -230,3 +230,62 @@ def get_voice_for_evaluation(audience: str) -> str:
     lines.append("")
     lines.append("Core brand constants (all audiences): " + ", ".join(profile.brand_constants))
     return "\n".join(lines)
+
+
+# Persona-specific voice overrides (PB-05)
+_PERSONA_VOICE: dict[str, dict[str, Any]] = {
+    "athlete_recruit": {
+        "tone": "urgent, scheduling-aware, recruiting-timeline focused",
+        "prefer": ["recruiting window", "scholarship", "schedule around practice", "NCAA", "first session within 48hrs"],
+        "avoid": ["no rush", "take your time", "whenever you're ready"],
+    },
+    "suburban_optimizer": {
+        "tone": "specific, data-driven, comparison-oriented",
+        "prefer": ["diagnostic", "gap analysis", "targeted plan", "8-10 weeks", "3-4 fixes"],
+        "avoid": ["generic", "one-size-fits-all", "trust the process"],
+    },
+    "immigrant_navigator": {
+        "tone": "patient, guiding, step-by-step, credibility-first",
+        "prefer": ["we walk you through", "step by step", "tutor qualifications", "the SAT process"],
+        "avoid": ["you should know", "obviously", "as you know"],
+    },
+    "cultural_investor": {
+        "tone": "information-dense, mastery-focused, consolidation-oriented",
+        "prefer": ["one system", "replace five tools", "diagnostic-driven", "AP-level"],
+        "avoid": ["quick fix", "hack", "trick"],
+    },
+    "system_optimizer": {
+        "tone": "data-driven, process-oriented, ROI-focused, concise",
+        "prefer": ["inputs/outputs", "timeline", "measurable", "diagnostic", "process"],
+        "avoid": ["feel", "journey", "holistic", "nurturing"],
+    },
+    "neurodivergent_advocate": {
+        "tone": "warm, specific, accommodation-aware, dignity-preserving",
+        "prefer": ["learns differently", "right fit", "tutor who understands", "matching process", "extended time"],
+        "avoid": ["broken", "fix", "normal", "despite their disability"],
+    },
+    "burned_returner": {
+        "tone": "acknowledgment-first, accountability-focused, transparent",
+        "prefer": ["what went wrong", "what's different", "we hear you", "match, measure, change course"],
+        "avoid": ["trust us", "this time it'll work", "we promise"],
+    },
+}
+
+
+def get_voice_for_persona(persona: str) -> str:
+    """Format persona-specific voice guidance for the generation prompt.
+
+    Falls back to parent voice profile if persona is unknown.
+    """
+    override = _PERSONA_VOICE.get(persona)
+    if not override:
+        return get_voice_for_prompt("parents")
+
+    return f"""## Brand Voice — Persona: {persona}
+Tone: {override['tone']}
+Prefer these words/phrases: {', '.join(override['prefer'])}
+Avoid: {', '.join(override['avoid'])}
+Core brand (all audiences): {', '.join(BRAND_CONSTANTS)}
+
+MANDATORY: Say "your child" (NEVER "your student"). Say "SAT Tutoring" (NEVER "SAT Prep").
+Use plain parent language. No corporate jargon."""

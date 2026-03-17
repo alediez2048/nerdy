@@ -32,13 +32,27 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_CONFIG = "data/config.yaml"
 
-# Valid Meta CTA options (from brand_knowledge + common)
+# Valid Meta CTA options — original + persona-specific (PB-05)
 VALID_CTAS = frozenset({
+    # Original
     "Learn More",
     "Get Started",
     "Sign Up",
     "Start Free Practice Test",
     "Book Now",
+    # Persona-specific (PB-05)
+    "Book Diagnostic",
+    "Talk to an SAT specialist today",
+    "See what score range is realistic in 8–10 weeks",
+    "See how many scholarship dollars your score could unlock",
+    "See what 1-on-1 changes",
+    "Tell us about your child",
+    "Tell us what went wrong",
+    "See how we help students walk into the SAT feeling ready",
+    "Get a tutor who keeps your child accountable",
+    "See what real SAT tutoring looks like",
+    "Let's build the plan that works for this child",
+    "Give your child an expert they'll actually listen to",
 })
 
 # Audience normalization for pattern query (brief uses parent/parents, patterns use parents/students/both)
@@ -130,7 +144,7 @@ def _build_generation_prompt(
     expanded_brief: ExpandedBrief,
     atoms: list[dict[str, Any]],
 ) -> str:
-    """Construct recombination prompt with expanded brief and structural atoms."""
+    """Construct recombination prompt with Nerdy rules, persona context, and Meta ad structure."""
     brief = expanded_brief.original_brief
     campaign_goal = brief.get("campaign_goal", "awareness")
     audience = brief.get("audience", "parents")
@@ -145,14 +159,59 @@ def _build_generation_prompt(
     differentiators = ", ".join(expanded_brief.key_differentiators[:3]) if expanded_brief.key_differentiators else "N/A"
     constraints = "; ".join(expanded_brief.constraints[:3]) if expanded_brief.constraints else "None"
 
+    # CTA options — persona-specific preferred + goal defaults
+    persona_cta = ""
+    if hasattr(expanded_brief, "suggested_hooks") and expanded_brief.suggested_hooks:
+        ctas_from_hooks = list({h.get("cta_text", "") for h in expanded_brief.suggested_hooks if h.get("cta_text")})
+        if ctas_from_hooks:
+            persona_cta = f"\nPreferred CTA for this persona: {ctas_from_hooks[0]}"
+
     cta_options = {
         "awareness": ["Learn More", "Get Started"],
-        "conversion": ["Sign Up", "Start Free Practice Test", "Book Now"],
+        "conversion": ["Sign Up", "Start Free Practice Test", "Book Now", "Book Diagnostic"],
     }
-    goal_ctas = cta_options.get(campaign_goal, list(VALID_CTAS))
+    goal_ctas = cta_options.get(campaign_goal, list(VALID_CTAS)[:5])
     cta_hint = ", ".join(goal_ctas)
 
-    return f"""You are writing a Meta (Facebook/Instagram) ad for Varsity Tutors SAT test prep. Use the reference-decompose-recombine approach: draw from the proven structural patterns below, but adapt and recombine — do NOT copy verbatim.
+    # Persona hooks as inspiration
+    hooks_block = ""
+    if hasattr(expanded_brief, "suggested_hooks") and expanded_brief.suggested_hooks:
+        hook_lines = [f'  "{h["hook_text"]}"' for h in expanded_brief.suggested_hooks[:3]]
+        hooks_block = f"""
+## Proven Hooks for This Persona (use as INSPIRATION — do NOT copy verbatim)
+{chr(10).join(hook_lines)}"""
+
+    # Offer context for conversion
+    offer_block = ""
+    if hasattr(expanded_brief, "offer_context") and expanded_brief.offer_context and campaign_goal == "conversion":
+        offer = expanded_brief.offer_context
+        offer_block = f"""
+## Offer Context (weave into copy naturally, don't list features)
+- {offer.get('score_improvement', '')}
+- Model: {offer.get('model', '')}"""
+
+    # Persona voice
+    persona_voice = ""
+    if hasattr(expanded_brief, "persona") and expanded_brief.persona:
+        from generate.brand_voice import get_voice_for_persona
+        persona_voice = get_voice_for_persona(expanded_brief.persona)
+
+    voice_block = persona_voice or get_voice_for_prompt(audience)
+
+    return f"""You are writing a Meta (Facebook/Instagram) ad for Varsity Tutors SAT Tutoring. Use the reference-decompose-recombine approach: draw from proven structural patterns, adapt and recombine — do NOT copy verbatim.
+
+## NERDY LANGUAGE RULES (MANDATORY)
+- ALWAYS say "your child" — NEVER "your student"
+- ALWAYS say "SAT Tutoring" — NEVER "SAT Prep"
+- Use plain parent language, not corporate marketing speak
+- NO fake urgency: "spots filling fast", "limited enrollment", "don't miss out"
+- NO vague promises: "unlock potential", "maximize score", "tailored support"
+- Include SPECIFIC mechanisms: how the digital SAT works, diagnostic process, session structure
+- Score claims MUST have conditions: "200 points in 16 sessions", NOT bare "gain 200 points"
+- Calendar urgency is OK: test dates, application deadlines, weeks remaining
+
+## META AD STRUCTURE (follow this format)
+Hook (1 scroll-stopping sentence) → Short pattern interrupt explanation (2–3 lines max) → Micro-commitment CTA
 
 ## Expanded Brief Context
 - Audience: {audience}
@@ -161,30 +220,26 @@ def _build_generation_prompt(
 - Value propositions: {value_props}
 - Key differentiators: {differentiators}
 - Constraints: {constraints}
+{hooks_block}
 
 ## Proven Structural Patterns (draw from these, recombine creatively)
 {atoms_block}
-
-IMPORTANT: Use the FIRST structural pattern listed as your primary structure. Do NOT default to generic SAT prep messaging.
-
-## Structural Variation Rules
-- Your headline must use a different structure than a simple "Ace the [subject]" format. Try: a question, a statistic, a testimonial quote, or a fear-based hook.
-- Select your CTA button based on the campaign goal from the options below — do NOT always default to "Start Free Practice Test".
+{offer_block}
 
 ## Meta Ad Format
-- Primary text: Main copy above image — scroll-stopping hook in first line, ~125 chars visible. Can be longer.
+- Primary text: Hook in first line (~125 chars visible), then 2-3 lines of pattern interrupt. Can be longer but front-load the hook.
 - Headline: 5-8 words, benefit-driven
-- Description: Often truncated on mobile — keep concise
-- CTA button: Select the best fit for the campaign goal from: {cta_hint}
+- Description: Concise, often truncated on mobile
+- CTA button: Best fit from: {cta_hint}{persona_cta}
 
-{get_voice_for_prompt(audience)}
+{voice_block}
 
 Output ONLY valid JSON (no markdown, no code fences):
 {{
   "primary_text": "<full primary text>",
   "headline": "<headline>",
   "description": "<description>",
-  "cta_button": "<exact CTA from list above>"
+  "cta_button": "<exact CTA from options above>"
 }}"""
 
 
@@ -221,8 +276,14 @@ def _parse_generation_response(
     description = str(data.get("description", "") or "").strip()
     cta = str(data.get("cta_button", "") or "Learn More").strip()
 
-    if not cta or cta not in VALID_CTAS:
-        cta = "Learn More"
+    # Accept valid CTAs or reasonable variants (strip trailing punctuation)
+    cta_clean = cta.rstrip(".!").strip()
+    if not cta_clean or (cta_clean not in VALID_CTAS and cta not in VALID_CTAS):
+        # Try fuzzy match: check if any valid CTA starts with the generated one
+        matched = next((v for v in VALID_CTAS if v.lower().startswith(cta_clean.lower()[:20])), None)
+        cta = matched or "Learn More"
+    else:
+        cta = cta_clean if cta_clean in VALID_CTAS else cta
 
     return GeneratedAd(
         ad_id=ad_id,

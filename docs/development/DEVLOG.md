@@ -7,6 +7,24 @@
 
 ---
 
+## PB-05: Update Ad Generator with Nerdy Messaging Rules ✅
+
+### Plain-English Summary
+- VALID_CTAS: 5 → 17 options (persona-specific micro-commitment CTAs added)
+- Generation prompt: Nerdy language rules, Meta ad structure, persona hooks, offer context, conditional claims
+- `get_voice_for_persona()`: 7 persona-specific voice overrides (tone + prefer/avoid vocabulary)
+- Flexible CTA validation with fuzzy matching and graceful fallback
+- 15 tests (expanded CTAs, prompt rules, persona voice, CTA parsing)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 16, 2026
+- **Ticket:** PB-05
+- **Tests:** 15 (all passing)
+- **Files:** `generate/ad_generator.py`, `generate/brand_voice.py`, `tests/test_generation/test_nerdy_generation.py`
+
+---
+
 ## PB-04: Persona-Aware Brief Expansion ✅
 
 ### Plain-English Summary
