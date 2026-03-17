@@ -7,6 +7,27 @@
 
 ---
 
+## PB-03: Nerdy Language Compliance Rules ✅
+
+### Plain-English Summary
+- Updated `generate/compliance.py` with Nerdy-specific language rules:
+  - **Critical:** "your student", "SAT Prep", fake urgency (6 patterns), "online tutoring", score guarantees
+  - **Warning:** corporate jargon (7 patterns: "unlock potential", "maximize score", etc.)
+  - **Info:** competitor names downgraded — comparisons with real data now allowed
+- Added `ComplianceResult.has_critical`, `.critical_violations`, `.warnings` properties
+- `passes` = True unless critical violations exist (warnings don't block)
+- Added `check_nerdy_positives(text)` — detects "your child", "SAT Tutoring", conditional claims, specific mechanisms, competitor data usage
+- 19 tests covering critical violations, warnings, clean copy, competitor-with-data, positive validation
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 16, 2026
+- **Ticket:** PB-03
+- **Tests:** 19 (all passing)
+- **Files:** `generate/compliance.py`, `tests/test_generation/test_nerdy_compliance.py`
+
+---
+
 ## PB-02: Persona-Specific Hook Library ✅
 
 ### Plain-English Summary
