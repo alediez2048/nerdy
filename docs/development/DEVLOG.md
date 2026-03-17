@@ -1645,14 +1645,17 @@
 | Phase | Name | Tickets | Timeline | Status |
 |-------|------|---------|----------|--------|
 | P0 | Foundation & Calibration | P0-01 – P0-10 (10) | Day 0–1 | ✅ Complete |
-| P1 | Full-Ad Pipeline (v1: Copy + Image) | P1-01 – P1-20 (20) | Days 1–4 | 🔄 In Progress |
-| P1B | Application Layer | PA-01 – PA-13 (13) | Days 3–5 | ⏳ Not Started |
-| P2 | Testing & Validation | P2-01 – P2-07 (7) | Days 3–4 | ⏳ Not Started |
-| P3 | A/B Variant Engine + UGC Video (v2) | P3-01 – P3-13 (13) | Days 4–7 | ⏳ Not Started |
-| P4 | Autonomous Engine (v3) | P4-01 – P4-07 (7) | Days 7–14 | ⏳ Not Started |
-| P5 | Dashboard, Docs & Submission | P5-01 – P5-11 (11) | Days 12–14 | ⏳ Not Started |
+| P1 | Full-Ad Pipeline (v1: Copy + Image) | P1-01 – P1-20 (20) | Days 1–4 | ✅ Complete |
+| P1B | Application Layer | PA-01 – PA-13 (13) | Days 3–5 | 🔄 In Progress |
+| P2 | Testing & Validation | P2-01 – P2-07 (7) | Days 3–4 | ✅ Complete |
+| P3 | A/B Variant Engine + UGC Video (v2) | P3-01 – P3-13 (13) | Days 4–7 | ✅ Complete |
+| P4 | Autonomous Engine (v3) | P4-01 – P4-07 (7) | Days 7–14 | ✅ Complete |
+| P5 | Dashboard, Docs & Submission | P5-01 – P5-11 (11) | Days 12–14 | ✅ Complete |
+| PB | Nerdy Content Quality Integration | PB-01 – PB-14 (14) | Post-core polish | ✅ Complete |
+| PF | Performance Feedback | PF-01 – PF-07 (7) | Post-core polish | ✅ Complete |
 
-**Total:** 81 tickets | 14 days (per prd.md Section 10)
+**Core PRD total:** 81 tickets | 14 days (per prd.md Section 10)
+**Supplemental follow-on phases tracked here:** `PB`, `PF`
 
 ## Ticket Index
 
@@ -1677,93 +1680,122 @@
 | P1-02 | Ad copy generator | ✅ |
 | P1-03 | Audience-specific brand voice profiles | ✅ |
 | P1-04 | Chain-of-thought evaluator | ✅ |
-| P1-05 | Campaign-goal-adaptive weighting | ⏳ |
-| P1-06 | Tiered model routing | ⏳ |
-| P1-07 | Pareto-optimal regeneration | ⏳ |
-| P1-08 | Brief mutation + escalation | ⏳ |
-| P1-09 | Distilled context objects | ⏳ |
-| P1-10 | Quality ratchet | ⏳ |
-| P1-11 | Token attribution engine | ⏳ |
-| P1-12 | Result-level cache | ⏳ |
-| P1-13 | Batch-sequential processor | ⏳ |
-| P1-14 | Nano Banana Pro integration + multi-variant generation | ⏳ |
-| P1-15 | Visual attribute evaluator + Pareto image selection | ⏳ |
-| P1-16 | Text-image coherence checker | ⏳ |
-| P1-17 | Image targeted regen loop | ⏳ |
-| P1-18 | Full ad assembly + export | ⏳ |
-| P1-19 | Image cost tracking | ⏳ |
-| P1-20 | 50+ full ad generation run | ⏳ |
+| P1-05 | Campaign-goal-adaptive weighting | ✅ |
+| P1-06 | Tiered model routing | ✅ |
+| P1-07 | Pareto-optimal regeneration | ✅ |
+| P1-08 | Brief mutation + escalation | ✅ |
+| P1-09 | Distilled context objects | ✅ |
+| P1-10 | Quality ratchet | ✅ |
+| P1-11 | Token attribution engine | ✅ |
+| P1-12 | Result-level cache | ✅ |
+| P1-13 | Batch-sequential processor | ✅ |
+| P1-14 | Nano Banana Pro integration + multi-variant generation | ✅ |
+| P1-15 | Visual attribute evaluator + Pareto image selection | ✅ |
+| P1-16 | Text-image coherence checker | ✅ |
+| P1-17 | Image targeted regen loop | ✅ |
+| P1-18 | Full ad assembly + export | ✅ |
+| P1-19 | Image cost tracking | ✅ |
+| P1-20 | 50+ full ad generation run | ✅ |
 
 ### Phase 1B: Application Layer (13 tickets)
 | Ticket | Title | Status |
 |--------|-------|--------|
-| PA-01 | FastAPI backend scaffold | ⏳ |
-| PA-02 | Database schema — users & sessions | ⏳ |
-| PA-03 | Google SSO authentication | ⏳ |
-| PA-04 | Session CRUD API | ⏳ |
-| PA-05 | Brief configuration form (React) | ⏳ |
-| PA-06 | Session list UI (React) | ⏳ |
-| PA-07 | Background job progress reporting | ⏳ |
-| PA-08 | "Watch Live" progress view (React) | ⏳ |
-| PA-09 | Session detail — dashboard integration | ⏳ |
-| PA-10 | Curation layer + Curated Set tab | ⏳ |
-| PA-11 | Share session link | ⏳ |
+| PA-01 | FastAPI backend scaffold | ✅ |
+| PA-02 | Database schema — users & sessions | ✅ |
+| PA-03 | Google SSO authentication | ✅ |
+| PA-04 | Session CRUD API | ✅ |
+| PA-05 | Brief configuration form (React) | ✅ |
+| PA-06 | Session list UI (React) | ✅ |
+| PA-07 | Background job progress reporting | ✅ |
+| PA-08 | "Watch Live" progress view (React) | ✅ |
+| PA-09 | Session detail — dashboard integration | ✅ |
+| PA-10 | Curation layer + Curated Set tab | ✅ |
+| PA-11 | Share session link | ✅ |
 | PA-12 | Docker Compose production deployment | ⏳ |
 | PA-13 | Frontend component build — mockup-to-production | ⏳ |
 
 ### Phase 2: Testing & Validation (7 tickets)
 | Ticket | Title | Status |
 |--------|-------|--------|
-| P2-01 | Inversion tests | ⏳ |
-| P2-02 | Correlation analysis | ⏳ |
-| P2-03 | Adversarial boundary tests | ⏳ |
-| P2-04 | SPC drift detection | ⏳ |
-| P2-05 | Confidence-gated autonomy | ⏳ |
-| P2-06 | Tiered compliance filter | ⏳ |
-| P2-07 | End-to-end integration test | ⏳ |
+| P2-01 | Inversion tests | ✅ |
+| P2-02 | Correlation analysis | ✅ |
+| P2-03 | Adversarial boundary tests | ✅ |
+| P2-04 | SPC drift detection | ✅ |
+| P2-05 | Confidence-gated autonomy | ✅ |
+| P2-06 | Tiered compliance filter | ✅ |
+| P2-07 | End-to-end integration test | ✅ |
 
 ### Phase 3: A/B Variant Engine + UGC Video — v2 (13 tickets)
 | Ticket | Title | Status |
 |--------|-------|--------|
-| P3-01 | Nano Banana 2 integration (cost tier) | ⏳ |
-| P3-02 | Single-variable A/B variants — copy | ⏳ |
-| P3-03 | Single-variable A/B variants — image | ⏳ |
-| P3-04 | Image style transfer experiments | ⏳ |
-| P3-05 | Multi-model orchestration doc | ⏳ |
-| P3-06 | Multi-aspect-ratio batch generation | ⏳ |
-| P3-07 | Veo integration + video spec extraction | ⏳ |
-| P3-08 | Video attribute evaluator | ⏳ |
-| P3-09 | Script-video coherence checker | ⏳ |
-| P3-10 | Video Pareto selection + regen loop | ⏳ |
-| P3-11 | Three-format ad assembly | ⏳ |
-| P3-12 | Video cost tracking | ⏳ |
-| P3-13 | 10-ad video pilot run | ⏳ |
+| P3-01 | Nano Banana 2 integration (cost tier) | ✅ |
+| P3-02 | Single-variable A/B variants — copy | ✅ |
+| P3-03 | Single-variable A/B variants — image | ✅ |
+| P3-04 | Image style transfer experiments | ✅ |
+| P3-05 | Multi-model orchestration doc | ✅ |
+| P3-06 | Multi-aspect-ratio batch generation | ✅ |
+| P3-07 | Veo integration + video spec extraction | ✅ |
+| P3-08 | Video attribute evaluator | ✅ |
+| P3-09 | Script-video coherence checker | ✅ |
+| P3-10 | Video Pareto selection + regen loop | ✅ |
+| P3-11 | Three-format ad assembly | ✅ |
+| P3-12 | Video cost tracking | ✅ |
+| P3-13 | 10-ad video pilot run | ✅ |
 
 ### Phase 4: Autonomous Engine — v3 (7 tickets)
 | Ticket | Title | Status |
 |--------|-------|--------|
-| P4-01 | Agentic orchestration layer | ⏳ |
-| P4-02 | Self-healing feedback loop | ⏳ |
-| P4-03 | Competitive intelligence pipeline | ⏳ |
-| P4-04 | Cross-campaign transfer | ⏳ |
-| P4-05 | Performance-decay exploration trigger | ⏳ |
-| P4-06 | Full marginal analysis engine | ⏳ |
-| P4-07 | Narrated pipeline replay | ⏳ |
+| P4-01 | Agentic orchestration layer | ✅ |
+| P4-02 | Self-healing feedback loop | ✅ |
+| P4-03 | Competitive intelligence pipeline | ✅ |
+| P4-04 | Cross-campaign transfer | ✅ |
+| P4-05 | Performance-decay exploration trigger | ✅ |
+| P4-06 | Full marginal analysis engine | ✅ |
+| P4-07 | Narrated pipeline replay | ✅ |
 
 ### Phase 5: Dashboard, Docs & Submission (11 tickets)
 | Ticket | Title | Status |
 |--------|-------|--------|
-| P5-01 | Dashboard data export script | ⏳ |
-| P5-02 | Dashboard HTML — Pipeline Summary + Iteration Cycles | ⏳ |
-| P5-03 | Dashboard HTML — Quality Trends + Dimension Deep-Dive | ⏳ |
-| P5-04 | Dashboard HTML — Ad Library | ⏳ |
-| P5-05 | Dashboard HTML — Token Economics | ⏳ |
-| P5-06 | Dashboard HTML — System Health + Competitive Intel | ⏳ |
-| P5-07 | Decision log | ⏳ |
-| P5-08 | Technical writeup (1–2 pages) | ⏳ |
-| P5-09 | Demo video (7 min, Problem-Solution-Proof) | ⏳ |
-| P5-10 | Generated ad library export | ⏳ |
-| P5-11 | README with one-command setup | ⏳ |
+| P5-01 | Dashboard data export script | ✅ |
+| P5-02 | Dashboard HTML — Pipeline Summary + Iteration Cycles | ✅ |
+| P5-03 | Dashboard HTML — Quality Trends + Dimension Deep-Dive | ✅ |
+| P5-04 | Dashboard HTML — Ad Library | ✅ |
+| P5-05 | Dashboard HTML — Token Economics | ✅ |
+| P5-06 | Dashboard HTML — System Health + Competitive Intel | ✅ |
+| P5-07 | Decision log | ✅ |
+| P5-08 | Technical writeup (1–2 pages) | ✅ |
+| P5-09 | Demo video (7 min, Problem-Solution-Proof) | ✅ |
+| P5-10 | Generated ad library export | ✅ |
+| P5-11 | README with one-command setup | ✅ |
+
+### Phase PB: Nerdy Content Quality Integration (14 tickets)
+| Ticket | Title | Status |
+|--------|-------|--------|
+| PB-01 | Ingest Supplementary into Brand Knowledge Base | ✅ |
+| PB-02 | Persona-Specific Hook Library | ✅ |
+| PB-03 | Nerdy Language Compliance Rules | ✅ |
+| PB-04 | Persona-Aware Brief Expansion | ✅ |
+| PB-05 | Update Ad Generator with Nerdy Messaging Rules | ✅ |
+| PB-06 | Nerdy-Calibrated Evaluator | ✅ |
+| PB-07 | Persona Selector in Session Config + Dashboard Updates | ✅ |
+| PB-08 | Integration Test Suite — Nerdy Content Quality | ✅ |
+| PB-09 | Validation — Phase PB Complete | ✅ |
+| PB-10 | Pipeline Config → Persona Flow | ✅ |
+| PB-11 | Creative Direction + Key Message Form Fields | ✅ |
+| PB-12 | Ad Generator with Nerdy Messaging Rules | ✅ |
+| PB-13 | Nerdy-Calibrated Evaluator | ✅ |
+| PB-14 | Integration Test + Validation | ✅ |
+
+### Phase PF: Performance Feedback (7 tickets)
+| Ticket | Title | Status |
+|--------|-------|--------|
+| PF-01 | Meta Performance Data Schema + Ingestion | ✅ |
+| PF-02 | Simulated Performance Dataset | ✅ |
+| PF-03 | Evaluator-Performance Correlation Analysis | ✅ |
+| PF-04 | Weight Recalibration from Performance Data | ✅ |
+| PF-05 | Evaluator Accuracy Report | ✅ |
+| PF-06 | Closed-Loop Architecture Documentation | ✅ |
+| PF-07 | Performance Feedback Dashboard Panel | ✅ |
 
 ## PRD Alignment Notes
 
