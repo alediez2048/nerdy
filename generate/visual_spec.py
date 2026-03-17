@@ -88,11 +88,23 @@ def _call_gemini_for_spec(prompt: str) -> dict[str, Any]:
     return retry_with_backoff(_do_call)
 
 
+_PERSONA_VISUAL_DIRECTION: dict[str, str] = {
+    "athlete_recruit": "Athletic student in sports context — on campus, near practice field, wearing team gear. Competitive energy, scholarship aspiration. Show laptop with SAT prep alongside sports equipment.",
+    "suburban_optimizer": "Organized home study space — clean desk, good lighting, focused student with parent nearby. Professional, optimistic. Show diagnostic report or score chart on screen.",
+    "immigrant_navigator": "Diverse family learning together — warm, welcoming atmosphere. Multicultural home or library setting. Show guidance and step-by-step support.",
+    "cultural_investor": "Modern study setup with multiple resources — tech-forward, books alongside laptop. STEM-oriented student. Show consolidation of tools into one platform.",
+    "system_optimizer": "Data dashboard aesthetic — minimal, clean, McKinsey-style. White/light background, sans-serif typography. INPUT/OUTPUT table or score chart. NO lifestyle imagery, NO stock photos of people.",
+    "neurodivergent_advocate": "Warm, inclusive 1:1 tutoring scene — comfortable setting, patient tutor, student at ease. Calm lighting, adaptive environment. Show connection and understanding.",
+    "burned_returner": "Fresh start transformation — before/after aesthetic. Student gaining confidence, moving from frustration to focus. Show progress and new beginning.",
+}
+
+
 def extract_visual_spec(
     expanded_brief: dict[str, Any],
     campaign_goal: str,
     audience: str,
     ad_id: str,
+    persona: str | None = None,
 ) -> VisualSpec:
     """Extract a structured visual spec from an expanded brief.
 
@@ -101,6 +113,7 @@ def extract_visual_spec(
         campaign_goal: "awareness" or "conversion".
         audience: "parents" or "students".
         ad_id: The ad identifier.
+        persona: Optional persona key for persona-specific visual direction.
 
     Returns:
         VisualSpec with all fields populated.
@@ -110,13 +123,20 @@ def extract_visual_spec(
     mood = "aspirational, warm, community-oriented" if campaign_goal == "awareness" else "action-oriented, focused, achievement-driven"
     subject_hint = "family or parent-child study scenes" if audience == "parents" else "peer study groups or individual student achievement"
 
+    # PB-10: Persona-specific visual direction overrides generic hints
+    persona_direction = ""
+    if persona and persona in _PERSONA_VISUAL_DIRECTION:
+        persona_direction = f"\nPERSONA CREATIVE DIRECTION (override generic guidance with this):\n{_PERSONA_VISUAL_DIRECTION[persona]}"
+        subject_hint = _PERSONA_VISUAL_DIRECTION[persona].split(".")[0]
+
     prompt = f"""Extract a structured visual specification for an education/tutoring ad image.
 
 Brief context:
-- Product: {expanded_brief.get('product', 'SAT prep tutoring')}
+- Product: {expanded_brief.get('product', 'SAT Tutoring')}
 - Audience: {audience}
 - Campaign goal: {campaign_goal}
 - Key message: {expanded_brief.get('key_message', '')}
+{persona_direction}
 
 Brand colors: {', '.join(_BRAND_COLORS)} (teal, navy, white)
 Mood: {mood}

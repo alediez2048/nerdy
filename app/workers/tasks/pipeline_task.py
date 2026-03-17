@@ -40,6 +40,8 @@ def run_pipeline_session(self, session_id: str) -> dict:
         cycle_count = config.get("cycle_count", 3)
         quality_threshold = config.get("quality_threshold", 7.0)
         image_enabled = config.get("image_enabled", True)
+        persona_raw = config.get("persona", "auto")
+        persona = persona_raw if persona_raw and persona_raw != "auto" else None
         ledger_path = session_row.ledger_path or "data/ledger.jsonl"
 
         batch_size = min(10, ad_count)
@@ -62,6 +64,7 @@ def run_pipeline_session(self, session_id: str) -> dict:
             "global_seed": f"session_{session_id}",
             "improvable_range": [5.5, 7.0],
             "image_enabled": image_enabled,
+            "persona": persona,
         }
 
         # Generate briefs
@@ -72,6 +75,7 @@ def run_pipeline_session(self, session_id: str) -> dict:
             ledger_path=ledger_path,
             dry_run=False,
             global_seed=f"session_{session_id}",
+            persona=persona,
         )
         briefs = generate_briefs(pconfig)
         batches = create_batches(briefs, batch_size)

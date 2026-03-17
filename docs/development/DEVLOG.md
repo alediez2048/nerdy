@@ -7,6 +7,24 @@
 
 ---
 
+## PB-10: Pipeline Config → Persona Flow ✅
+
+### Plain-English Summary
+- **pipeline_task.py**: extracts `persona` from session config, passes to pipeline_config and PipelineConfig
+- **batch_processor.py**: reads persona from config, passes to `expand_brief(persona=)`, `evaluate_ad(persona=)`, `_generate_and_select_image(persona=)`. Falls back to brief-level persona (from CLI `--persona` flag)
+- **visual_spec.py**: `extract_visual_spec()` accepts `persona` param, injects persona-specific creative direction into prompt (7 personas: athlete→sports/campus, system_optimizer→McKinsey/dashboard, neurodivergent→warm/inclusive, etc.)
+- Now selecting "Athlete Recruit" on the session form → persona flows through pipeline_task → batch_processor → expand_brief → generate_ad → evaluate_ad → visual_spec → image generation
+- 7 tests: persona extraction, auto handling, visual directions defined, prompt changes, system optimizer McKinsey, expand_brief flow, default selection
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 17, 2026
+- **Ticket:** PB-10
+- **Tests:** 7 (all passing)
+- **Files:** `app/workers/tasks/pipeline_task.py`, `iterate/batch_processor.py`, `generate/visual_spec.py`, `tests/test_pb/test_pb10_persona_flow.py`
+
+---
+
 ## PB-09: Validation — Phase PB Complete ✅
 
 ### Plain-English Summary

@@ -109,13 +109,16 @@ def process_batch(
         return result
 
     ledger_path = config.get("ledger_path", "data/ledger.jsonl")
+    persona = config.get("persona")  # PB-10: persona from session config
 
     for brief in briefs:
         brief_id = brief.get("brief_id", "unknown")
+        # Use persona from config, or from brief (CLI --persona sets it on brief)
+        brief_persona = persona or brief.get("persona")
         try:
-            # Stage 1: Expand brief
+            # Stage 1: Expand brief (with persona context)
             from generate.brief_expansion import expand_brief
-            expanded = expand_brief(brief)
+            expanded = expand_brief(brief, persona=brief_persona)
 
             # Stage 2: Generate ad copy (per-brief seed for structural diversity)
             from generate.ad_generator import generate_ad
@@ -144,13 +147,14 @@ def process_batch(
                 },
             })
 
-            # Stage 3: Evaluate (cache-aware)
+            # Stage 3: Evaluate (cache-aware, persona-aware)
             from evaluate.evaluator import evaluate_ad
             evaluation = evaluate_ad(
                 ad.to_evaluator_input(),
                 campaign_goal=brief.get("campaign_goal", "conversion"),
                 audience=brief.get("audience", "parents"),
                 ledger_path=ledger_path,
+                persona=brief_persona,
             )
 
             # Stage 4: Route
@@ -172,6 +176,7 @@ def process_batch(
                     brief=brief,
                     brief_seed=brief_seed,
                     ledger_path=ledger_path,
+                    persona=brief_persona,
                 )
 
             if routing.decision == "publish":
@@ -233,6 +238,7 @@ def _generate_and_select_image(
     brief: dict[str, Any],
     brief_seed: int,
     ledger_path: str,
+    persona: str | None = None,
 ) -> str | None:
     """Generate 3 image variants, evaluate, and select the best one.
 
@@ -253,6 +259,7 @@ def _generate_and_select_image(
             campaign_goal=brief.get("campaign_goal", "conversion"),
             audience=brief.get("audience", "parents"),
             ad_id=ad.ad_id,
+            persona=persona,
         )
 
         # Step 2: Generate 3 image variants
