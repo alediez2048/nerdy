@@ -113,6 +113,8 @@ def process_batch(
     key_message = config.get("key_message", "")  # PB-11: creative direction
     creative_brief = config.get("creative_brief", "auto")
     copy_on_image = config.get("copy_on_image", False)
+    aspect_ratios = config.get("aspect_ratios", ["1:1"])
+    primary_aspect_ratio = aspect_ratios[0] if aspect_ratios else "1:1"
 
     for brief in briefs:
         brief_id = brief.get("brief_id", "unknown")
@@ -185,6 +187,7 @@ def process_batch(
                     persona=brief_persona,
                     creative_brief=creative_brief,
                     copy_on_image=copy_on_image,
+                    aspect_ratio=primary_aspect_ratio,
                 )
 
             if routing.decision == "publish":
@@ -249,6 +252,7 @@ def _generate_and_select_image(
     persona: str | None = None,
     creative_brief: str = "auto",
     copy_on_image: bool = False,
+    aspect_ratio: str = "1:1",
 ) -> str | None:
     """Generate 3 image variants, evaluate, and select the best one.
 
@@ -272,6 +276,7 @@ def _generate_and_select_image(
             persona=persona,
             creative_brief=creative_brief,
             copy_on_image=copy_on_image,
+            aspect_ratio=aspect_ratio,
         )
 
         # Step 2: Generate 3 image variants

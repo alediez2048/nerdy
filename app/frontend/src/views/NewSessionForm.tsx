@@ -35,15 +35,6 @@ export default function NewSessionForm() {
     setConfig((prev) => ({ ...prev, [key]: value }))
   }
 
-  const toggleAspectRatio = (ratio: AspectRatio) => {
-    setConfig((prev) => {
-      const has = prev.aspect_ratios.includes(ratio)
-      const next = has
-        ? prev.aspect_ratios.filter((r) => r !== ratio)
-        : [...prev.aspect_ratios, ratio]
-      return { ...prev, aspect_ratios: next.length ? next : [ratio] }
-    })
-  }
 
   const cloneFrom = (session: SessionSummary) => {
     const c = session.config as Record<string, unknown>
@@ -57,7 +48,7 @@ export default function NewSessionForm() {
       model_tier: (c.model_tier as ModelTier) || 'standard',
       budget_cap_usd: (c.budget_cap_usd as number | null) ?? null,
       image_enabled: c.image_enabled !== false,
-      aspect_ratios: (c.aspect_ratios as AspectRatio[]) || ['1:1'],
+      aspect_ratio: (c.aspect_ratio as AspectRatio) || (c.aspect_ratios as AspectRatio[])?.[0] || '1:1',
       persona: (c.persona as Persona) || 'auto',
       key_message: (c.key_message as string) || '',
       creative_brief: (c.creative_brief as string) || 'auto',
@@ -346,16 +337,17 @@ export default function NewSessionForm() {
                 </label>
               </div>
 
-              {/* Aspect ratios */}
+              {/* Aspect ratio */}
               <div style={s.field}>
-                <label style={s.label}>Aspect Ratios</label>
+                <label style={s.label}>Aspect Ratio</label>
                 <div style={s.checkGroup}>
                   {(['1:1', '4:5', '9:16'] as AspectRatio[]).map((ratio) => (
                     <label key={ratio} style={s.checkLabel}>
                       <input
-                        type="checkbox"
-                        checked={config.aspect_ratios.includes(ratio)}
-                        onChange={() => toggleAspectRatio(ratio)}
+                        type="radio"
+                        name="aspect_ratio"
+                        checked={config.aspect_ratio === ratio}
+                        onChange={() => update('aspect_ratio', ratio)}
                       />
                       {ratio}
                     </label>

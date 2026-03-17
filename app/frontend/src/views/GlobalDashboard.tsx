@@ -431,7 +431,7 @@ function AdLibraryTab({ data }: { data: Record<string, unknown> }) {
                 <img
                   src={`/api${ad.image_url}`}
                   alt={`Ad ${ad.ad_id}`}
-                  style={{ width: '100%', maxHeight: '220px', objectFit: 'cover' as const, borderRadius: radii.input, marginTop: '10px' }}
+                  style={{ width: '100%', maxHeight: '480px', objectFit: 'contain' as const, borderRadius: radii.input, marginTop: '10px' }}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
               )}

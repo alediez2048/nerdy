@@ -69,6 +69,15 @@ def _call_image_api(
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY not set in environment")
 
+    # Map aspect ratio to orientation instruction for the prompt
+    _AR_INSTRUCTIONS = {
+        "9:16": "Generate a VERTICAL/PORTRAIT image (9:16 aspect ratio, taller than wide, like a phone screen or Instagram Story).",
+        "4:5": "Generate a PORTRAIT image (4:5 aspect ratio, slightly taller than wide, like an Instagram feed post).",
+        "1:1": "Generate a SQUARE image (1:1 aspect ratio).",
+    }
+    ar_instruction = _AR_INSTRUCTIONS.get(aspect_ratio, _AR_INSTRUCTIONS["1:1"])
+    full_prompt = f"{ar_instruction}\n\n{prompt}"
+
     def _do_call() -> str:
         client = genai.Client(api_key=api_key)
 
@@ -79,7 +88,7 @@ def _call_image_api(
         # Use Nano Banana Pro (generateContent with image modality)
         response = client.models.generate_content(
             model=MODEL_NANO_BANANA_PRO,
-            contents=prompt,
+            contents=full_prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["IMAGE", "TEXT"],
             ),

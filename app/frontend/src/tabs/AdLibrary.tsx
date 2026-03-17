@@ -47,53 +47,86 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
         ))}
       </div>
 
-      {/* Ad list */}
+      {/* Ad grid */}
       {filtered.length === 0 ? (
         <p style={{ color: colors.muted }}>No ads found</p>
       ) : (
-        <div style={s.list}>
-          {filtered.map((ad) => (
-            <div
-              key={ad.ad_id}
-              onClick={() => setExpanded(expanded === ad.ad_id ? null : ad.ad_id)}
-              style={s.card}
-            >
-              <div style={s.cardHeader}>
-                <span style={s.adId}>{ad.ad_id}</span>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <StatusBadge status={ad.status} />
-                  <Badge label={ad.aggregate_score.toFixed(1)} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
-                </div>
-              </div>
-              <p style={s.copy}>{ad.copy?.primary_text || ad.copy?.headline || '—'}</p>
-
-              {ad.image_url && (
-                <img
-                  src={`/api${ad.image_url}`}
-                  alt={`Ad ${ad.ad_id}`}
-                  style={s.adImage}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
-              )}
-
-              {expanded === ad.ad_id && (
-                <div style={s.expanded}>
-                  {ad.copy?.headline && <p><strong>Headline:</strong> {ad.copy.headline}</p>}
-                  {ad.copy?.description && <p><strong>Description:</strong> {ad.copy.description}</p>}
-                  {ad.copy?.cta_button && <p><strong>CTA:</strong> {ad.copy.cta_button}</p>}
-                  <div style={s.scoreGrid}>
-                    {Object.entries(ad.scores).map(([dim, score]) => (
-                      <div key={dim} style={s.scoreItem}>
-                        <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace('_', ' ')}</span>
-                        <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '—'}</span>
+        <div style={s.grid}>
+          {filtered.map((ad) => {
+            const isExpanded = expanded === ad.ad_id
+            if (isExpanded) {
+              return (
+                <div
+                  key={ad.ad_id}
+                  onClick={() => setExpanded(null)}
+                  style={{ ...s.card, ...s.cardExpanded }}
+                >
+                  <div style={s.expandedLayout}>
+                    {ad.image_url && (
+                      <img
+                        src={`/api${ad.image_url}`}
+                        alt={`Ad ${ad.ad_id}`}
+                        style={s.adImageExpanded}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    )}
+                    <div style={s.expandedDetails}>
+                      <div style={s.cardHeader}>
+                        <span style={s.adId}>{ad.ad_id}</span>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <StatusBadge status={ad.status} />
+                          <Badge label={ad.aggregate_score.toFixed(1)} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                        </div>
                       </div>
-                    ))}
+                      <p style={s.copyFull}>
+                        {ad.copy?.primary_text || ad.copy?.headline || '—'}
+                      </p>
+                      <div style={s.detailSection}>
+                        {ad.copy?.headline && <p style={{ margin: '4px 0' }}><strong>Headline:</strong> {ad.copy.headline}</p>}
+                        {ad.copy?.description && <p style={{ margin: '4px 0' }}><strong>Description:</strong> {ad.copy.description}</p>}
+                        {ad.copy?.cta_button && <p style={{ margin: '4px 0' }}><strong>CTA:</strong> {ad.copy.cta_button}</p>}
+                      </div>
+                      <div style={s.scoreGrid}>
+                        {Object.entries(ad.scores).map(([dim, score]) => (
+                          <div key={dim} style={s.scoreItem}>
+                            <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace('_', ' ')}</span>
+                            <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '—'}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: '12px', color: colors.muted, margin: '8px 0 0' }}>Cycles: {ad.cycle_count}</p>
+                    </div>
                   </div>
-                  <p style={{ fontSize: '12px', color: colors.muted }}>Cycles: {ad.cycle_count}</p>
                 </div>
-              )}
-            </div>
-          ))}
+              )
+            }
+            return (
+              <div
+                key={ad.ad_id}
+                onClick={() => setExpanded(ad.ad_id)}
+                style={s.card}
+              >
+                {ad.image_url && (
+                  <img
+                    src={`/api${ad.image_url}`}
+                    alt={`Ad ${ad.ad_id}`}
+                    style={s.adImage}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                )}
+                <div style={s.cardHeader}>
+                  <span style={s.adId}>{ad.ad_id}</span>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <StatusBadge status={ad.status} />
+                    <Badge label={ad.aggregate_score.toFixed(1)} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                  </div>
+                </div>
+                <p style={s.copy}>
+                  {ad.copy?.primary_text || ad.copy?.headline || '—'}
+                </p>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -110,16 +143,52 @@ const s: Record<string, React.CSSProperties> = {
     padding: '6px 14px', borderRadius: radii.button, border: `1px solid ${colors.cyan}`,
     background: `${colors.cyan}20`, color: colors.cyan, cursor: 'pointer', fontSize: '12px', fontFamily: font.family,
   },
-  list: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  card: {
-    background: colors.surface, borderRadius: radii.input, padding: '14px 18px',
-    cursor: 'pointer', fontFamily: font.family,
+  grid: {
+    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px',
   },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' },
-  adId: { fontSize: '12px', color: colors.muted },
-  copy: { fontSize: '14px', color: colors.white, margin: 0, lineHeight: 1.4 },
-  adImage: { width: '100%', maxHeight: '220px', objectFit: 'cover' as const, borderRadius: radii.input, marginTop: '10px' },
-  expanded: { marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.muted}20`, fontSize: '13px', color: colors.white },
+  card: {
+    background: colors.surface, borderRadius: radii.card, padding: '0',
+    cursor: 'pointer', fontFamily: font.family, overflow: 'hidden',
+    transition: 'box-shadow 0.2s ease',
+  },
+  cardExpanded: {
+    gridColumn: '1 / -1',
+  },
+  cardHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '10px 14px 4px',
+  },
+  adId: { fontSize: '11px', color: colors.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '55%' },
+  copy: {
+    fontSize: '13px', color: colors.white, margin: 0, lineHeight: 1.4,
+    padding: '0 14px 12px',
+    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const,
+    overflow: 'hidden',
+  },
+  copyFull: {
+    fontSize: '13px', color: colors.white, margin: 0, lineHeight: 1.4,
+    padding: '0 14px 12px',
+  },
+  adImage: {
+    width: '100%', objectFit: 'cover' as const, display: 'block',
+  },
+  expandedLayout: {
+    display: 'flex', gap: '0',
+  },
+  adImageExpanded: {
+    width: '280px', minWidth: '280px', maxHeight: '400px',
+    objectFit: 'cover' as const, display: 'block',
+    background: colors.surface,
+    borderRight: `1px solid ${colors.muted}20`,
+  },
+  expandedDetails: {
+    flex: 1, padding: '4px 0 14px', fontSize: '13px', color: colors.white,
+    display: 'flex', flexDirection: 'column' as const,
+  },
+  detailSection: {
+    padding: '0 14px', borderTop: `1px solid ${colors.muted}20`,
+    paddingTop: '10px', marginTop: '4px',
+  },
   scoreGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginTop: '8px' },
   scoreItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
 }

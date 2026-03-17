@@ -48,7 +48,7 @@ export interface SessionConfig {
   model_tier: ModelTier
   budget_cap_usd: number | null
   image_enabled: boolean
-  aspect_ratios: AspectRatio[]
+  aspect_ratio: AspectRatio
   persona: Persona
   key_message: string
   creative_brief: string
@@ -112,7 +112,7 @@ export const DEFAULT_CONFIG: SessionConfig = {
   model_tier: 'standard',
   budget_cap_usd: null,
   image_enabled: true,
-  aspect_ratios: ['1:1'],
+  aspect_ratio: '1:1',
   persona: 'auto',
   key_message: '',
   creative_brief: 'auto',

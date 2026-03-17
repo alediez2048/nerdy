@@ -56,7 +56,7 @@ class SessionConfig(BaseModel):
     model_tier: ModelTier = ModelTier.standard
     budget_cap_usd: float | None = Field(default=None, ge=1.0)
     image_enabled: bool = True
-    aspect_ratios: list[AspectRatio] = Field(default_factory=lambda: [AspectRatio.square])
+    aspect_ratio: AspectRatio = AspectRatio.square
     persona: Persona = Persona.auto
     # PB-11: Creative direction fields
     key_message: str = ""

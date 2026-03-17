@@ -45,6 +45,8 @@ def run_pipeline_session(self, session_id: str) -> dict:
         key_message = config.get("key_message", "")
         creative_brief = config.get("creative_brief", "auto")
         copy_on_image = config.get("copy_on_image", False)
+        aspect_ratio_single = config.get("aspect_ratio")
+        aspect_ratios = [aspect_ratio_single] if aspect_ratio_single else config.get("aspect_ratios", ["1:1"])
         ledger_path = session_row.ledger_path or "data/ledger.jsonl"
 
         batch_size = min(10, ad_count)
@@ -71,6 +73,7 @@ def run_pipeline_session(self, session_id: str) -> dict:
             "key_message": key_message,
             "creative_brief": creative_brief,
             "copy_on_image": copy_on_image,
+            "aspect_ratios": aspect_ratios,
         }
 
         # Generate briefs

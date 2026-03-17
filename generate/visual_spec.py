@@ -116,6 +116,7 @@ def extract_visual_spec(
     persona: str | None = None,
     creative_brief: str = "auto",
     copy_on_image: bool = False,
+    aspect_ratio: str = "1:1",
 ) -> VisualSpec:
     """Extract a structured visual spec from an expanded brief.
 
@@ -194,7 +195,7 @@ Output ONLY valid JSON:
     if not isinstance(color_palette, list):
         color_palette = _BRAND_COLORS
 
-    return VisualSpec(
+    spec = VisualSpec(
         ad_id=ad_id,
         brief_id=brief_id,
         subject=raw.get("subject", "Student studying"),
@@ -203,7 +204,9 @@ Output ONLY valid JSON:
         composition=raw.get("composition", "Centered, balanced"),
         campaign_goal_cue=raw.get("campaign_goal_cue", mood),
         text_overlay=raw.get("text_overlay", ""),
+        aspect_ratio=aspect_ratio,
     )
+    return spec
 
 
 def build_image_prompt(spec: VisualSpec, variant_type: str) -> str:
