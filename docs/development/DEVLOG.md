@@ -7,6 +7,18 @@
 
 ---
 
+## PB-14: Integration Test + Validation ✅
+
+### Plain-English Summary
+- 13 integration tests: persona hooks, visual spec, creative briefs, compliance, offer context, CTAs, backward compat, evaluator rewards
+- **134 total PB tests all passing** (PB-01 through PB-14)
+- Validation run: `python run_pipeline.py --max-ads 5 --persona athlete_recruit`
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 17, 2026  |  **Tests:** 134 total PB
+
+---
+
 ## PB-13: Nerdy-Calibrated Evaluator ✅
 
 ### Plain-English Summary

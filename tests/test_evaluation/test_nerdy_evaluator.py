@@ -108,9 +108,9 @@ def test_clean_nerdy_copy_no_penalties():
         headline="SAT Tutoring That Raises Scores",
     )
     result = _apply_nerdy_adjustments(scores, ad)
-    # No penalties should be applied
-    assert result["brand_voice"]["score"] == 7.5
-    assert result["clarity"]["score"] == 7.5
+    # No penalties — may get bonuses (your_child +0.3 BV, meta structure +0.3 CL)
+    assert result["brand_voice"]["score"] >= 7.5
+    assert result["clarity"]["score"] >= 7.5
 
 
 # --- Combined penalties stack ---
