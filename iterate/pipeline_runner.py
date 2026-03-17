@@ -55,6 +55,7 @@ class PipelineConfig:
     output_dir: str = "output/ads"
     dry_run: bool = False
     global_seed: str = "nerdy_p1_20"
+    persona: str | None = None  # PB-07: persona key or None for auto
 
 
 @dataclass
@@ -91,14 +92,17 @@ def generate_briefs(config: PipelineConfig) -> list[dict[str, Any]]:
         audience = _AUDIENCES[i % len(_AUDIENCES)]
         goal = _CAMPAIGN_GOALS[(i // 2) % len(_CAMPAIGN_GOALS)]
 
-        briefs.append({
+        brief: dict[str, Any] = {
             "brief_id": f"brief_{i + 1:03d}",
             "product": product,
             "audience": audience,
             "campaign_goal": goal,
             "key_message": f"Expert {product} — personalized 1-on-1 sessions",
             "platform": "facebook",
-        })
+        }
+        if config.persona:
+            brief["persona"] = config.persona
+        briefs.append(brief)
 
     return briefs
 

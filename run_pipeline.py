@@ -55,6 +55,12 @@ def main() -> int:
         help="Output directory for exported ads (default: output/ads)",
     )
     parser.add_argument(
+        "--persona", type=str, default=None,
+        choices=["auto", "athlete_recruit", "suburban_optimizer", "immigrant_navigator",
+                 "cultural_investor", "system_optimizer", "neurodivergent_advocate", "burned_returner"],
+        help="Target persona for ad generation (default: auto)",
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Enable debug logging",
     )
@@ -71,6 +77,8 @@ def main() -> int:
     # Compute batches from max-ads
     num_batches = max(1, (args.max_ads + args.batch_size - 1) // args.batch_size)
 
+    persona = args.persona if args.persona and args.persona != "auto" else None
+
     config = PipelineConfig(
         num_batches=num_batches,
         batch_size=min(args.batch_size, args.max_ads),
@@ -79,11 +87,13 @@ def main() -> int:
         output_dir=args.output,
         dry_run=args.dry_run,
         global_seed=args.seed,
+        persona=persona,
     )
 
     logging.info(
-        "Pipeline config: %d ads (%d batches x %d), %d cycles, dry_run=%s",
-        args.max_ads, num_batches, config.batch_size, config.max_cycles, config.dry_run,
+        "Pipeline config: %d ads (%d batches x %d), %d cycles, persona=%s, dry_run=%s",
+        args.max_ads, num_batches, config.batch_size, config.max_cycles,
+        config.persona or "auto", config.dry_run,
     )
 
     try:
