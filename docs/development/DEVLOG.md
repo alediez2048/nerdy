@@ -7,6 +7,32 @@
 
 ---
 
+## PB-01: Ingest Supplementary into Brand Knowledge Base ✅
+
+### Plain-English Summary
+- Extended `data/brand_knowledge.json` with all Nerdy supplementary content:
+  - 7 persona profiles (athlete_recruit, suburban_optimizer, immigrant_navigator, cultural_investor, system_optimizer, neurodivergent_advocate, burned_returner) — each with description, psychology, trigger, funnel_position, conversion_likelihood, key_needs, preferred_cta
+  - SAT messaging rules: 12 do's (your child, SAT Tutoring, conditional claims, competitor comparisons with real data, digital SAT advantage) + 8 don'ts (your student, SAT Prep, fake urgency, corporate jargon, online tutoring framing)
+  - Detailed competitor data: real pricing for self-study ($0-$99), group courses ($1500-$2500 + $199-$252/hr), local tutors ($80-$200/hr), VT ($349-$1099/mo)
+  - Offer positioning: monthly membership at $639/mo recommended, 10 included features, ~100pts/month improvement, super score strategy
+  - 13 persona-specific CTAs (athlete → "Talk to specialist in 60 seconds", etc.)
+  - Updated compliance never_claim with Nerdy-specific rules
+  - Creative brief template: "The Gap Report" for System Optimizer (McKinsey-style INPUT/OUTPUT table)
+  - Meta ad structure template: Hook → Pattern interrupt → Micro-commitment CTA
+  - 11 verified product claims with sources
+  - 5 proof points (10X self-study, 2.6X group, 100pts/month, 60% calculator, 3x SAT average)
+- All backward-compatible — existing `brand`, `audiences`, `competitors`, `compliance`, `ctas` keys preserved
+- 11 tests: personas (count + fields), messaging dos/donts, competitor pricing, offer, persona CTAs, backward compat, compliance updates, creative brief, meta ad structure
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 16, 2026
+- **Ticket:** PB-01
+- **Tests:** 11 (all passing)
+- **Files:** `data/brand_knowledge.json`, `tests/test_data/test_brand_kb_pb.py`
+
+---
+
 ## PA-11: Share Session Link ✅
 
 ### Plain-English Summary

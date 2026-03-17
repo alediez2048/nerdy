@@ -7,19 +7,22 @@
     "source": "assignment_spec"
   },
   "products": {
-    "sat_prep": {
+    "sat_tutoring": {
       "type": "1-on-1 tutoring",
-      "format": "online",
-      "description": "SAT test prep tutoring for high school students",
+      "format": "online (digital SAT environment)",
+      "description": "SAT tutoring — monthly membership with expert 1:1 sessions, diagnostics, study plan, practice tests, and progress tracking",
       "verified_claims": [
-        {
-          "claim": "Offers 1-on-1 SAT test prep tutoring",
-          "source": "assignment_spec"
-        },
-        {
-          "claim": "Online format available",
-          "source": "assignment_spec"
-        }
+        {"claim": "1-on-1 expert SAT tutoring with vetted tutors", "source": "supplementary"},
+        {"claim": "Online format mirrors the real Digital SAT interface", "source": "supplementary"},
+        {"claim": "Students raise scores 10X more than self-study", "source": "supplementary"},
+        {"claim": "Students raise scores 2.6X more than group classes, local tutors, and brand-name programs", "source": "supplementary"},
+        {"claim": "~100 points per month at 2 sessions/week + 20min/day practice", "source": "supplementary"},
+        {"claim": "Over 60% of SAT math can be solved with built-in calculator and formulas", "source": "supplementary"},
+        {"claim": "6 full-length Digital SAT practice tests included", "source": "supplementary"},
+        {"claim": "20,000+ Bluebook-identical practice questions", "source": "supplementary"},
+        {"claim": "Weekly progress reports with projected score", "source": "supplementary"},
+        {"claim": "Perfect tutor match guarantee — rematch immediately if not right fit", "source": "supplementary"},
+        {"claim": "College essay support included after SAT", "source": "supplementary"}
       ]
     }
   },
@@ -28,12 +31,19 @@
       "pain_points": [
         {"point": "College admissions anxiety", "source": "assignment_spec"},
         {"point": "Comparing prep options (Princeton Review, Khan Academy, Chegg, Kaplan)", "source": "assignment_spec"},
-        {"point": "Wanting the best for their child", "source": "brand_context"}
+        {"point": "Wanting the best for their child", "source": "brand_context"},
+        {"point": "GPA/SAT score mismatch — smart kid, disappointing test score", "source": "supplementary"},
+        {"point": "Prior tutoring didn't work", "source": "supplementary"},
+        {"point": "Can't make their teenager study", "source": "supplementary"},
+        {"point": "School SAT prep was inadequate", "source": "supplementary"}
       ],
       "emotional_drivers": [
         {"driver": "College admissions anxiety", "source": "assignment_spec"},
         {"driver": "Comparison shopping", "source": "brand_context"},
-        {"driver": "Wanting the best for their child", "source": "brand_context"}
+        {"driver": "Wanting the best for their child", "source": "brand_context"},
+        {"driver": "Fear of missed scholarship opportunity", "source": "supplementary"},
+        {"driver": "Frustration with self-study not working", "source": "supplementary"},
+        {"driver": "Parental exhaustion — tired of being homework police", "source": "supplementary"}
       ],
       "tone_register": "authoritative, reassuring, outcome-focused",
       "source": "brand_context"
@@ -52,28 +62,256 @@
       "source": "brand_context"
     }
   },
-  "proof_points": [],
+  "personas": {
+    "athlete_recruit": {
+      "description": "Mother of 11th-grade student athlete. SAT is a gating factor for scholarships, NCAA/NAIA eligibility, or coach support.",
+      "psychology": "Fear of missed window + urgency + identity (athletic dream). Hard work on the field should not be undermined by a test score.",
+      "trigger": "Recruiting window open, SAT score needed for eligibility or scholarship. Specific math gaps (Algebra 2, word problems).",
+      "funnel_position": "late",
+      "conversion_likelihood": "very_high",
+      "key_needs": ["Understand recruiting timelines", "Fit around practice/competition schedule", "Fast start (first session within 48hrs)", "Late evening availability", "Targeted 1:1 on precise weaknesses"],
+      "preferred_cta": "Talk to an SAT specialist today. We'll call you in 60 seconds.",
+      "source": "supplementary"
+    },
+    "suburban_optimizer": {
+      "description": "Upper-middle-class suburban mother, 11th grader with 3.8+ GPA but mid-1200s SAT. Dual-income household in affluent district.",
+      "psychology": "Control, optimization, fairness. Doesn't want child leaving points on the table vs. peers who prepared more.",
+      "trigger": "PSAT or first SAT score in mid-1200s doesn't match classroom performance. 'She wants a 1450.'",
+      "funnel_position": "mid",
+      "conversion_likelihood": "strong",
+      "key_needs": ["Specificity over hype", "Clear plan (diagnostic, gap analysis, 30-40 hours over 8-10 weeks)", "Comparison to alternatives", "Investment framing vs scholarship potential"],
+      "preferred_cta": "See what score range is realistic in 8–10 weeks.",
+      "source": "supplementary"
+    },
+    "immigrant_navigator": {
+      "description": "First/second-gen immigrant family (South Asian, Middle Eastern, Latin American). Mother calling 60%, student as proxy 40%.",
+      "psychology": "Overwhelm + unfamiliar system + fear of making wrong choice. Education as primary path to upward mobility.",
+      "trigger": "Navigating test prep for first time, or returning after disappointing tutoring. Need education about SAT itself before evaluating providers.",
+      "funnel_position": "early_to_mid",
+      "conversion_likelihood": "high_when_decision_maker_engaged",
+      "key_needs": ["Credibility first (tutor qualifications, success stories)", "Step-by-step process explanation", "Understanding of US college admissions", "Patient guidance"],
+      "preferred_cta": "Talk to an SAT specialist who will walk you through it step by step.",
+      "source": "supplementary"
+    },
+    "cultural_investor": {
+      "description": "Dual-income STEM professionals with high father involvement. Education spending is non-negotiable. Student in accelerated track.",
+      "psychology": "Process-oriented, already investing in multiple resources. Values mastery over quick performance gains.",
+      "trigger": "Grade-related concern (AP Physics/Calculus drop), frustration that prior tutoring didn't improve performance.",
+      "funnel_position": "mid",
+      "conversion_likelihood": "high_ltv_slow_conversion",
+      "key_needs": ["Information-driven decision making", "Spousal consultation support", "Trial before committing", "Consolidate scattered resources into one system"],
+      "preferred_cta": "See how we replace five tools with one system that actually raises scores.",
+      "source": "supplementary"
+    },
+    "system_optimizer": {
+      "description": "Corporate father (75%+ calling), tech-centric regions. Approaches tutoring as procurement decision, not emotional one.",
+      "psychology": "Efficiency, process optimization, measurable outcomes. Wants scope, method, timeline, result — not marketing.",
+      "trigger": "Approaching SAT date, expiring employer benefit (Bright Horizons), frustration with cumbersome setup.",
+      "funnel_position": "late",
+      "conversion_likelihood": "high_when_process_smooth",
+      "key_needs": ["Fast start", "Clear scheduling/rescheduling", "Measurable progress tracking", "Benefits application support", "Self-service tools"],
+      "preferred_cta": "Book Diagnostic",
+      "source": "supplementary"
+    },
+    "neurodivergent_advocate": {
+      "description": "Mother of 9th-12th grader with ADHD, autism, dyslexia, dyscalculia, or processing disorder. Deep knowledge of child's diagnosis.",
+      "psychology": "Protective + 'my child learns differently' + fear of being misunderstood. Values right fit over lowest price.",
+      "trigger": "Approaching test date + realization that standard prep won't work. Prior tutoring failed because instructor couldn't adapt.",
+      "funnel_position": "mid",
+      "conversion_likelihood": "high_with_warmth_and_specificity",
+      "key_needs": ["Acknowledgment of specific diagnosis", "Honesty about tutor experience with similar students", "Detailed matching process", "Easy tutor switching", "Follow-up in writing with tutor profiles and accommodation plan"],
+      "preferred_cta": "Tell us about your child. We'll match them with a tutor who understands how they learn.",
+      "source": "supplementary"
+    },
+    "burned_returner": {
+      "description": "Mother of 11th/12th grader after prior negative tutoring experience (with VT or competitor). Defining characteristic is disappointment.",
+      "psychology": "Trust deficit + urgency + conditional willingness. Core fear: being burned again.",
+      "trigger": "New academic crisis forcing return despite past disappointment. May reference specific tutor by name or describe grades declining during prior tutoring.",
+      "funnel_position": "late",
+      "conversion_likelihood": "moderate_trust_dependent",
+      "key_needs": ["Acknowledgment and ownership of past failure", "Concrete explanation of what will be different", "Accountability and professionalism", "Real results with proof"],
+      "preferred_cta": "Tell us what went wrong. We'll show you what's different.",
+      "source": "supplementary"
+    }
+  },
+  "messaging_rules": {
+    "dos": [
+      {"rule": "Use 'your child' — parents think of them as their children, not students", "source": "supplementary"},
+      {"rule": "Use 'SAT Tutoring' — not 'SAT Prep'", "source": "supplementary"},
+      {"rule": "Use avg or typical score gains/improvements with conditions", "source": "supplementary"},
+      {"rule": "100pts/month if attending 2x/week 1:1 sessions, 1 weekly practice test, 20min/day practice", "source": "supplementary"},
+      {"rule": "Mention that every X points on SAT is worth Y dollars in scholarship/merit aid", "source": "supplementary"},
+      {"rule": "Compare to competitors with real data: self-study, learning centers, local tutors, group courses", "source": "supplementary"},
+      {"rule": "Compare results: 10X the score improvement of self-study, 2.6X of in-person/group/courses", "source": "supplementary"},
+      {"rule": "Compare value: Princeton Review/Kaplan $199-$252/hr for 1:1, VT as low as $349/mth", "source": "supplementary"},
+      {"rule": "Digital SAT advantage: taken on laptop, 60%+ of math solved with built-in tools, students trained on paper run out of time", "source": "supplementary"},
+      {"rule": "Use calendar urgency: test dates, application deadlines, weeks remaining, sessions possible", "source": "supplementary"},
+      {"rule": "Use specific mechanisms: describe HOW the digital SAT is different, HOW tutoring works", "source": "supplementary"},
+      {"rule": "Make claims credible with conditions: '16 sessions → 200 points', 'if score is 1100-1300'", "source": "supplementary"}
+    ],
+    "donts": [
+      {"rule": "Never use 'your student' — always 'your child'", "source": "supplementary"},
+      {"rule": "Never use 'SAT Prep' — always 'SAT Tutoring'", "source": "supplementary"},
+      {"rule": "Never use score improvement guarantees", "source": "supplementary"},
+      {"rule": "Never use vague score claims without specificity", "source": "supplementary"},
+      {"rule": "Never claim to help them actually get a scholarship", "source": "supplementary"},
+      {"rule": "Never market as 'online tutoring' — parents dismiss before hearing the case", "source": "supplementary"},
+      {"rule": "Never use fake urgency: 'spots filling fast', 'limited enrollment', 'secure their spot', 'don't miss out'", "source": "supplementary"},
+      {"rule": "Never use corporate/marketing language: 'unlock potential', 'maximize score', 'tailored support', 'custom strategies', 'growth areas', 'dream college within reach'", "source": "supplementary"}
+    ],
+    "source": "supplementary"
+  },
+  "competitors_detailed": {
+    "self_study": {
+      "names": ["Khan Academy", "SAT prep books", "Acely", "apps"],
+      "category": "Self-study",
+      "pricing": "$0–$99/mo",
+      "format": "Practice problems, no live instruction",
+      "vt_advantage": "10X the score improvement",
+      "source": "supplementary"
+    },
+    "self_paced_courses": {
+      "names": [],
+      "category": "Self-paced online courses",
+      "pricing": "$599–$999 one-time",
+      "format": "Pre-recorded videos, no live instruction",
+      "vt_advantage": "No one identifying what your child specifically struggles with",
+      "source": "supplementary"
+    },
+    "group_courses": {
+      "names": ["Princeton Review", "Kaplan"],
+      "category": "Group classes/courses",
+      "pricing": "$1,500–$2,500 for group + $199–$252/hr for 1:1 add-on",
+      "format": "Group Zoom class, 1:1 is extra charge",
+      "vt_advantage": "2.6X the score improvement, 1:1 included not add-on",
+      "source": "supplementary"
+    },
+    "local_tutors": {
+      "names": ["Sylvan", "Kumon", "Mathnasium", "independent tutors"],
+      "category": "In-person learning centers/local tutors",
+      "pricing": "$80–$200/hr",
+      "format": "1 person, no platform, no diagnostics, no practice tests",
+      "vt_advantage": "2.6X the score improvement",
+      "source": "supplementary"
+    },
+    "varsity_tutors": {
+      "pricing": "$349–$1,099/mo",
+      "recommended": "$639/mo (2 sessions/week)",
+      "format": "1:1 expert + full platform + study plan + diagnostics + practice tests",
+      "source": "supplementary"
+    }
+  },
+  "offer": {
+    "model": "Monthly SAT tutoring membership — not a course, not a group class, not a self-study app",
+    "recommended_plan": {
+      "sessions_per_week": 2,
+      "price_per_month": 639,
+      "includes": [
+        "2 hour-long 1:1 sessions per week with their tutor",
+        "1 full-length Digital SAT practice test per week",
+        "Study plan built specifically for them with daily assigned lessons and practice problems"
+      ]
+    },
+    "whats_included": [
+      "1-on-1 Expert Tutoring Sessions",
+      "SAT Math & Reading/Writing Diagnostics",
+      "Personalized SAT Study Plan",
+      "Training on Real Digital SAT Interface",
+      "6 Full-Length Digital SAT Practice Tests",
+      "20,000+ Bluebook-Identical Practice Questions",
+      "Weekly Progress Reports & Score Tracking",
+      "Perfect Tutor Match Guarantee",
+      "Flexible Rescheduling & 24/7 Instant Tutors",
+      "College Essay Support"
+    ],
+    "score_improvement": "~100 points per month at 2 sessions/week + 20min/day practice",
+    "typical_timeline": {
+      "1200_to_1400": "2 months minimum",
+      "1050_to_1400": "3–4 months",
+      "custom": "Based on diagnostics"
+    },
+    "super_score": "Students who score 1400+ typically take the SAT 3 times on average. Membership continues with same tutor and progress.",
+    "cancellation": "Cancel anytime. No long-term commitments, no penalties.",
+    "source": "supplementary"
+  },
+  "proof_points": [
+    {"claim": "Students raise scores 10X more than self-study", "source": "supplementary"},
+    {"claim": "Students raise scores 2.6X more than group classes, local tutors, and brand-name programs", "source": "supplementary"},
+    {"claim": "~100 points per month at 2 sessions/week + 20min/day practice", "source": "supplementary"},
+    {"claim": "Over 60% of SAT math can be solved with built-in calculator and formulas", "source": "supplementary"},
+    {"claim": "Students who score 1400+ typically take the SAT 3 times", "source": "supplementary"}
+  ],
   "competitors": ["Princeton Review", "Kaplan", "Khan Academy", "Chegg"],
   "competitors_source": "assignment_spec",
   "ctas": {
     "awareness": ["Learn More", "Get Started"],
-    "conversion": ["Sign Up", "Start Free Practice Test", "Book Now"],
-    "source": "brand_context"
+    "conversion": ["Sign Up", "Start Free Practice Test", "Book Now", "Book Diagnostic"],
+    "persona_specific": {
+      "athlete_recruit": "Talk to an SAT specialist today. We'll call you in 60 seconds.",
+      "suburban_optimizer": "See what score range is realistic in 8–10 weeks.",
+      "immigrant_navigator": "Talk to an SAT specialist who will walk you through it step by step.",
+      "cultural_investor": "See how we replace five tools with one system that actually raises scores.",
+      "system_optimizer": "Book Diagnostic",
+      "neurodivergent_advocate": "Tell us about your child. We'll match them with a tutor who understands how they learn.",
+      "burned_returner": "Tell us what went wrong. We'll show you what's different.",
+      "scholarship": "See how many scholarship dollars your score could unlock.",
+      "khan_failures": "See what 1-on-1 changes.",
+      "test_anxiety": "See how we help students walk into the SAT feeling ready, not scared.",
+      "accountability": "Get a tutor who keeps your child accountable — so you don't have to.",
+      "school_failed": "See what real SAT tutoring looks like.",
+      "sibling": "Let's build the plan that works for this child."
+    },
+    "source": "brand_context + supplementary"
   },
   "compliance": {
     "never_claim": [
       "Guaranteed score improvements (e.g. 'Guaranteed 1500+')",
       "Fear-based language implying the child is deficient",
-      "Specific competitor disparagement by name",
+      "Competitor disparagement without factual basis",
       "Unverified statistics or pricing",
       "Absolute promises ('100% guaranteed', 'always works')",
-      "PII in generated content"
+      "PII in generated content",
+      "Use of 'your student' (must be 'your child')",
+      "Use of 'SAT Prep' (must be 'SAT Tutoring')",
+      "Fake urgency ('spots filling fast', 'limited enrollment', 'don't miss out')",
+      "Corporate jargon ('unlock potential', 'maximize score', 'tailored support')",
+      "Marketing as 'online tutoring'",
+      "Score improvement guarantees",
+      "Claiming to help get scholarships directly"
     ],
     "always_include": [
       "Factual basis for any claims (sourced from this knowledge base)",
-      "Appropriate CTA for the funnel stage",
-      "On-brand tone matching the target audience profile"
+      "Appropriate CTA for the funnel stage and persona",
+      "On-brand tone matching the target audience/persona profile",
+      "Specific mechanisms (how tutoring works, how digital SAT is different)",
+      "Conditional claims with specificity (score + timeframe/condition)"
     ],
-    "source": "brand_context"
+    "source": "brand_context + supplementary"
+  },
+  "creative_briefs": {
+    "gap_report": {
+      "persona": "system_optimizer",
+      "concept": "The Gap Report — ad looks like an internal performance dashboard or consulting deliverable, not a tutoring ad",
+      "visual_direction": "White/light background, clean sans-serif, no stock photos, no lifestyle imagery. Data only. McKinsey one-pager aesthetic.",
+      "palette": "White, black, one accent (dark navy or muted green 'on track' indicator)",
+      "headline_example": "Gap: 190 points. Timeline: 10 weeks. Result: Closed.",
+      "layout": "Header (small logo) → Headline → INPUT/OUTPUT spec table → Bottom strip CTA",
+      "input_output_table": {
+        "inputs": ["Starting Score: 1,260", "Target Score: 1,450+", "Diagnostic Gaps: 3", "Sessions/Week: 2", "Format: 1:1"],
+        "outputs": ["Final Score: 1,470", "Points Gained: 210", "Time to Result: 10 weeks", "Practice Tests: 9", "Score Trend: Linear weeks 3–10"]
+      },
+      "cta": "Start with a free diagnostic. Know the gap before you spend a dollar.",
+      "variant_headline": "Princeton Review: $252/hr for group instruction. Varsity Tutors: 1:1 sessions, diagnostic-driven plan, 210-point avg gain. Do the math.",
+      "source": "supplementary"
+    }
+  },
+  "meta_ad_structure": {
+    "format": "Hook (1 sentence) → Short pattern interrupt explanation (2–3 lines max) → Micro-commitment CTA",
+    "example": {
+      "hook": "3.8 GPA. 1260 SAT. Something's off.",
+      "body": "The SAT isn't a classroom test. Most strong students are 3–4 targeted fixes away from a 1400+. We diagnose exactly where points are hiding.",
+      "cta": "See what score is realistic in 8–10 weeks."
+    },
+    "source": "supplementary"
   }
 }
