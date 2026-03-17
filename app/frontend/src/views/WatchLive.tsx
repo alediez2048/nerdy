@@ -26,52 +26,57 @@ export default function WatchLive() {
   const adTarget = 50 // Default, could come from session config
 
   return (
-    <div style={s.page}>
-      {/* Header */}
-      <div style={s.header}>
-        <div>
-          <span onClick={() => navigate('/sessions')} style={s.back}>← Sessions</span>
-          <h1 style={s.title}>Watch Live</h1>
+    <div style={s.pageBg}>
+      <div style={s.pageInner}>
+        {/* Header */}
+        <div style={s.header}>
+          <div>
+            <span onClick={() => navigate('/sessions')} style={s.back}>← Sessions</span>
+            <h1 style={s.title}>Watch Live</h1>
+          </div>
+          <div style={s.status}>
+            <span style={{ ...s.dot, background: connected ? colors.mint : error ? colors.red : colors.yellow }} />
+            <span style={{ color: colors.muted, fontSize: '12px' }}>
+              {connected ? 'Connected' : error ? 'Disconnected' : 'Reconnecting...'}
+            </span>
+          </div>
         </div>
-        <div style={s.status}>
-          <span style={{ ...s.dot, background: connected ? colors.mint : error ? colors.red : colors.yellow }} />
-          <span style={{ color: colors.muted, fontSize: '12px' }}>
-            {connected ? 'Connected' : error ? 'Disconnected' : 'Reconnecting...'}
-          </span>
+
+        {error && <p style={s.error}>{error}</p>}
+
+        {progress?.type === 'pipeline_complete' && (
+          <div style={s.completeBar}>Pipeline complete — redirecting to dashboard...</div>
+        )}
+
+        {progress?.type === 'pipeline_error' && (
+          <div style={s.errorBar}>Pipeline failed: {progress.error || 'Unknown error'}</div>
+        )}
+
+        {/* 6 live elements — 2x3 grid */}
+        <div style={s.grid}>
+          <CycleIndicator progress={progress} />
+          <AdCountBar progress={progress} target={adTarget} />
+          <ScoreFeed history={history} />
+          <CostAccumulator progress={progress} />
+          <QualityTrend history={history} />
+          <LatestAdPreview history={history} />
         </div>
-      </div>
-
-      {error && <p style={s.error}>{error}</p>}
-
-      {progress?.type === 'pipeline_complete' && (
-        <div style={s.completeBar}>Pipeline complete — redirecting to dashboard...</div>
-      )}
-
-      {progress?.type === 'pipeline_error' && (
-        <div style={s.errorBar}>Pipeline failed: {progress.error || 'Unknown error'}</div>
-      )}
-
-      {/* 6 live elements — 2x3 grid */}
-      <div style={s.grid}>
-        <CycleIndicator progress={progress} />
-        <AdCountBar progress={progress} target={adTarget} />
-        <ScoreFeed history={history} />
-        <CostAccumulator progress={progress} />
-        <QualityTrend history={history} />
-        <LatestAdPreview history={history} />
       </div>
     </div>
   )
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page: {
+  pageBg: {
     minHeight: '100vh',
+    width: '100%',
     background: colors.ink,
     fontFamily: font.family,
-    padding: '32px 20px',
+  },
+  pageInner: {
     maxWidth: '900px',
     margin: '0 auto',
+    padding: '32px 20px',
   },
   header: {
     display: 'flex',

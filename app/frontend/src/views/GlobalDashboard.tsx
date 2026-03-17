@@ -84,55 +84,59 @@ export default function GlobalDashboard() {
 
   if (error) {
     return (
-      <div style={s.page}>
-        <p style={{ color: colors.red }}>{error}</p>
-        <a href="/sessions" style={{ color: colors.cyan }}>Back to Sessions</a>
+      <div style={s.pageBg}>
+        <div style={s.pageInner}>
+          <p style={{ color: colors.red }}>{error}</p>
+          <a href="/sessions" style={{ color: colors.cyan }}>Back to Sessions</a>
+        </div>
       </div>
     )
   }
 
   if (!data) {
-    return <div style={s.page}><p style={{ color: colors.muted }}>Loading global dashboard...</p></div>
+    return <div style={s.pageBg}><div style={s.pageInner}><p style={{ color: colors.muted }}>Loading global dashboard...</p></div></div>
   }
 
   return (
-    <div style={s.page}>
-      {/* Header */}
-      <div style={s.header}>
-        <div>
-          <span onClick={() => navigate('/sessions')} style={s.backLink}>Sessions</span>
-          <span style={{ color: colors.muted }}> / </span>
-          <span style={{ color: colors.white }}>Global Dashboard</span>
+    <div style={s.pageBg}>
+      <div style={s.pageInner}>
+        {/* Header */}
+        <div style={s.header}>
+          <div>
+            <span onClick={() => navigate('/sessions')} style={s.backLink}>Sessions</span>
+            <span style={{ color: colors.muted }}> / </span>
+            <span style={{ color: colors.white }}>Global Dashboard</span>
+          </div>
+          <h1 style={s.title}>Performance Dashboard</h1>
+          <p style={{ color: colors.muted, fontSize: '13px', margin: 0 }}>
+            All pipeline data across every session
+          </p>
         </div>
-        <h1 style={s.title}>Performance Dashboard</h1>
-        <p style={{ color: colors.muted, fontSize: '13px', margin: 0 }}>
-          All pipeline data across every session
-        </p>
-      </div>
 
-      {/* Tab bar */}
-      <div style={s.tabBar}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setTab(tab.key)}
-            style={activeTab === tab.key ? s.tabActive : s.tab}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        {/* Tab bar */}
+        <div style={s.tabBar}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setTab(tab.key)}
+              style={activeTab === tab.key ? s.tabActive : s.tab}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Tab content */}
-      <div style={s.tabContent}>
-        {activeTab === 'summary' && <PipelineSummaryTab data={data} />}
-        {activeTab === 'iterations' && <IterationCyclesTab data={data} />}
-        {activeTab === 'quality' && <QualityTrendsTab data={data} />}
-        {activeTab === 'dimensions' && <DimensionDeepDiveTab data={data} />}
-        {activeTab === 'ads' && <AdLibraryTab data={data} />}
-        {activeTab === 'costs' && <TokenEconomicsTab data={data} />}
-        {activeTab === 'health' && <SystemHealthTab data={data} />}
-        {activeTab === 'competitive' && <CompetitiveIntelTab data={data} />}
+        {/* Tab content */}
+        <div style={s.tabContent}>
+          {activeTab === 'summary' && <PipelineSummaryTab data={data} />}
+          {activeTab === 'iterations' && <IterationCyclesTab data={data} />}
+          {activeTab === 'quality' && <QualityTrendsTab data={data} />}
+          {activeTab === 'dimensions' && <DimensionDeepDiveTab data={data} />}
+          {activeTab === 'ads' && <AdLibraryTab data={data} />}
+          {activeTab === 'costs' && <TokenEconomicsTab data={data} />}
+          {activeTab === 'health' && <SystemHealthTab data={data} />}
+          {activeTab === 'competitive' && <CompetitiveIntelTab data={data} />}
+        </div>
       </div>
     </div>
   )
@@ -696,13 +700,16 @@ function FrequencyBars({ title, data, barColor }: { title: string; data: Record<
 // ── Styles ─────────────────────────────────────────────────────────
 
 const s: Record<string, React.CSSProperties> = {
-  page: {
+  pageBg: {
     minHeight: '100vh',
+    width: '100%',
     background: colors.ink,
     fontFamily: font.family,
-    padding: '32px 20px',
+  },
+  pageInner: {
     maxWidth: '1100px',
     margin: '0 auto',
+    padding: '32px 20px',
   },
   header: { marginBottom: '24px' },
   backLink: { color: colors.cyan, cursor: 'pointer', fontSize: '13px' },

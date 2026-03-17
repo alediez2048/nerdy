@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { colors, radii, font } from '../design/tokens'
 import { fetchAds } from '../api/dashboard'
+import { addAdToCurated } from '../api/curation'
 import Badge, { StatusBadge } from '../components/Badge'
 
 interface Ad {
@@ -18,8 +19,9 @@ interface Ad {
 export default function AdLibrary({ sessionId }: { sessionId: string }) {
   const [ads, setAds] = useState<Ad[]>([])
   const [filter, setFilter] = useState('')
-  const [expanded, setExpanded] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const [curatedIds, setCuratedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchAds(sessionId)
@@ -53,12 +55,17 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
       ) : (
         <div style={s.grid}>
           {filtered.map((ad) => {
-            const isExpanded = expanded === ad.ad_id
+            const isExpanded = expanded.has(ad.ad_id)
+            const toggle = () => setExpanded((prev) => {
+              const next = new Set(prev)
+              next.has(ad.ad_id) ? next.delete(ad.ad_id) : next.add(ad.ad_id)
+              return next
+            })
             if (isExpanded) {
               return (
                 <div
                   key={ad.ad_id}
-                  onClick={() => setExpanded(null)}
+                  onClick={toggle}
                   style={{ ...s.card, ...s.cardExpanded }}
                 >
                   <div style={s.expandedLayout}>
@@ -94,7 +101,23 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
                           </div>
                         ))}
                       </div>
-                      <p style={{ fontSize: '12px', color: colors.muted, margin: '8px 0 0' }}>Cycles: {ad.cycle_count}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', padding: '0 14px' }}>
+                        <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>
+                        {ad.status === 'published' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              addAdToCurated(sessionId, ad.ad_id, 0)
+                                .then(() => setCuratedIds((prev) => new Set(prev).add(ad.ad_id)))
+                                .catch(() => {})
+                            }}
+                            style={curatedIds.has(ad.ad_id) ? s.curatedBtnDone : s.curateBtn}
+                            disabled={curatedIds.has(ad.ad_id)}
+                          >
+                            {curatedIds.has(ad.ad_id) ? 'Added to Curated Set' : 'Add to Curated Set'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -103,7 +126,7 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
             return (
               <div
                 key={ad.ad_id}
-                onClick={() => setExpanded(ad.ad_id)}
+                onClick={toggle}
                 style={s.card}
               >
                 {ad.image_url && (
@@ -191,4 +214,13 @@ const s: Record<string, React.CSSProperties> = {
   },
   scoreGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginTop: '8px' },
   scoreItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
+  curateBtn: {
+    padding: '5px 14px', borderRadius: radii.button, border: 'none',
+    background: `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
+    color: colors.ink, fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: font.family,
+  },
+  curatedBtnDone: {
+    padding: '5px 14px', borderRadius: radii.button, border: `1px solid ${colors.mint}40`,
+    background: 'transparent', color: colors.mint, fontSize: '12px', cursor: 'default', fontFamily: font.family,
+  },
 }

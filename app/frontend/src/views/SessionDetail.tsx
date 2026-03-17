@@ -45,14 +45,16 @@ export default function SessionDetail() {
 
   if (error) {
     return (
-      <div style={s.page}>
-        <p style={{ color: colors.red }}>{error}</p>
-        <a href="/sessions" style={{ color: colors.cyan }}>← Back to Sessions</a>
+      <div style={s.pageBg}>
+        <div style={s.pageInner}>
+          <p style={{ color: colors.red }}>{error}</p>
+          <a href="/sessions" style={{ color: colors.cyan }}>← Back to Sessions</a>
+        </div>
       </div>
     )
   }
   if (!session) {
-    return <div style={s.page}><p style={{ color: colors.muted }}>Loading...</p></div>
+    return <div style={s.pageBg}><div style={s.pageInner}><p style={{ color: colors.muted }}>Loading...</p></div></div>
   }
 
   const config = session.config || {}
@@ -62,63 +64,68 @@ export default function SessionDetail() {
   }
 
   return (
-    <div style={s.page}>
-      {/* Breadcrumb */}
-      <div style={s.breadcrumb}>
-        <span onClick={() => navigate('/sessions')} style={s.breadcrumbLink}>Sessions</span>
-        <span style={{ color: colors.muted }}> / </span>
-        <span style={{ color: colors.white }}>{session.name || session.session_id}</span>
-      </div>
-
-      {/* Session header */}
-      <div style={s.header}>
-        <div style={{ flex: 1 }}>
-          <h1 style={s.title}>{session.name || session.session_id}</h1>
-          <div style={s.meta}>
-            <StatusBadge status={session.status} />
-            <span style={{ color: colors.muted, fontSize: '13px' }}>
-              {new Date(session.created_at).toLocaleDateString()} · {(config.audience as string) || ''} · {(config.campaign_goal as string) || ''}
-            </span>
-          </div>
+    <div style={s.pageBg}>
+      <div style={s.pageInner}>
+        {/* Breadcrumb */}
+        <div style={s.breadcrumb}>
+          <span onClick={() => navigate('/sessions')} style={s.breadcrumbLink}>Sessions</span>
+          <span style={{ color: colors.muted }}> / </span>
+          <span style={{ color: colors.white }}>{session.name || session.session_id}</span>
         </div>
-        <ShareButton sessionId={sessionId!} />
-      </div>
 
-      {/* Tab navigation */}
-      <div style={s.tabBar}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setTab(tab.key)}
-            style={activeTab === tab.key ? s.tabActive : s.tab}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        {/* Session header */}
+        <div style={s.header}>
+          <div style={{ flex: 1 }}>
+            <h1 style={s.title}>{session.name || session.session_id}</h1>
+            <div style={s.meta}>
+              <StatusBadge status={session.status} />
+              <span style={{ color: colors.muted, fontSize: '13px' }}>
+                {new Date(session.created_at).toLocaleDateString()} · {(config.audience as string) || ''} · {(config.campaign_goal as string) || ''}
+              </span>
+            </div>
+          </div>
+          <ShareButton sessionId={sessionId!} />
+        </div>
 
-      {/* Tab content */}
-      <div style={s.tabContent}>
-        {activeTab === 'overview' && <Overview sessionId={sessionId!} />}
-        {activeTab === 'quality' && <Quality sessionId={sessionId!} />}
-        {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} />}
-        {activeTab === 'competitive' && <CompetitiveIntel />}
-        {activeTab === 'costs' && <TokenEconomics sessionId={sessionId!} />}
-        {activeTab === 'curated' && <CuratedSet sessionId={sessionId!} />}
-        {activeTab === 'health' && <SystemHealth sessionId={sessionId!} />}
+        {/* Tab navigation */}
+        <div style={s.tabBar}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setTab(tab.key)}
+              style={activeTab === tab.key ? s.tabActive : s.tab}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div style={s.tabContent}>
+          {activeTab === 'overview' && <Overview sessionId={sessionId!} />}
+          {activeTab === 'quality' && <Quality sessionId={sessionId!} />}
+          {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} />}
+          {activeTab === 'competitive' && <CompetitiveIntel />}
+          {activeTab === 'costs' && <TokenEconomics sessionId={sessionId!} />}
+          {activeTab === 'curated' && <CuratedSet sessionId={sessionId!} />}
+          {activeTab === 'health' && <SystemHealth sessionId={sessionId!} />}
+        </div>
       </div>
     </div>
   )
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page: {
+  pageBg: {
     minHeight: '100vh',
+    width: '100%',
     background: colors.ink,
     fontFamily: font.family,
-    padding: '32px 20px',
+  },
+  pageInner: {
     maxWidth: '1000px',
     margin: '0 auto',
+    padding: '32px 20px',
   },
   breadcrumb: { marginBottom: '16px', fontSize: '13px' },
   breadcrumbLink: { color: colors.cyan, cursor: 'pointer' },

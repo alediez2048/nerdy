@@ -169,13 +169,19 @@ competitive_router = APIRouter()
 @competitive_router.get("/summary")
 def get_competitive_summary() -> dict[str, Any]:
     """Competitive intelligence summary from pattern database."""
+    result: dict[str, Any] = {}
     try:
         from output.export_dashboard import _build_competitive_intel
-        return _build_competitive_intel("data/ledger.jsonl")
+        result = _build_competitive_intel("data/ledger.jsonl")
     except Exception:
-        # Fallback: read patterns directly
-        patterns_path = Path("data/competitive/patterns.json")
-        if patterns_path.exists():
-            with open(patterns_path) as f:
-                return json.load(f)
-        return {}
+        pass
+
+    patterns_path = Path("data/competitive/patterns.json")
+    if patterns_path.exists():
+        with open(patterns_path) as f:
+            raw = json.load(f)
+        if "competitor_summaries" in raw:
+            result["competitor_summaries"] = raw["competitor_summaries"]
+        if "metadata" in raw:
+            result["metadata"] = raw["metadata"]
+    return result
