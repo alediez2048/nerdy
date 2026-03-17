@@ -10,6 +10,16 @@ body {
   color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: filter 0.3s ease;
+}
+
+body.light-mode {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Counter-invert images so they display correctly in light mode */
+body.light-mode img {
+  filter: invert(1) hue-rotate(180deg);
 }
 
 #root {

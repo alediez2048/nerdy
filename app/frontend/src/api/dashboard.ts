@@ -22,3 +22,4 @@ export const fetchCosts = (id: string) => get<Record<string, unknown>>(`${BASE}/
 export const fetchAds = (id: string) => get<Record<string, unknown>>(`${BASE}/${id}/ads`)
 export const fetchSpc = (id: string) => get<Record<string, unknown>>(`${BASE}/${id}/spc`)
 export const fetchCompetitive = () => get<Record<string, unknown>>('/api/competitive/summary')
+export const fetchGlobalDashboard = () => get<Record<string, unknown>>('/api/dashboard/global')

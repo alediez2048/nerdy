@@ -41,6 +41,7 @@ app.include_router(curation.router, prefix="/sessions", tags=["curation"])
 app.include_router(share.router, prefix="/sessions", tags=["share"])
 app.include_router(share.shared_router, prefix="/shared", tags=["shared"])
 app.include_router(dashboard.competitive_router, prefix="/competitive", tags=["competitive"])
+app.include_router(dashboard.global_dashboard_router, prefix="/dashboard", tags=["global-dashboard"])
 
 # Serve generated images as static files
 _images_dir = Path("output/images")

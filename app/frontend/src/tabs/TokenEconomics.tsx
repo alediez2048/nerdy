@@ -24,7 +24,8 @@ export default function TokenEconomics({ sessionId }: { sessionId: string }) {
       {/* Cost per published ad */}
       {costPerPub !== undefined && (
         <div style={s.hero}>
-          <div style={s.heroValue}>${costPerPub.toFixed(2)}</div>
+          <div style={s.heroValue}>{costPerPub.toLocaleString()} tokens</div>
+          <div style={s.heroSub}>≈ ${(costPerPub * 0.00001).toFixed(2)} USD</div>
           <div style={s.heroLabel}>Cost Per Published Ad</div>
         </div>
       )}
@@ -70,7 +71,8 @@ function CostBreakdown({ data }: { data: Record<string, number> }) {
 const s: Record<string, React.CSSProperties> = {
   hero: { textAlign: 'center', padding: '24px', background: colors.surface, borderRadius: radii.card, marginBottom: '24px' },
   heroValue: { fontSize: '36px', fontWeight: 700, color: colors.yellow, fontFamily: font.family },
-  heroLabel: { fontSize: '14px', color: colors.muted, fontFamily: font.family },
+  heroSub: { fontSize: '16px', color: colors.mint, marginTop: '4px', fontFamily: font.family },
+  heroLabel: { fontSize: '14px', color: colors.muted, marginTop: '8px', fontFamily: font.family },
   section: { marginBottom: '24px' },
   heading: { fontSize: '16px', fontWeight: 600, color: colors.white, margin: '0 0 12px', fontFamily: font.family },
 }

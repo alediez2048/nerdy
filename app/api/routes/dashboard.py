@@ -142,6 +142,25 @@ def get_spc(
     }
 
 
+# --- Global dashboard (no auth, reads global ledger) ---
+
+global_dashboard_router = APIRouter()
+
+
+@global_dashboard_router.get("/global")
+def get_global_dashboard() -> dict[str, Any]:
+    """Full dashboard data from the global ledger — no auth required."""
+    ledger = Path(DEFAULT_LEDGER)
+    if not ledger.exists():
+        return {}
+    try:
+        from output.export_dashboard import build_dashboard_data
+        return build_dashboard_data(str(ledger))
+    except Exception as e:
+        logger.warning("Failed to build global dashboard: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to build dashboard data")
+
+
 # --- Competitive intel (shared, not session-scoped) ---
 
 competitive_router = APIRouter()

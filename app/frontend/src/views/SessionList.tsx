@@ -82,9 +82,14 @@ export default function SessionList() {
         {/* Header */}
         <div style={s.header}>
           <h1 style={s.title}>Sessions</h1>
-          <button onClick={() => navigate('/sessions/new')} style={s.newBtn}>
-            + New Session
-          </button>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button onClick={() => navigate('/dashboard')} style={s.dashboardBtn}>
+              Dashboard
+            </button>
+            <button onClick={() => navigate('/sessions/new')} style={s.newBtn}>
+              + New Session
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -160,6 +165,17 @@ const s: Record<string, React.CSSProperties> = {
     background: `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
+  },
+  dashboardBtn: {
+    padding: '10px 24px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.cyan}`,
+    background: 'transparent',
+    color: colors.cyan,
+    fontWeight: 600,
+    fontSize: '14px',
+    cursor: 'pointer',
+    fontFamily: font.family,
   },
   newBtn: {
     padding: '10px 24px',
