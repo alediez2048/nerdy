@@ -7,6 +7,18 @@
 
 ---
 
+## PB-12: Ad Generator with Nerdy Messaging Rules ✅
+
+### Plain-English Summary
+- `_compliance_pre_check()`: scans generated ad for critical violations, logs to metadata
+- Persona preferred_cta loaded from brand KB (fallback to hook CTAs)
+- 9 tests (compliance clean/violations, persona CTA, offer context, Nerdy rules)
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 17, 2026  |  **Tests:** 9
+
+---
+
 ## PB-11: Creative Direction + Key Message Form Fields ✅
 
 ### Plain-English Summary

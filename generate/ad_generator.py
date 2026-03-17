@@ -161,7 +161,18 @@ def _build_generation_prompt(
 
     # CTA options — persona-specific preferred + goal defaults
     persona_cta = ""
-    if hasattr(expanded_brief, "suggested_hooks") and expanded_brief.suggested_hooks:
+    # Try persona profile preferred_cta from brand KB
+    if hasattr(expanded_brief, "persona") and expanded_brief.persona:
+        try:
+            from generate.brief_expansion import _load_brand_knowledge, _get_persona_profile
+            kb = _load_brand_knowledge()
+            profile = _get_persona_profile(kb, expanded_brief.persona)
+            if profile and profile.get("preferred_cta"):
+                persona_cta = f"\nPreferred CTA for this persona: {profile['preferred_cta']}"
+        except Exception:
+            pass
+    # Fallback: extract from hooks
+    if not persona_cta and hasattr(expanded_brief, "suggested_hooks") and expanded_brief.suggested_hooks:
         ctas_from_hooks = list({h.get("cta_text", "") for h in expanded_brief.suggested_hooks if h.get("cta_text")})
         if ctas_from_hooks:
             persona_cta = f"\nPreferred CTA for this persona: {ctas_from_hooks[0]}"
@@ -331,6 +342,18 @@ def _load_config() -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
+def _compliance_pre_check(ad: GeneratedAd) -> list[str]:
+    """Scan generated ad for critical Nerdy violations before publishing.
+
+    Returns list of violation descriptions. Empty = clean.
+    """
+    from generate.compliance import check_compliance
+
+    full_text = f"{ad.primary_text} {ad.headline} {ad.description}"
+    result = check_compliance(full_text)
+    return [f"{v.rule_name}: {v.matched_text}" for v in result.critical_violations]
+
+
 def generate_ad(
     expanded_brief: ExpandedBrief,
     seed: int | None = None,
@@ -379,6 +402,15 @@ def generate_ad(
     result = _parse_generation_response(
         response, ad_id, atoms, brief_id, metadata
     )
+
+    # PB-12: Compliance pre-check — log violations if found
+    violations = _compliance_pre_check(result)
+    if violations:
+        logger.warning(
+            "Ad %s has %d compliance violations: %s",
+            ad_id, len(violations), violations,
+        )
+        result.generation_metadata["compliance_violations"] = violations
 
     cfg = _load_config()
     led_path = ledger_path or cfg.get("ledger_path", "data/ledger.jsonl")
