@@ -7,6 +7,21 @@
 
 ---
 
+## PB-13: Nerdy-Calibrated Evaluator ✅
+
+### Plain-English Summary
+- Fake urgency now penalizes Emotional Resonance (-1.0) in addition to Brand Voice
+- Meta ad structure bonus: short hook first line (<80 chars) + multi-line body → Clarity +0.3
+- "your child" positive signal: correct language without "your student" → Brand Voice +0.3
+- Expanded persona keywords (10 per persona, up from 6)
+- Tiered persona match: 2+ keywords → ER +0.7 (strong), 1 keyword → ER +0.4 (partial)
+- 8 tests (urgency ER, meta structure, your_child bonus, expanded persona matching)
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 17, 2026  |  **Tests:** 8
+
+---
+
 ## PB-12: Ad Generator with Nerdy Messaging Rules ✅
 
 ### Plain-English Summary

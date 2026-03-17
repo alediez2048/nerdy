@@ -442,6 +442,7 @@ def _apply_nerdy_adjustments(
         bv_score = max(1.0, bv_score - 1.0)
     if re.search(r"(?:spots?\s+filling|limited\s+enrollment|don'?t\s+miss\s+out|act\s+now)", full_text):
         bv_score = max(1.0, bv_score - 1.5)
+        er_score = max(1.0, er_score - 1.0)  # PB-13: fake urgency also hurts ER
     if re.search(r"(?:unlock\s+(?:their\s+)?potential|maximize\s+score|tailored\s+support|custom\s+strategies)", full_text):
         cl_score = max(1.0, cl_score - 1.0)
 
@@ -453,20 +454,36 @@ def _apply_nerdy_adjustments(
     if re.search(r"(?:princeton|kaplan|khan).{0,40}\$\d+", full_text):
         vp_score = min(10.0, vp_score + 0.5)
 
-    # --- Persona match bonus/penalty ---
+    # PB-13: Meta ad structure bonus — hook (short first line) + body + CTA pattern
+    primary = ad_text.get("primary_text", "")
+    if primary:
+        lines = [ln.strip() for ln in primary.split("\n") if ln.strip()]
+        first_line = lines[0] if lines else ""
+        # Hook: short first line (< 80 chars), followed by more content
+        if len(first_line) < 80 and len(lines) >= 2:
+            cl_score = min(10.0, cl_score + 0.3)
+
+    # PB-13: "your child" positive signal — reward correct language
+    if "your child" in full_text and "your student" not in full_text:
+        bv_score = min(10.0, bv_score + 0.3)
+
+    # --- Persona match bonus/penalty (PB-13: expanded keywords) ---
     if persona:
         _PERSONA_KEYWORDS: dict[str, list[str]] = {
-            "athlete_recruit": ["recruit", "scholarship", "ncaa", "coach", "athlete", "practice"],
-            "system_optimizer": ["diagnostic", "process", "timeline", "roi", "data", "inputs", "outputs"],
-            "neurodivergent_advocate": ["adhd", "learn differently", "accommodation", "extended time", "right fit"],
-            "burned_returner": ["didn't work", "what went wrong", "different this time", "burned", "disappointed"],
-            "immigrant_navigator": ["walk you through", "step by step", "first time", "the sat process"],
-            "suburban_optimizer": ["gpa", "1200", "1400", "fixes", "realistic"],
-            "cultural_investor": ["multiple resources", "one system", "consolidate", "mastery"],
+            "athlete_recruit": ["recruit", "scholarship", "ncaa", "coach", "athlete", "practice", "eligibility", "sports", "game", "field"],
+            "system_optimizer": ["diagnostic", "process", "timeline", "roi", "data", "inputs", "outputs", "measurable", "scope", "method"],
+            "neurodivergent_advocate": ["adhd", "learn differently", "accommodation", "extended time", "right fit", "processing", "dyslexia", "adapts"],
+            "burned_returner": ["didn't work", "what went wrong", "different this time", "burned", "disappointed", "wasted", "last tutor"],
+            "immigrant_navigator": ["walk you through", "step by step", "first time", "the sat process", "guide", "college process", "admissions"],
+            "suburban_optimizer": ["gpa", "1200", "1400", "fixes", "realistic", "mid-1200", "3.8", "something's off", "gap"],
+            "cultural_investor": ["multiple resources", "one system", "consolidate", "mastery", "ap class", "replace five tools", "scattered"],
         }
         keywords = _PERSONA_KEYWORDS.get(persona, [])
-        if keywords and any(kw in full_text for kw in keywords):
-            er_score = min(10.0, er_score + 0.5)
+        matched_count = sum(1 for kw in keywords if kw in full_text)
+        if matched_count >= 2:
+            er_score = min(10.0, er_score + 0.7)  # Strong persona match
+        elif matched_count == 1:
+            er_score = min(10.0, er_score + 0.4)  # Partial persona match
 
     # Write back
     bv["score"] = round(bv_score, 1)
