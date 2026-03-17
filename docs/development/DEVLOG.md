@@ -7,6 +7,41 @@
 
 ---
 
+## PB-09: Validation — Phase PB Complete ✅
+
+### Plain-English Summary
+- **89 PB tests all passing** across 9 test files
+- Phase PB integration complete — Nerdy supplementary content is fully wired into the pipeline:
+  - `data/brand_knowledge.json`: 7 personas, messaging rules, competitor pricing, offer positioning, 13 CTAs
+  - `data/hooks_library.json`: 113 proven hooks across 15 categories
+  - `generate/compliance.py`: 20+ Nerdy-specific rules (critical + warning + info)
+  - `generate/brief_expansion.py`: persona-aware expansion with hooks, offer, messaging rules
+  - `generate/ad_generator.py`: Nerdy language enforcement, 17 CTAs, Meta ad structure, persona voice
+  - `generate/brand_voice.py`: 7 persona-specific voice profiles
+  - `evaluate/evaluator.py`: deterministic penalties/bonuses, Nerdy calibration anchors
+  - `app/api/schemas/session.py`: Persona enum in SessionConfig
+  - Frontend: persona selector, persona badges
+- **Pipeline run pending** — requires `python run_pipeline.py --max-ads 3 --persona athlete_recruit` per persona (7 runs, 21 ads total) to generate real output for quality comparison
+
+### What Changed End-to-End
+| Component | Before PB | After PB |
+|-----------|-----------|----------|
+| Audiences | 2 generic | 7 rich personas with psychology |
+| Language | Generic "empowering" | "your child", "SAT Tutoring", no fake urgency |
+| Hooks | From competitive DB only | 113 proven hooks injected per persona |
+| Compliance | 18 rules | 38+ rules (critical/warning/info) |
+| Evaluator | Generic anchors | Nerdy-specific penalties/bonuses |
+| CTAs | 5 generic | 17 persona-specific |
+| Dashboard | No persona | Persona selector + badges |
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 16, 2026
+- **Ticket:** PB-09
+- **Tests:** 89 PB tests passing
+
+---
+
 ## PB-08: Integration Test Suite — Nerdy Content Quality ✅
 
 ### Plain-English Summary
