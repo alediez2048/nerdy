@@ -7,6 +7,24 @@
 
 ---
 
+## PB-07: Persona Selector in Session Config + Dashboard Updates ✅
+
+### Plain-English Summary
+- Backend: Added `Persona` enum (auto + 7 personas) to `SessionConfig` schema
+- Frontend: Persona dropdown in NewSessionForm (after Ad Count, before Advanced)
+- Frontend: Persona badge (lightPurple) on SessionCard when not "auto"
+- Frontend: PERSONA_LABELS mapping for display names
+- Clone-from-previous includes persona field
+- Frontend builds clean
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 16, 2026
+- **Ticket:** PB-07
+- **Files:** `app/api/schemas/session.py`, `app/frontend/src/types/session.ts`, `app/frontend/src/views/NewSessionForm.tsx`, `app/frontend/src/components/SessionCard.tsx`
+
+---
+
 ## PB-06: Nerdy-Calibrated Evaluator ✅
 
 ### Plain-English Summary

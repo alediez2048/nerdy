@@ -33,8 +33,19 @@ class AspectRatio(str, Enum):
     story = "9:16"
 
 
+class Persona(str, Enum):
+    auto = "auto"
+    athlete_recruit = "athlete_recruit"
+    suburban_optimizer = "suburban_optimizer"
+    immigrant_navigator = "immigrant_navigator"
+    cultural_investor = "cultural_investor"
+    system_optimizer = "system_optimizer"
+    neurodivergent_advocate = "neurodivergent_advocate"
+    burned_returner = "burned_returner"
+
+
 class SessionConfig(BaseModel):
-    """Typed session configuration — matches PRD Section 4.7.2."""
+    """Typed session configuration — matches PRD Section 4.7.2 + PB-07."""
 
     audience: Audience
     campaign_goal: CampaignGoal
@@ -46,6 +57,7 @@ class SessionConfig(BaseModel):
     budget_cap_usd: float | None = Field(default=None, ge=1.0)
     image_enabled: bool = True
     aspect_ratios: list[AspectRatio] = Field(default_factory=lambda: [AspectRatio.square])
+    persona: Persona = Persona.auto
 
 
 class SessionCreate(BaseModel):

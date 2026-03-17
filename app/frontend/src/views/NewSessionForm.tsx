@@ -10,9 +10,10 @@ import type {
   DimensionWeights,
   ModelTier,
   AspectRatio,
+  Persona,
   SessionSummary,
 } from '../types/session'
-import { DEFAULT_CONFIG } from '../types/session'
+import { DEFAULT_CONFIG, PERSONA_LABELS } from '../types/session'
 
 export default function NewSessionForm() {
   const navigate = useNavigate()
@@ -57,6 +58,7 @@ export default function NewSessionForm() {
       budget_cap_usd: (c.budget_cap_usd as number | null) ?? null,
       image_enabled: c.image_enabled !== false,
       aspect_ratios: (c.aspect_ratios as AspectRatio[]) || ['1:1'],
+      persona: (c.persona as Persona) || 'auto',
     })
     setShowClone(false)
   }
@@ -177,6 +179,20 @@ export default function NewSessionForm() {
               onChange={(e) => update('ad_count', Number(e.target.value))}
               style={s.input}
             />
+          </div>
+
+          {/* Persona selector */}
+          <div style={s.field}>
+            <label style={s.label}>Target Persona</label>
+            <select
+              value={config.persona}
+              onChange={(e) => update('persona', e.target.value as Persona)}
+              style={s.input}
+            >
+              {(Object.entries(PERSONA_LABELS) as [Persona, string][]).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Advanced toggle */}

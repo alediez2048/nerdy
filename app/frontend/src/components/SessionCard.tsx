@@ -50,6 +50,9 @@ export default function SessionCard({ session, onDelete }: { session: SessionSum
         {audience && <Badge label={audience.charAt(0).toUpperCase() + audience.slice(1)} color={colors.cyan} />}
         {goal && <Badge label={goal.charAt(0).toUpperCase() + goal.slice(1)} color={colors.mint} />}
         {adCount > 0 && <Badge label={`${adCount} ads`} color={colors.muted} />}
+        {typeof config.persona === 'string' && config.persona !== 'auto' && (
+          <Badge label={String(config.persona).replace(/_/g, ' ')} color={colors.lightPurple} />
+        )}
       </div>
 
       {/* Metrics or Progress */}

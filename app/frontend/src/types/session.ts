@@ -5,6 +5,18 @@ export type CampaignGoal = 'awareness' | 'conversion'
 export type DimensionWeights = 'awareness_profile' | 'conversion_profile' | 'equal'
 export type ModelTier = 'standard' | 'premium'
 export type AspectRatio = '1:1' | '4:5' | '9:16'
+export type Persona = 'auto' | 'athlete_recruit' | 'suburban_optimizer' | 'immigrant_navigator' | 'cultural_investor' | 'system_optimizer' | 'neurodivergent_advocate' | 'burned_returner'
+
+export const PERSONA_LABELS: Record<Persona, string> = {
+  auto: 'Auto (recommended)',
+  athlete_recruit: 'Athlete-Recruit Gatekeeper',
+  suburban_optimizer: 'Proactive Suburban Optimizer',
+  immigrant_navigator: 'Immigrant Family Navigator',
+  cultural_investor: 'Education-First Cultural Investor',
+  system_optimizer: 'System Optimizer',
+  neurodivergent_advocate: 'Neurodivergent Advocate',
+  burned_returner: 'Burned Returner',
+}
 
 export interface SessionConfig {
   audience: Audience
@@ -17,6 +29,7 @@ export interface SessionConfig {
   budget_cap_usd: number | null
   image_enabled: boolean
   aspect_ratios: AspectRatio[]
+  persona: Persona
 }
 
 export interface SessionCreate {
@@ -77,4 +90,5 @@ export const DEFAULT_CONFIG: SessionConfig = {
   budget_cap_usd: null,
   image_enabled: true,
   aspect_ratios: ['1:1'],
+  persona: 'auto',
 }
