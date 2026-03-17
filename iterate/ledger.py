@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import fcntl
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Union
@@ -63,18 +64,29 @@ def log_event(ledger_path: str, event: dict) -> None:
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
+_ledger_logger = logging.getLogger(__name__)
+
+
 def read_events(ledger_path: str) -> list[dict]:
-    """Read all events from the ledger. Returns [] if file does not exist."""
+    """Read all events from the ledger. Returns [] if file does not exist.
+
+    Skips malformed lines (e.g. truncated JSON from mid-stream crashes)
+    and logs a warning for each.
+    """
     path = Path(ledger_path)
     if not path.exists():
         return []
 
     events: list[dict] = []
     with open(path) as f:
-        for line in f:
+        for lineno, line in enumerate(f, 1):
             stripped = line.strip()
-            if stripped:
+            if not stripped:
+                continue
+            try:
                 events.append(json.loads(stripped))
+            except json.JSONDecodeError:
+                _ledger_logger.warning("Skipping malformed ledger line %d in %s", lineno, ledger_path)
     return events
 
 
