@@ -232,12 +232,13 @@ def _build_dimension_deep_dive(events: list[dict]) -> dict:
 
 def _build_ad_library(events: list[dict]) -> list[dict]:
     """Panel 5: All ads with copy, scores, rationales."""
-    # Find all unique ad_ids from any ad event (not just AdGenerated)
+    # Find all unique ad_ids — filter out test/reference/calibration ads
+    _SKIP_PREFIXES = ("batch_", "test_", "ref_", "adv_", "golden_")
     ad_ids: list[str] = []
     seen: set[str] = set()
     for e in events:
         aid = e.get("ad_id")
-        if aid and aid not in seen and not aid.startswith("batch_"):
+        if aid and aid not in seen and not any(aid.startswith(p) for p in _SKIP_PREFIXES):
             ad_ids.append(aid)
             seen.add(aid)
 
@@ -282,8 +283,9 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
         aggregate = latest_eval.get("outputs", {}).get("aggregate_score", 0.0) if latest_eval else 0.0
         cycle_count = max((e.get("cycle_number", 0) for e in ad_events), default=1)
 
-        # Extract winning image from AdPublished event
-        pub_event = next((e for e in ad_events if e.get("event_type") == "AdPublished"), None)
+        # Extract winning image from LAST AdPublished event (latest run has image)
+        pub_events = [e for e in ad_events if e.get("event_type") == "AdPublished"]
+        pub_event = pub_events[-1] if pub_events else None
         image_path = None
         image_url = None
         if pub_event:
@@ -292,6 +294,12 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
                 image_path = winning
                 filename = Path(winning).name
                 image_url = f"/images/{filename}"
+
+        # Skip ads with no copy data (test artifacts, orphaned events)
+        has_copy = copy_data.get("primary_text") or copy_data.get("headline")
+        has_scores = bool(scores)
+        if not has_copy and not has_scores:
+            continue
 
         library.append({
             "ad_id": ad_id,

@@ -1,32 +1,40 @@
 {
-  "generated_at": "2026-03-15T23:00:59.438580+00:00",
+  "generated_at": "2026-03-17T03:08:37.740327+00:00",
   "ledger_path": "data/ledger.jsonl",
   "pipeline_summary": {
-    "total_ads_generated": 147,
-    "total_ads_published": 66,
+    "total_ads_generated": 179,
+    "total_ads_published": 73,
     "total_ads_discarded": 0,
-    "publish_rate": 0.449,
-    "total_batches": 15,
-    "total_tokens": 3009447,
-    "total_cost_usd": 30.0945,
+    "publish_rate": 0.408,
+    "total_batches": 22,
+    "total_tokens": 3518657,
+    "total_cost_usd": 35.1866,
     "avg_score": 7.1
   },
   "iteration_cycles": [
     {
+      "ad_id": "ref_vt_14",
+      "cycle": 0,
+      "score_before": 5.0,
+      "score_after": 7.71,
+      "weakest_dimension": "clarity",
+      "action_taken": "regenerated"
+    },
+    {
       "ad_id": "ref_vt_05_deg_brand_voice",
       "cycle": 0,
       "score_before": 4.97,
-      "score_after": 6.05,
+      "score_after": 6.14,
       "weakest_dimension": "brand_voice",
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_01_deg_brand_voice",
+      "ad_id": "ad_brief_003_c0_1772442924",
       "cycle": 0,
-      "score_before": 5.67,
-      "score_after": 6.62,
-      "weakest_dimension": "brand_voice",
-      "action_taken": "regenerated"
+      "score_before": 6.92,
+      "score_after": 7.76,
+      "weakest_dimension": "cta",
+      "action_taken": "published"
     },
     {
       "ad_id": "ref_vt_07_deg_brand_voice",
@@ -37,18 +45,42 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_03",
+      "ad_id": "ref_vt_01_deg_brand_voice",
       "cycle": 0,
-      "score_before": 4.63,
-      "score_after": 5.32,
+      "score_before": 5.67,
+      "score_after": 6.21,
+      "weakest_dimension": "brand_voice",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_05_deg_value_proposition",
+      "cycle": 0,
+      "score_before": 3.62,
+      "score_after": 4.15,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_07_deg_value_proposition",
+      "ad_id": "ad_brief_001_c0_2212892864",
       "cycle": 0,
-      "score_before": 5.46,
-      "score_after": 6.12,
+      "score_before": 6.86,
+      "score_after": 7.37,
+      "weakest_dimension": "cta",
+      "action_taken": "published"
+    },
+    {
+      "ad_id": "ref_chg_05",
+      "cycle": 0,
+      "score_before": 4.6,
+      "score_after": 4.95,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_03",
+      "cycle": 0,
+      "score_before": 4.63,
+      "score_after": 4.94,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -69,28 +101,12 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "adv_wrong_brand_voice",
-      "cycle": 0,
-      "score_before": 6.02,
-      "score_after": 6.29,
-      "weakest_dimension": "brand_voice",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "ad_brief_050_c0_1817572179",
       "cycle": 0,
       "score_before": 7.02,
       "score_after": 7.28,
       "weakest_dimension": "cta",
       "action_taken": "published"
-    },
-    {
-      "ad_id": "adv_empty_minimal",
-      "cycle": 0,
-      "score_before": 1.0,
-      "score_after": 1.25,
-      "weakest_dimension": "clarity",
-      "action_taken": "regenerated"
     },
     {
       "ad_id": "ad_brief_042_c0_1387330968",
@@ -105,14 +121,6 @@
       "cycle": 0,
       "score_before": 7.02,
       "score_after": 7.25,
-      "weakest_dimension": "cta",
-      "action_taken": "published"
-    },
-    {
-      "ad_id": "ad_brief_001_c0_2212892864",
-      "cycle": 0,
-      "score_before": 6.86,
-      "score_after": 7.08,
       "weakest_dimension": "cta",
       "action_taken": "published"
     },
@@ -149,10 +157,10 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_chg_05",
+      "ad_id": "ref_vt_01_deg_cta",
       "cycle": 0,
-      "score_before": 4.6,
-      "score_after": 4.79,
+      "score_before": 5.39,
+      "score_after": 5.58,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -161,6 +169,30 @@
       "cycle": 0,
       "score_before": 6.75,
       "score_after": 6.92,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ad_brief_005_c0_1586594391",
+      "cycle": 0,
+      "score_before": 6.69,
+      "score_after": 6.85,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "adv_wrong_brand_voice",
+      "cycle": 0,
+      "score_before": 6.02,
+      "score_after": 6.15,
+      "weakest_dimension": "brand_voice",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_04",
+      "cycle": 0,
+      "score_before": 4.75,
+      "score_after": 4.87,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -189,10 +221,10 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_06",
+      "ad_id": "ref_vt_09",
       "cycle": 0,
-      "score_before": 7.71,
-      "score_after": 7.8,
+      "score_before": 5.58,
+      "score_after": 5.67,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -205,19 +237,27 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "adv_pure_manipulation",
-      "cycle": 0,
-      "score_before": 4.17,
-      "score_after": 4.23,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "ad_brief_031_c0_2468150918",
       "cycle": 0,
       "score_before": 6.85,
       "score_after": 6.9,
       "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_08",
+      "cycle": 0,
+      "score_before": 7.33,
+      "score_after": 7.38,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_01_deg_value_proposition",
+      "cycle": 0,
+      "score_before": 5.03,
+      "score_after": 5.08,
+      "weakest_dimension": "value_proposition",
       "action_taken": "regenerated"
     },
     {
@@ -229,11 +269,11 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_01",
+      "ad_id": "ref_vt_07_deg_value_proposition",
       "cycle": 0,
-      "score_before": 7.61,
-      "score_after": 7.65,
-      "weakest_dimension": "value_proposition",
+      "score_before": 5.46,
+      "score_after": 5.5,
+      "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
     {
@@ -245,19 +285,19 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_05_deg_value_proposition",
+      "ad_id": "ref_vt_06",
       "cycle": 0,
-      "score_before": 3.62,
-      "score_after": 3.65,
+      "score_before": 7.71,
+      "score_after": 7.73,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "adv_competitor_branding",
+      "ad_id": "ref_vt_01",
       "cycle": 0,
-      "score_before": 7.32,
-      "score_after": 7.34,
-      "weakest_dimension": "brand_voice",
+      "score_before": 7.61,
+      "score_after": 7.63,
+      "weakest_dimension": "value_proposition",
       "action_taken": "regenerated"
     },
     {
@@ -269,18 +309,10 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_08",
+      "ad_id": "ref_vt_13",
       "cycle": 0,
-      "score_before": 7.33,
-      "score_after": 7.33,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_02",
-      "cycle": 0,
-      "score_before": 7.33,
-      "score_after": 7.33,
+      "score_before": 7.54,
+      "score_after": 7.54,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -293,30 +325,6 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_14",
-      "cycle": 0,
-      "score_before": 5.0,
-      "score_after": 5.0,
-      "weakest_dimension": "clarity",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_01_deg_value_proposition",
-      "cycle": 0,
-      "score_before": 5.03,
-      "score_after": 5.03,
-      "weakest_dimension": "value_proposition",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_05_deg_cta",
-      "cycle": 0,
-      "score_before": 5.98,
-      "score_after": 5.98,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "ref_vt_07_deg_cta",
       "cycle": 0,
       "score_before": 6.19,
@@ -325,19 +333,27 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "adv_aggressive_cta_no_value",
-      "cycle": 0,
-      "score_before": 2.7,
-      "score_after": 2.7,
-      "weakest_dimension": "value_proposition",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "adv_jargon_overload",
       "cycle": 0,
       "score_before": 1.0,
       "score_after": 1.0,
       "weakest_dimension": "clarity",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "adv_empty_minimal",
+      "cycle": 0,
+      "score_before": 1.0,
+      "score_after": 1.0,
+      "weakest_dimension": "clarity",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_15",
+      "cycle": 0,
+      "score_before": 7.52,
+      "score_after": 7.52,
+      "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
     {
@@ -413,14 +429,6 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_01_deg_cta",
-      "cycle": 0,
-      "score_before": 5.39,
-      "score_after": 5.38,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "ref_vt_05_deg_clarity",
       "cycle": 0,
       "score_before": 1.08,
@@ -429,26 +437,18 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ad_brief_002_c0_7021860",
+      "ad_id": "ref_vt_07_deg_emotional_resonance",
       "cycle": 0,
-      "score_before": 7.25,
-      "score_after": 7.22,
+      "score_before": 5.33,
+      "score_after": 5.3,
       "weakest_dimension": "cta",
-      "action_taken": "published"
+      "action_taken": "regenerated"
     },
     {
       "ad_id": "ref_vt_07",
       "cycle": 0,
       "score_before": 7.58,
       "score_after": 7.54,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_09",
-      "cycle": 0,
-      "score_before": 5.58,
-      "score_after": 5.54,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -461,19 +461,11 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_15",
+      "ad_id": "adv_high_clarity_zero_emotion",
       "cycle": 0,
-      "score_before": 7.52,
-      "score_after": 7.46,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ad_brief_005_c0_1586594391",
-      "cycle": 0,
-      "score_before": 6.69,
-      "score_after": 6.63,
-      "weakest_dimension": "cta",
+      "score_before": 6.44,
+      "score_after": 6.39,
+      "weakest_dimension": "emotional_resonance",
       "action_taken": "regenerated"
     },
     {
@@ -483,6 +475,14 @@
       "score_after": 7.02,
       "weakest_dimension": "cta",
       "action_taken": "published"
+    },
+    {
+      "ad_id": "ref_vt_01_deg_emotional_resonance",
+      "cycle": 0,
+      "score_before": 7.08,
+      "score_after": 7.02,
+      "weakest_dimension": "emotional_resonance",
+      "action_taken": "regenerated"
     },
     {
       "ad_id": "ad_brief_026_c0_3297496889",
@@ -505,6 +505,22 @@
       "cycle": 0,
       "score_before": 7.08,
       "score_after": 7.02,
+      "weakest_dimension": "cta",
+      "action_taken": "published"
+    },
+    {
+      "ad_id": "adv_compliance_violation",
+      "cycle": 0,
+      "score_before": 3.77,
+      "score_after": 3.7,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ad_brief_002_c0_7021860",
+      "cycle": 0,
+      "score_before": 7.25,
+      "score_after": 7.18,
       "weakest_dimension": "cta",
       "action_taken": "published"
     },
@@ -533,6 +549,30 @@
       "action_taken": "regenerated"
     },
     {
+      "ad_id": "adv_pure_manipulation",
+      "cycle": 0,
+      "score_before": 4.17,
+      "score_after": 4.07,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_chg_01",
+      "cycle": 0,
+      "score_before": 4.52,
+      "score_after": 4.42,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_12",
+      "cycle": 0,
+      "score_before": 7.19,
+      "score_after": 7.09,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
       "ad_id": "ad_brief_041_c0_2806915504",
       "cycle": 0,
       "score_before": 7.02,
@@ -541,18 +581,18 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_13",
+      "ad_id": "ref_vt_07_deg_clarity",
       "cycle": 0,
-      "score_before": 7.54,
-      "score_after": 7.43,
+      "score_before": 1.2,
+      "score_after": 1.08,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_chg_01",
+      "ad_id": "ref_vt_02",
       "cycle": 0,
-      "score_before": 4.52,
-      "score_after": 4.4,
+      "score_before": 7.33,
+      "score_after": 7.21,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -573,27 +613,11 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_07_deg_clarity",
-      "cycle": 0,
-      "score_before": 1.2,
-      "score_after": 1.07,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "ad_brief_017_c0_617383396",
       "cycle": 0,
       "score_before": 6.92,
       "score_after": 6.79,
       "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_01_deg_clarity",
-      "cycle": 0,
-      "score_before": 1.26,
-      "score_after": 1.13,
-      "weakest_dimension": "clarity",
       "action_taken": "regenerated"
     },
     {
@@ -605,6 +629,22 @@
       "action_taken": "published"
     },
     {
+      "ad_id": "adv_competitor_branding",
+      "cycle": 0,
+      "score_before": 7.32,
+      "score_after": 7.17,
+      "weakest_dimension": "brand_voice",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_01_deg_clarity",
+      "cycle": 0,
+      "score_before": 1.26,
+      "score_after": 1.1,
+      "weakest_dimension": "clarity",
+      "action_taken": "regenerated"
+    },
+    {
       "ad_id": "ad_brief_045_c0_381608129",
       "cycle": 0,
       "score_before": 7.08,
@@ -613,18 +653,18 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ad_brief_003_c0_1772442924",
-      "cycle": 0,
-      "score_before": 6.92,
-      "score_after": 6.75,
-      "weakest_dimension": "cta",
-      "action_taken": "published"
-    },
-    {
       "ad_id": "ref_vt_11",
       "cycle": 0,
       "score_before": 7.71,
       "score_after": 7.54,
+      "weakest_dimension": "cta",
+      "action_taken": "regenerated"
+    },
+    {
+      "ad_id": "ref_vt_05_deg_cta",
+      "cycle": 0,
+      "score_before": 5.98,
+      "score_after": 5.8,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -661,22 +701,6 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_01_deg_emotional_resonance",
-      "cycle": 0,
-      "score_before": 7.08,
-      "score_after": 6.82,
-      "weakest_dimension": "emotional_resonance",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "adv_high_clarity_zero_emotion",
-      "cycle": 0,
-      "score_before": 6.44,
-      "score_after": 6.17,
-      "weakest_dimension": "emotional_resonance",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "ad_brief_033_c0_2474594560",
       "cycle": 0,
       "score_before": 7.33,
@@ -693,10 +717,10 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_04",
+      "ad_id": "ref_vt_05_deg_emotional_resonance",
       "cycle": 0,
-      "score_before": 4.75,
-      "score_after": 4.4,
+      "score_before": 7.0,
+      "score_after": 6.67,
       "weakest_dimension": "cta",
       "action_taken": "regenerated"
     },
@@ -709,22 +733,6 @@
       "action_taken": "regenerated"
     },
     {
-      "ad_id": "ref_vt_07_deg_emotional_resonance",
-      "cycle": 0,
-      "score_before": 5.33,
-      "score_after": 4.89,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "adv_compliance_violation",
-      "cycle": 0,
-      "score_before": 3.77,
-      "score_after": 3.3,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
       "ad_id": "ad_brief_009_c0_4097614953",
       "cycle": 0,
       "score_before": 7.28,
@@ -733,19 +741,11 @@
       "action_taken": "published"
     },
     {
-      "ad_id": "ref_vt_12",
+      "ad_id": "adv_aggressive_cta_no_value",
       "cycle": 0,
-      "score_before": 7.19,
-      "score_after": 5.98,
-      "weakest_dimension": "cta",
-      "action_taken": "regenerated"
-    },
-    {
-      "ad_id": "ref_vt_05_deg_emotional_resonance",
-      "cycle": 0,
-      "score_before": 7.0,
-      "score_after": 5.62,
-      "weakest_dimension": "cta",
+      "score_before": 2.7,
+      "score_after": 1.95,
+      "weakest_dimension": "value_proposition",
       "action_taken": "regenerated"
     }
   ],
@@ -758,7 +758,7 @@
         "published": 4,
         "generated": 10,
         "publish_rate": 0.4,
-        "tokens": 1532424
+        "tokens": 2041634
       },
       {
         "batch": 1,
@@ -767,7 +767,7 @@
         "published": 5,
         "generated": 10,
         "publish_rate": 0.5,
-        "tokens": 1532424
+        "tokens": 2041634
       },
       {
         "batch": 1,
@@ -776,7 +776,7 @@
         "published": 5,
         "generated": 10,
         "publish_rate": 0.5,
-        "tokens": 1532424
+        "tokens": 2041634
       },
       {
         "batch": 2,
@@ -821,7 +821,7 @@
         "published": 6,
         "generated": 10,
         "publish_rate": 0.6,
-        "tokens": 1532424
+        "tokens": 2041634
       },
       {
         "batch": 1,
@@ -830,7 +830,7 @@
         "published": 2,
         "generated": 10,
         "publish_rate": 0.2,
-        "tokens": 1532424
+        "tokens": 2041634
       },
       {
         "batch": 1,
@@ -839,7 +839,7 @@
         "published": 5,
         "generated": 10,
         "publish_rate": 0.5,
-        "tokens": 1532424
+        "tokens": 2041634
       },
       {
         "batch": 2,
@@ -884,7 +884,70 @@
         "published": 2,
         "generated": 5,
         "publish_rate": 0.4,
-        "tokens": 1532424
+        "tokens": 2041634
+      },
+      {
+        "batch": 1,
+        "avg_score": 7.0,
+        "threshold": 7.0,
+        "published": 2,
+        "generated": 5,
+        "publish_rate": 0.4,
+        "tokens": 2041634
+      },
+      {
+        "batch": 1,
+        "avg_score": 7.0,
+        "threshold": 7.0,
+        "published": 1,
+        "generated": 3,
+        "publish_rate": 0.33,
+        "tokens": 2041634
+      },
+      {
+        "batch": 1,
+        "avg_score": 7.0,
+        "threshold": 7.0,
+        "published": 1,
+        "generated": 3,
+        "publish_rate": 0.33,
+        "tokens": 2041634
+      },
+      {
+        "batch": 1,
+        "avg_score": 7.0,
+        "threshold": 7.0,
+        "published": 0,
+        "generated": 3,
+        "publish_rate": 0.0,
+        "tokens": 2041634
+      },
+      {
+        "batch": 1,
+        "avg_score": 7.0,
+        "threshold": 7.0,
+        "published": 1,
+        "generated": 1,
+        "publish_rate": 1.0,
+        "tokens": 2041634
+      },
+      {
+        "batch": 1,
+        "avg_score": 7.0,
+        "threshold": 7.0,
+        "published": 0,
+        "generated": 1,
+        "publish_rate": 0.0,
+        "tokens": 2041634
+      },
+      {
+        "batch": 1,
+        "avg_score": 7.0,
+        "threshold": 7.0,
+        "published": 3,
+        "generated": 3,
+        "publish_rate": 1.0,
+        "tokens": 2041634
       }
     ],
     "ratchet_history": [
@@ -947,18 +1010,46 @@
       {
         "batch": 1,
         "threshold": 7.0
+      },
+      {
+        "batch": 1,
+        "threshold": 7.0
+      },
+      {
+        "batch": 1,
+        "threshold": 7.0
+      },
+      {
+        "batch": 1,
+        "threshold": 7.0
+      },
+      {
+        "batch": 1,
+        "threshold": 7.0
+      },
+      {
+        "batch": 1,
+        "threshold": 7.0
+      },
+      {
+        "batch": 1,
+        "threshold": 7.0
+      },
+      {
+        "batch": 1,
+        "threshold": 7.0
       }
     ],
     "score_distribution": [
       0,
-      100,
+      118,
       8,
-      35,
-      82,
-      179,
-      155,
-      397,
-      114,
+      40,
+      97,
+      208,
+      178,
+      460,
+      132,
       0
     ]
   },
@@ -2034,7 +2125,178 @@
         7.2,
         8.5,
         7.2,
-        5.8
+        5.8,
+        7.2,
+        7.5,
+        7.2,
+        2.0,
+        1.0,
+        7.2,
+        7.5,
+        7.2,
+        2.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        5.0,
+        8.0,
+        8.0,
+        7.8,
+        7.8,
+        7.8,
+        7.5,
+        7.5,
+        7.8,
+        7.5,
+        7.8,
+        7.5,
+        7.8,
+        7.8,
+        7.8,
+        6.8,
+        6.5,
+        7.5,
+        6.5,
+        7.5,
+        6.5,
+        7.8,
+        7.8,
+        7.5,
+        1.1,
+        5.5,
+        7.5,
+        6.5,
+        7.5,
+        1.2,
+        4.5,
+        7.5,
+        6.5,
+        7.5,
+        1.1,
+        6.2,
+        7.5,
+        6.8,
+        7.2,
+        7.5,
+        7.2,
+        7.2,
+        7.5,
+        7.2,
+        7.2,
+        7.2,
+        7.2,
+        7.5,
+        7.2,
+        7.2,
+        7.2,
+        8.5,
+        5.5,
+        7.2,
+        2.0,
+        1.0,
+        7.5,
+        1.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        5.0,
+        8.0,
+        8.0,
+        8.1,
+        8.1,
+        7.8,
+        7.5,
+        7.5,
+        7.8,
+        7.5,
+        8.1,
+        7.2,
+        7.8,
+        6.5,
+        7.8,
+        8.1,
+        7.8,
+        5.5,
+        6.5,
+        6.5,
+        7.2,
+        7.5,
+        2.0,
+        6.5,
+        1.0,
+        7.2,
+        8.0,
+        6.5,
+        1.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        5.0,
+        8.0,
+        8.0,
+        7.8,
+        7.8,
+        7.8,
+        8.1,
+        7.8,
+        7.8,
+        1.1,
+        7.5,
+        6.2,
+        7.5,
+        7.5,
+        7.8,
+        6.5,
+        7.5,
+        7.5,
+        7.8,
+        1.1,
+        7.5,
+        4.5,
+        7.8,
+        7.5,
+        7.8,
+        7.8,
+        5.5,
+        6.5,
+        7.5,
+        6.5,
+        1.1,
+        7.5,
+        6.5,
+        6.5,
+        7.5,
+        7.2,
+        6.8,
+        6.8,
+        7.8,
+        7.2,
+        8.1,
+        7.5,
+        1.1,
+        5.5,
+        7.5,
+        6.5,
+        7.5,
+        1.1,
+        4.8,
+        7.2,
+        6.5,
+        7.5,
+        1.1,
+        6.5,
+        7.5,
+        7.2,
+        7.2,
+        7.5,
+        7.2,
+        7.5
       ],
       "value_proposition": [
         6.5,
@@ -3106,7 +3368,178 @@
         6.5,
         6.8,
         6.8,
-        4.2
+        4.2,
+        6.5,
+        7.2,
+        6.8,
+        1.0,
+        1.0,
+        6.5,
+        3.0,
+        6.5,
+        1.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        7.5,
+        7.5,
+        7.5,
+        7.8,
+        7.8,
+        8.1,
+        7.8,
+        8.1,
+        7.2,
+        7.5,
+        8.1,
+        7.5,
+        6.2,
+        6.2,
+        6.8,
+        5.5,
+        6.5,
+        5.2,
+        7.5,
+        7.8,
+        7.8,
+        1.2,
+        3.2,
+        7.8,
+        6.8,
+        7.2,
+        1.5,
+        3.2,
+        7.8,
+        7.2,
+        7.2,
+        1.2,
+        5.5,
+        7.8,
+        7.5,
+        7.5,
+        6.8,
+        6.8,
+        6.5,
+        6.8,
+        6.5,
+        6.5,
+        6.8,
+        6.5,
+        6.8,
+        6.5,
+        6.5,
+        6.5,
+        6.8,
+        4.5,
+        6.8,
+        1.0,
+        1.0,
+        3.0,
+        1.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        7.8,
+        7.8,
+        8.1,
+        7.8,
+        7.8,
+        8.1,
+        7.8,
+        8.3,
+        7.5,
+        7.5,
+        6.8,
+        8.1,
+        6.8,
+        7.5,
+        4.2,
+        6.2,
+        6.2,
+        7.5,
+        6.8,
+        1.0,
+        5.5,
+        1.0,
+        6.5,
+        2.0,
+        5.5,
+        1.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        7.5,
+        7.5,
+        8.1,
+        7.8,
+        8.1,
+        8.1,
+        2.0,
+        8.1,
+        3.5,
+        7.8,
+        7.2,
+        7.5,
+        6.8,
+        7.2,
+        7.2,
+        8.1,
+        1.2,
+        7.2,
+        3.2,
+        7.5,
+        7.8,
+        8.1,
+        7.5,
+        6.8,
+        6.2,
+        7.2,
+        5.5,
+        1.1,
+        7.2,
+        5.5,
+        5.5,
+        7.8,
+        6.5,
+        7.2,
+        5.5,
+        7.5,
+        6.8,
+        7.8,
+        7.8,
+        1.1,
+        3.2,
+        7.8,
+        7.2,
+        7.2,
+        1.1,
+        3.2,
+        7.5,
+        7.2,
+        7.2,
+        1.2,
+        5.5,
+        7.8,
+        7.5,
+        6.8,
+        7.7,
+        7.3,
+        8.3
       ],
       "cta": [
         6.2,
@@ -4178,7 +4611,178 @@
         7.2,
         5.5,
         6.2,
-        1.0
+        1.0,
+        6.2,
+        7.8,
+        6.2,
+        3.0,
+        1.0,
+        6.2,
+        1.0,
+        6.2,
+        1.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        7.8,
+        7.2,
+        7.2,
+        6.8,
+        7.2,
+        7.5,
+        6.8,
+        7.2,
+        7.5,
+        5.5,
+        7.2,
+        7.2,
+        1.0,
+        1.0,
+        2.0,
+        2.0,
+        1.0,
+        2.0,
+        7.5,
+        7.5,
+        7.2,
+        1.5,
+        6.5,
+        1.5,
+        6.2,
+        7.2,
+        1.0,
+        2.5,
+        2.0,
+        5.5,
+        2.0,
+        1.0,
+        4.0,
+        2.0,
+        2.0,
+        1.0,
+        6.2,
+        6.2,
+        6.2,
+        6.2,
+        6.2,
+        6.2,
+        6.2,
+        6.2,
+        6.5,
+        6.2,
+        6.2,
+        6.8,
+        6.5,
+        1.0,
+        7.5,
+        3.0,
+        1.0,
+        1.0,
+        1.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        7.5,
+        7.5,
+        7.5,
+        6.5,
+        7.2,
+        7.2,
+        6.8,
+        7.5,
+        7.5,
+        6.5,
+        7.2,
+        7.5,
+        6.5,
+        7.2,
+        1.0,
+        1.0,
+        1.0,
+        7.2,
+        2.0,
+        3.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        2.0,
+        1.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        9.0,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        6.8,
+        7.2,
+        2.0,
+        6.5,
+        6.5,
+        7.2,
+        1.5,
+        7.2,
+        6.2,
+        6.8,
+        6.8,
+        7.2,
+        1.0,
+        7.5,
+        2.5,
+        5.8,
+        2.0,
+        7.2,
+        7.2,
+        5.0,
+        1.0,
+        2.0,
+        2.0,
+        1.0,
+        2.0,
+        4.0,
+        1.0,
+        3.0,
+        1.0,
+        5.0,
+        2.0,
+        7.8,
+        2.0,
+        7.5,
+        7.2,
+        1.1,
+        6.8,
+        1.5,
+        6.8,
+        6.8,
+        1.0,
+        3.5,
+        2.0,
+        5.5,
+        5.5,
+        1.0,
+        4.0,
+        3.0,
+        2.0,
+        2.0,
+        6.5,
+        6.2,
+        7.5
       ],
       "brand_voice": [
         7.2,
@@ -5250,7 +5854,178 @@
         2.5,
         6.0,
         7.5,
-        6.5
+        6.5,
+        7.8,
+        6.8,
+        7.5,
+        1.0,
+        1.0,
+        7.5,
+        3.0,
+        7.5,
+        1.0,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        4.0,
+        7.5,
+        7.5,
+        7.5,
+        8.1,
+        8.1,
+        7.5,
+        8.1,
+        8.3,
+        7.5,
+        8.5,
+        7.8,
+        7.8,
+        8.1,
+        7.5,
+        7.2,
+        6.5,
+        7.0,
+        6.2,
+        6.8,
+        6.2,
+        7.8,
+        8.1,
+        8.1,
+        1.1,
+        4.5,
+        5.5,
+        2.5,
+        6.8,
+        2.0,
+        4.1,
+        8.1,
+        3.5,
+        7.2,
+        1.0,
+        6.5,
+        7.2,
+        6.5,
+        6.5,
+        7.2,
+        7.5,
+        7.5,
+        7.2,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        7.2,
+        7.5,
+        7.5,
+        2.1,
+        5.5,
+        6.5,
+        6.5,
+        1.0,
+        1.0,
+        3.0,
+        1.0,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        4.0,
+        7.5,
+        7.5,
+        7.8,
+        8.3,
+        8.3,
+        7.5,
+        8.1,
+        8.1,
+        7.5,
+        8.5,
+        7.8,
+        7.8,
+        2.1,
+        8.3,
+        6.2,
+        7.8,
+        6.0,
+        7.2,
+        6.2,
+        6.8,
+        7.2,
+        2.0,
+        6.2,
+        1.0,
+        6.8,
+        3.0,
+        6.0,
+        1.0,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        7.5,
+        4.0,
+        7.5,
+        7.5,
+        7.8,
+        7.8,
+        8.5,
+        8.3,
+        8.3,
+        8.3,
+        1.0,
+        7.8,
+        4.5,
+        8.1,
+        5.5,
+        8.1,
+        2.5,
+        7.8,
+        7.2,
+        8.5,
+        2.0,
+        7.8,
+        4.0,
+        8.1,
+        7.5,
+        8.3,
+        7.8,
+        2.0,
+        7.2,
+        7.2,
+        6.2,
+        1.1,
+        7.5,
+        6.5,
+        6.2,
+        7.2,
+        6.8,
+        5.5,
+        6.2,
+        7.5,
+        6.5,
+        8.3,
+        8.1,
+        1.1,
+        4.5,
+        5.8,
+        3.0,
+        6.5,
+        1.1,
+        5.2,
+        7.8,
+        3.5,
+        7.0,
+        1.0,
+        6.2,
+        7.2,
+        6.5,
+        6.5,
+        7.5,
+        7.5,
+        8.1
       ],
       "emotional_resonance": [
         6.8,
@@ -6322,27 +7097,198 @@
         4.5,
         1.0,
         7.2,
-        7.8
+        7.8,
+        7.2,
+        6.5,
+        7.2,
+        2.0,
+        1.0,
+        7.2,
+        6.5,
+        6.5,
+        1.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.2,
+        7.5,
+        7.5,
+        7.2,
+        7.5,
+        7.5,
+        7.2,
+        7.5,
+        7.2,
+        7.2,
+        7.5,
+        7.2,
+        7.2,
+        6.2,
+        6.0,
+        5.8,
+        6.5,
+        6.5,
+        7.5,
+        7.5,
+        7.5,
+        1.3,
+        4.2,
+        7.2,
+        4.5,
+        7.2,
+        2.0,
+        5.8,
+        7.5,
+        6.8,
+        6.5,
+        1.0,
+        6.8,
+        7.5,
+        7.2,
+        6.2,
+        6.5,
+        7.2,
+        7.2,
+        7.2,
+        6.8,
+        7.2,
+        6.5,
+        6.5,
+        7.2,
+        7.2,
+        6.8,
+        3.5,
+        1.0,
+        7.5,
+        6.8,
+        2.0,
+        1.0,
+        6.5,
+        1.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.5,
+        7.8,
+        7.8,
+        7.2,
+        7.5,
+        7.5,
+        7.2,
+        7.8,
+        7.2,
+        7.5,
+        4.5,
+        7.5,
+        1.0,
+        7.2,
+        7.5,
+        6.8,
+        6.2,
+        6.5,
+        6.5,
+        1.0,
+        6.2,
+        1.0,
+        6.5,
+        6.0,
+        6.5,
+        1.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.5,
+        7.2,
+        8.2,
+        7.8,
+        7.5,
+        7.5,
+        1.0,
+        7.5,
+        4.2,
+        7.5,
+        7.5,
+        7.5,
+        4.0,
+        7.2,
+        6.5,
+        7.5,
+        2.0,
+        7.2,
+        5.8,
+        7.2,
+        7.2,
+        7.5,
+        7.5,
+        6.5,
+        7.5,
+        6.5,
+        6.5,
+        1.1,
+        6.5,
+        6.8,
+        5.0,
+        7.5,
+        6.5,
+        7.2,
+        6.5,
+        7.2,
+        6.2,
+        7.8,
+        7.5,
+        1.1,
+        4.2,
+        7.2,
+        4.5,
+        6.5,
+        1.1,
+        5.8,
+        7.5,
+        7.2,
+        6.5,
+        1.1,
+        6.8,
+        7.5,
+        7.2,
+        5.5,
+        7.2,
+        7.2,
+        7.5
       ]
     },
     "correlation_matrix": {
       "clarity": {
         "value_proposition": 0.895,
-        "cta": 0.566,
-        "brand_voice": 0.838,
-        "emotional_resonance": 0.78
+        "cta": 0.564,
+        "brand_voice": 0.841,
+        "emotional_resonance": 0.789
       },
       "value_proposition": {
-        "cta": 0.663,
-        "brand_voice": 0.826,
-        "emotional_resonance": 0.81
+        "cta": 0.661,
+        "brand_voice": 0.828,
+        "emotional_resonance": 0.814
       },
       "cta": {
-        "brand_voice": 0.525,
-        "emotional_resonance": 0.462
+        "brand_voice": 0.524,
+        "emotional_resonance": 0.461
       },
       "brand_voice": {
-        "emotional_resonance": 0.845
+        "emotional_resonance": 0.847
       }
     }
   },
@@ -6358,23 +7304,24 @@
         "cta_button": "Learn More"
       },
       "scores": {
-        "clarity": 7.2,
-        "value_proposition": 6.8,
-        "cta": 6.2,
+        "clarity": 7.5,
+        "value_proposition": 7.7,
+        "cta": 6.5,
         "brand_voice": 7.5,
         "emotional_resonance": 7.2
       },
-      "aggregate_score": 7.08,
+      "aggregate_score": 7.37,
       "rationale": {
-        "clarity": "The message is clear and easy to understand. The analogy of a maze works well. However, the phrase 'Focused attention, better results' feels a bit redundant and could be more specific.",
-        "value_proposition": "The value proposition mentions personalized 1-on-1 expert tutoring. The differentiator is present but not front-loaded; reader might miss it scanning quickly. 'Better results' is not quantified.",
-        "cta": "CTA exists but is generic ('Learn More') with no urgency or specificity.",
-        "brand_voice": "Strong brand voice \u2013 empowering and approachable; one line slightly breaks character ('Focused attention, better results' is a bit generic).",
-        "emotional_resonance": "Good emotional hook with a real pain point (feeling lost in SAT prep); the transformation story could be more vivid. The 'clear the path' metaphor is decent but could be stronger."
+        "clarity": "The ad clearly states the problem and offers a solution. The value proposition is easy to understand. The headline reinforces the message.",
+        "value_proposition": "The value proposition is present: a diagnostic to pinpoint weaknesses and a targeted plan. It's better than generic tutoring, but lacks a specific outcome or proof point.",
+        "cta": "\"Learn More\" is a generic CTA. It doesn't create urgency or reduce friction.",
+        "brand_voice": "The tone is authoritative and reassuring. It avoids overly salesy language and focuses on the outcome. The use of \"your child\" is appropriate.",
+        "emotional_resonance": "The ad taps into the anxiety parents feel about the new digital SAT format and their child's performance. It offers a solution to their confusion."
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": "output/images/ad_brief_001_c0_2212892864_anchor_1x1.png",
+      "image_url": "/images/ad_brief_001_c0_2212892864_anchor_1x1.png"
     },
     {
       "ad_id": "ad_brief_002_c0_7021860",
@@ -6387,23 +7334,24 @@
         "cta_button": "Learn More"
       },
       "scores": {
-        "clarity": 7.5,
-        "value_proposition": 6.8,
+        "clarity": 7.2,
+        "value_proposition": 7.3,
         "cta": 6.2,
-        "brand_voice": 7.8,
+        "brand_voice": 7.5,
         "emotional_resonance": 7.2
       },
-      "aggregate_score": 7.22,
+      "aggregate_score": 7.18,
       "rationale": {
-        "clarity": "The ad clearly states the problem and offers a solution. The message is understandable and concise. The use of \"again\" in the hook helps to highlight the frustration.",
-        "value_proposition": "The value proposition is present but not front-loaded. The reader might miss the specific benefit of \"breaking down complex concepts\" and \"proven strategies\" when scanning quickly. While it mentions breaking down concepts, it doesn't specify how this is done or what makes it unique.",
-        "cta": "The CTA is generic (\"Learn More\") and lacks urgency or specificity. It doesn't provide a clear incentive to click.",
-        "brand_voice": "The brand voice is consistently on-brand throughout with strong empowerment framing. The use of \"you\" and the \ud83d\udcaa emoji creates a relatable and motivating tone. However, it could be slightly more peer-like by using more relatable student vocabulary.",
-        "emotional_resonance": "The ad taps into the frustration of being stuck on SAT questions and the desire to unlock one's potential. It creates a sense of hope and possibility. However, the transformation story could be more vivid and relatable."
+        "clarity": "The message is clear and understandable, outlining the problem and the solution. The hook is strong, and the value proposition is easy to grasp. However, the phrase 'See how we can help your child feel confident on test day' feels a bit redundant and weakens the overall clarity slightly.",
+        "value_proposition": "The value proposition mentions a diagnostic test and a custom plan, which are decent differentiators. However, it lacks a specific proof point or quantified outcome. The reader might miss the differentiator while scanning quickly.",
+        "cta": "The CTA is generic ('Learn More') and lacks urgency or specificity. It doesn't provide a clear incentive for the user to click.",
+        "brand_voice": "The brand voice is generally on-brand, using empowering language and focusing on results. The tone is approachable and knowledgeable. However, the phrase 'See how we can help your child feel confident on test day' is a bit generic and could be more impactful.",
+        "emotional_resonance": "The ad taps into the emotional pain point of a child not getting into their dream college and the desire for them to feel confident on test day. The hook is good at capturing attention. However, the transformation story could be more vivid and detailed."
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": "output/images/ad_brief_002_c0_7021860_anchor_1x1.png",
+      "image_url": "/images/ad_brief_002_c0_7021860_anchor_1x1.png"
     },
     {
       "ad_id": "ad_brief_003_c0_1772442924",
@@ -6416,23 +7364,24 @@
         "cta_button": "Book Now"
       },
       "scores": {
-        "clarity": 7.2,
-        "value_proposition": 6.5,
-        "cta": 6.2,
-        "brand_voice": 7.5,
-        "emotional_resonance": 7.2
+        "clarity": 7.5,
+        "value_proposition": 8.3,
+        "cta": 7.5,
+        "brand_voice": 8.1,
+        "emotional_resonance": 7.5
       },
-      "aggregate_score": 6.75,
+      "aggregate_score": 7.76,
       "rationale": {
-        "clarity": "The ad clearly identifies a specific problem (AP Calculus causing stress) and offers a solution (expert support and personalized tutoring). The message is understandable and the flow is good.",
-        "value_proposition": "The value proposition mentions 'expert support' and 'personalized tutoring,' but it lacks specific differentiation. 'Proven results' is vague without further elaboration.",
-        "cta": "'Sign Up' is a generic CTA. It doesn't offer any immediate benefit or reduce friction.",
-        "brand_voice": "The tone is authoritative and reassuring, aligning with the brand's desired voice. It focuses on outcomes and addresses parental worries.",
-        "emotional_resonance": "The ad effectively taps into parental anxiety about their child's performance in AP Calculus and its impact on college admissions. It offers a solution that eases these worries."
+        "clarity": "The ad clearly states the problem and the solution. The value proposition is easily understandable and the connection between the diagnostic assessment and the targeted plan is clear.",
+        "value_proposition": "The value proposition is strong. It offers a diagnostic assessment leading to a targeted plan with a timeframe (8 weeks). This is better than generic 'personalized' claims.",
+        "cta": "The CTA 'Book Diagnostic' is specific and low-friction. It directly relates to the service being offered.",
+        "brand_voice": "The brand voice is authoritative, reassuring, and outcome-focused. It speaks directly to the audience's emotional drivers (college admissions anxiety).",
+        "emotional_resonance": "The ad taps into the real emotional pain point of parents worrying about their child's college admissions prospects. The hook directly addresses this anxiety."
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": "output/images/ad_brief_003_c0_1772442924_anchor_1x1.png",
+      "image_url": "/images/ad_brief_003_c0_1772442924_anchor_1x1.png"
     },
     {
       "ad_id": "ad_brief_004_c0_3591419156",
@@ -6453,15 +7402,16 @@
       },
       "aggregate_score": 6.75,
       "rationale": {
-        "clarity": "The ad is clear about addressing feeling lost in SAT prep and offering strategies. The headline reinforces this. However, the description 'Smart strategies for a smarter you' feels a bit redundant and doesn't add much to the overall message.",
-        "value_proposition": "The value proposition is present but not very specific. It mentions 'strategies to unlock your best score' but doesn't offer any proof or quantification of the benefit. It's a generic promise.",
-        "cta": "The CTA 'Sign Up' is generic and lacks urgency or specificity. It doesn't provide any incentive or reduce friction for the user to take action.",
-        "brand_voice": "The brand voice is generally on-brand, using relatable language and addressing a common student concern (feeling lost). The use of emojis adds a touch of approachability. However, it could be more results-focused.",
-        "emotional_resonance": "The ad taps into the emotional pain point of feeling lost in SAT prep and wanting to shine. It offers a solution by providing strategies. However, the transformation story could be more vivid and specific."
+        "clarity": "The ad clearly states the problem (feeling lost) and the solution (Varsity Tutors provides a personalized map to success). The phrase 'personalized just for you' is a bit generic, but the overall message is understandable. The headline reinforces this.",
+        "value_proposition": "The value proposition mentions personalization, but it's not specific enough. It promises strategies, confidence, and unlocking potential, but these are generic benefits. There's no specific differentiator or proof point.",
+        "cta": "The CTA 'Sign Up' is very generic and doesn't create any urgency or reduce friction. It doesn't tell the user what they are signing up for.",
+        "brand_voice": "The brand voice is generally on-brand, using empowering language like 'unlock your potential' and 'ace it.' It's approachable and aims to be relatable to students. However, it could be more results-focused by highlighting specific achievements.",
+        "emotional_resonance": "The ad taps into the emotional pain point of feeling lost and overwhelmed during SAT prep. It offers a solution by providing a 'map to success,' which resonates with students seeking guidance. However, the resolution could be more vivid and specific."
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_005_c0_1586594391",
@@ -6474,23 +7424,24 @@
         "cta_button": "Learn More"
       },
       "scores": {
-        "clarity": 6.8,
-        "value_proposition": 6.2,
+        "clarity": 7.2,
+        "value_proposition": 6.5,
         "cta": 6.2,
-        "brand_voice": 7.2,
+        "brand_voice": 7.5,
         "emotional_resonance": 6.5
       },
-      "aggregate_score": 6.63,
+      "aggregate_score": 6.85,
       "rationale": {
-        "clarity": "The ad is clear about the topic (SAT prep) but the value proposition is somewhat generic. The phrase 'achieve their full potential' could be more specific. The description adds a bit more clarity with 'personalized support for college success'.",
-        "value_proposition": "The value proposition mentions 'personalized SAT prep' and 'expert guidance, real results' but lacks specific differentiation or quantified outcomes. It's a generic statement that doesn't stand out.",
-        "cta": "The CTA 'Learn More' is very generic and doesn't provide any incentive or reduce friction for the user to click.",
-        "brand_voice": "The brand voice is generally appropriate, being knowledgeable and approachable. It uses empowering language but could be more results-focused.",
-        "emotional_resonance": "The ad attempts to tap into the emotional angle of college admissions anxiety, but it's fairly surface-level. Mentioning 'college is on the horizon' is a start, but it doesn't deepen the pain point."
+        "clarity": "The message is clear and easy to understand. It directly addresses a common concern of parents. However, the phrase 'Empower your child's future today!' feels a bit redundant.",
+        "value_proposition": "The value proposition is present but lacks specific differentiation. 'Expert guidance' is generic. It doesn't highlight what makes Varsity Tutors unique or provide any proof points.",
+        "cta": "The CTA is generic ('Learn More') and lacks urgency or specificity. It doesn't reduce the perceived commitment or offer a clear next step.",
+        "brand_voice": "The brand voice is generally on-brand, using empowering language. However, it could be more results-focused and less generic.",
+        "emotional_resonance": "The ad identifies a real pain point (stress about college prep) but doesn't deepen it enough to create urgency. It's a surface-level acknowledgment of the emotion."
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_006_c0_2344074075",
@@ -6519,7 +7470,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_007_c0_2547429137",
@@ -6548,7 +7500,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_008_c0_2633779698",
@@ -6577,7 +7530,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_009_c0_4097614953",
@@ -6606,7 +7560,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_010_c0_1843212114",
@@ -6635,7 +7590,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_011_c0_857460680",
@@ -6664,7 +7620,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_012_c0_1962870880",
@@ -6693,7 +7650,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_013_c0_4223265226",
@@ -6722,7 +7680,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_014_c0_1644346063",
@@ -6751,7 +7710,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_015_c0_1395998568",
@@ -6780,7 +7740,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_016_c0_3706570361",
@@ -6809,7 +7770,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_017_c0_617383396",
@@ -6838,7 +7800,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_018_c0_3481010139",
@@ -6867,7 +7830,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_019_c0_4152657544",
@@ -6896,7 +7860,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_020_c0_2064461231",
@@ -6925,7 +7890,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_021_c0_1995319742",
@@ -6954,7 +7920,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_022_c0_4106381515",
@@ -6983,7 +7950,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_023_c0_846163756",
@@ -7012,7 +7980,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_024_c0_143543275",
@@ -7041,7 +8010,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_025_c0_3656358082",
@@ -7070,7 +8040,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_026_c0_3297496889",
@@ -7099,7 +8070,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_027_c0_3035250065",
@@ -7128,7 +8100,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_028_c0_3592795357",
@@ -7157,7 +8130,104 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
+    },
+    {
+      "ad_id": "ad_001",
+      "brief_id": "",
+      "copy": {},
+      "scores": {},
+      "aggregate_score": 0.0,
+      "rationale": {},
+      "status": "in_progress",
+      "cycle_count": 0,
+      "image_path": null,
+      "image_url": null
+    },
+    {
+      "ad_id": "ad_002",
+      "brief_id": "",
+      "copy": {},
+      "scores": {},
+      "aggregate_score": 0.0,
+      "rationale": {},
+      "status": "in_progress",
+      "cycle_count": 0,
+      "image_path": null,
+      "image_url": null
+    },
+    {
+      "ad_id": "ad_003",
+      "brief_id": "",
+      "copy": {},
+      "scores": {},
+      "aggregate_score": 0.0,
+      "rationale": {},
+      "status": "in_progress",
+      "cycle_count": 0,
+      "image_path": null,
+      "image_url": null
+    },
+    {
+      "ad_id": "ad_004",
+      "brief_id": "",
+      "copy": {},
+      "scores": {},
+      "aggregate_score": 0.0,
+      "rationale": {},
+      "status": "in_progress",
+      "cycle_count": 0,
+      "image_path": null,
+      "image_url": null
+    },
+    {
+      "ad_id": "ad_005",
+      "brief_id": "",
+      "copy": {},
+      "scores": {},
+      "aggregate_score": 0.0,
+      "rationale": {},
+      "status": "in_progress",
+      "cycle_count": 0,
+      "image_path": null,
+      "image_url": null
+    },
+    {
+      "ad_id": "ad_006",
+      "brief_id": "",
+      "copy": {},
+      "scores": {},
+      "aggregate_score": 0.0,
+      "rationale": {},
+      "status": "in_progress",
+      "cycle_count": 0,
+      "image_path": null,
+      "image_url": null
+    },
+    {
+      "ad_id": "ad_007",
+      "brief_id": "",
+      "copy": {},
+      "scores": {},
+      "aggregate_score": 0.0,
+      "rationale": {},
+      "status": "in_progress",
+      "cycle_count": 0,
+      "image_path": null,
+      "image_url": null
+    },
+    {
+      "ad_id": "ad_008",
+      "brief_id": "",
+      "copy": {},
+      "scores": {},
+      "aggregate_score": 0.0,
+      "rationale": {},
+      "status": "in_progress",
+      "cycle_count": 0,
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_029_c0_2168439840",
@@ -7186,7 +8256,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_030_c0_3781277762",
@@ -7215,7 +8286,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_031_c0_2468150918",
@@ -7244,7 +8316,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_032_c0_2056878104",
@@ -7273,7 +8346,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_033_c0_2474594560",
@@ -7302,7 +8376,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_034_c0_4148660125",
@@ -7331,7 +8406,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_035_c0_2099699679",
@@ -7360,7 +8436,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_036_c0_4102394733",
@@ -7389,7 +8466,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_037_c0_2257962766",
@@ -7418,7 +8496,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_038_c0_857875644",
@@ -7447,7 +8526,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_039_c0_2626045506",
@@ -7476,7 +8556,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_040_c0_310917777",
@@ -7505,7 +8586,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_041_c0_2806915504",
@@ -7534,7 +8616,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_042_c0_1387330968",
@@ -7563,7 +8646,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_043_c0_1371192475",
@@ -7592,7 +8676,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_044_c0_3756628797",
@@ -7621,7 +8706,8 @@
       },
       "status": "in_progress",
       "cycle_count": 0,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_045_c0_381608129",
@@ -7650,7 +8736,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_046_c0_2148030316",
@@ -7679,7 +8766,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_047_c0_1517709180",
@@ -7708,7 +8796,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_048_c0_3141514369",
@@ -7737,7 +8826,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_049_c0_2160421151",
@@ -7766,7 +8856,8 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     },
     {
       "ad_id": "ad_brief_050_c0_1817572179",
@@ -7795,23 +8886,25 @@
       },
       "status": "published",
       "cycle_count": 1,
-      "image_path": null
+      "image_path": null,
+      "image_url": null
     }
   ],
   "token_economics": {
     "by_stage": {
-      "generation": 326973,
-      "evaluation": 2682474,
+      "generation": 393398,
+      "evaluation": 3113259,
       "routing": 0,
       "publish": 0,
-      "batch": 0
+      "batch": 0,
+      "other": 12000
     },
     "by_model": {
-      "gemini-2.0-flash": 3009447,
+      "gemini-2.0-flash": 3518657,
       "gemini-2.0-pro": 0,
       "none": 0
     },
-    "cost_per_published": 45597.68,
+    "cost_per_published": 48200.78,
     "marginal_analysis": {
       "gain_curve": {},
       "token_spend": {},
@@ -7871,6 +8964,13 @@
         7.0,
         7.0,
         7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        7.0,
         7.0
       ],
       "ucl": 7.02,
@@ -7879,18 +8979,18 @@
       "breach_indices": []
     },
     "confidence_stats": {
-      "autonomous_count": 806,
+      "autonomous_count": 935,
       "flagged_count": 0,
       "human_required_count": 0,
-      "brand_safety_count": 266,
-      "total": 1072,
-      "autonomous_pct": 75.2,
+      "brand_safety_count": 306,
+      "total": 1241,
+      "autonomous_pct": 75.3,
       "flagged_pct": 0.0,
       "human_required_pct": 0.0
     },
     "compliance_stats": {
-      "total_checked": 67,
-      "passed": 67,
+      "total_checked": 73,
+      "passed": 73,
       "failed": 0,
       "pass_rate": 1.0
     }
@@ -7909,13 +9009,6 @@
       "aspiration": 7.5
     },
     "strategy_radar": {
-      "Varsity Tutors": {
-        "statistic": 20.0,
-        "question": 30.0,
-        "aspiration": 20.0,
-        "direct_offer": 20.0,
-        "fear_based": 10.0
-      },
       "Chegg": {
         "direct_offer": 20.0,
         "statistic": 10.0,
@@ -7932,6 +9025,13 @@
         "statistic": 10.0,
         "question": 10.0
       },
+      "Varsity Tutors": {
+        "statistic": 20.0,
+        "question": 30.0,
+        "aspiration": 20.0,
+        "direct_offer": 20.0,
+        "fear_based": 10.0
+      },
       "Kaplan": {
         "statistic": 20.0,
         "pattern_interrupt": 10.0,
@@ -7943,6 +9043,21 @@
       }
     },
     "gap_analysis": [
+      {
+        "hook_type": "fear_based",
+        "coverage_pct": 5.0,
+        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
+      },
+      {
+        "hook_type": "metaphor",
+        "coverage_pct": 5.0,
+        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
+      },
+      {
+        "hook_type": "pain_point",
+        "coverage_pct": 5.0,
+        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
+      },
       {
         "hook_type": "aspiration",
         "coverage_pct": 7.5,
@@ -7959,22 +9074,7 @@
         "opportunity": "Low competitor usage (12%) \u2014 potential differentiation"
       },
       {
-        "hook_type": "fear_based",
-        "coverage_pct": 5.0,
-        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
-      },
-      {
-        "hook_type": "pain_point",
-        "coverage_pct": 5.0,
-        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
-      },
-      {
         "hook_type": "pattern_interrupt",
-        "coverage_pct": 5.0,
-        "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
-      },
-      {
-        "hook_type": "metaphor",
         "coverage_pct": 5.0,
         "opportunity": "Low competitor usage (5%) \u2014 potential differentiation"
       }
