@@ -39,7 +39,7 @@ CLARITY_FLOOR = 6.0
 BRAND_VOICE_FLOOR = 5.0
 QUALITY_THRESHOLD = 7.0
 
-EVALUATOR_PROMPT_VERSION = "p1-04-v2"
+EVALUATOR_PROMPT_VERSION = "pb-06-v1"
 
 _DEFAULT_CONFIG = "data/config.yaml"
 
@@ -154,8 +154,33 @@ MID-RANGE GRANULAR EXAMPLES (use these to avoid clustering at whole numbers):
 
 COMPLIANCE FAILURES (automatic score penalties):
   - "Guaranteed 1500+" → Brand Voice capped at 3
-  - Competitor disparagement by name → Brand Voice capped at 3
+  - Competitor disparagement without data → Brand Voice capped at 3
   - "100% guaranteed" / absolute promises → Value Proposition capped at 4
+
+NERDY LANGUAGE PENALTIES (PB-06 — applied automatically after scoring):
+  - Uses "your student" instead of "your child" → Brand Voice capped at 4.0
+  - Uses "SAT Prep" instead of "SAT Tutoring" → Brand Voice -1.0
+  - Corporate jargon ("unlock potential", "maximize score", "tailored support") → Clarity -1.0
+  - Fake urgency ("spots filling fast", "limited enrollment", "don't miss out") → Brand Voice -1.5
+  - "Online tutoring" framing → Brand Voice -1.0
+
+NERDY SPECIFICITY BONUSES (reward these when present):
+  - Conditional claim (score + timeframe: "200 points in 16 sessions") → Value Proposition +0.5
+  - Specific mechanism (digital SAT tools, diagnostic, session structure) → Value Proposition +0.5
+  - Real competitor data (pricing, results comparison with numbers) → Value Proposition +0.5
+
+NERDY CALIBRATION ANCHORS (use these as primary reference):
+  SCORE 9: "3.8 GPA. 1260 SAT. Something's off. Most mid-1200s students are 3–4 targeted fixes away from a 1400+. We diagnose exactly where points are hiding. See what score is realistic in 8–10 weeks."
+  WHY 9: Crystal clear hook with GPA/SAT mismatch, specific mechanism (targeted fixes), persona-matched CTA (suburban optimizer), plain parent language.
+
+  SCORE 7: "Your child can raise their SAT score ~100 points per month with 2 sessions per week and 20 minutes of daily practice. Our 1:1 tutors have scored in the 99th percentile and are matched specifically to how your child learns."
+  WHY 7: Conditional claim with specifics, plain language, specific mechanism, but generic hook.
+
+  SCORE 5: "Struggling with the SAT? Unlock your child's potential with our personalized SAT prep program. Expert tutors. Flexible scheduling. Learn More."
+  WHY 5: Generic hook, corporate jargon ("unlock potential", "personalized"), no specific mechanism, vague CTA.
+
+  SCORE 3: "SAT Prep available for your student. Spots filling fast! Limited enrollment. Don't miss out. Get Started."
+  WHY 3: Wrong language ("your student", "SAT Prep"), fake urgency, no mechanism, no value prop.
 
 AD TO EVALUATE (ad_id: {ad_id}):
 {ad_block}
@@ -382,11 +407,82 @@ class EvaluationResult:
         return base
 
 
+def _apply_nerdy_adjustments(
+    scores: dict[str, dict[str, Any]],
+    ad_text: dict[str, Any],
+    persona: str | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Apply deterministic Nerdy language penalties and specificity bonuses (PB-06).
+
+    Modifies scores in-place and returns them. Penalties/bonuses are applied
+    AFTER the LLM evaluation to ensure consistency regardless of LLM variance.
+    """
+    full_text = " ".join([
+        ad_text.get("primary_text", ""),
+        ad_text.get("headline", ""),
+        ad_text.get("description", ""),
+    ]).lower()
+
+    bv = scores.get("brand_voice", {})
+    cl = scores.get("clarity", {})
+    vp = scores.get("value_proposition", {})
+    er = scores.get("emotional_resonance", {})
+
+    bv_score = float(bv.get("score", 5.0))
+    cl_score = float(cl.get("score", 5.0))
+    vp_score = float(vp.get("score", 5.0))
+    er_score = float(er.get("score", 5.0))
+
+    # --- Penalties ---
+    if "your student" in full_text:
+        bv_score = min(bv_score, 4.0)
+    if re.search(r"\bsat\s+prep\b", full_text):
+        bv_score = max(1.0, bv_score - 1.0)
+    if re.search(r"\bonline\s+tutoring\b", full_text):
+        bv_score = max(1.0, bv_score - 1.0)
+    if re.search(r"(?:spots?\s+filling|limited\s+enrollment|don'?t\s+miss\s+out|act\s+now)", full_text):
+        bv_score = max(1.0, bv_score - 1.5)
+    if re.search(r"(?:unlock\s+(?:their\s+)?potential|maximize\s+score|tailored\s+support|custom\s+strategies)", full_text):
+        cl_score = max(1.0, cl_score - 1.0)
+
+    # --- Bonuses ---
+    if re.search(r"\d{2,3}\s*points?\s*.{0,30}(?:sessions?|weeks?|month)", full_text):
+        vp_score = min(10.0, vp_score + 0.5)
+    if re.search(r"(?:diagnostic|built-in\s+(?:calculator|tools?)|digital\s+sat\s+interface|session\s+structure)", full_text):
+        vp_score = min(10.0, vp_score + 0.5)
+    if re.search(r"(?:princeton|kaplan|khan).{0,40}\$\d+", full_text):
+        vp_score = min(10.0, vp_score + 0.5)
+
+    # --- Persona match bonus/penalty ---
+    if persona:
+        _PERSONA_KEYWORDS: dict[str, list[str]] = {
+            "athlete_recruit": ["recruit", "scholarship", "ncaa", "coach", "athlete", "practice"],
+            "system_optimizer": ["diagnostic", "process", "timeline", "roi", "data", "inputs", "outputs"],
+            "neurodivergent_advocate": ["adhd", "learn differently", "accommodation", "extended time", "right fit"],
+            "burned_returner": ["didn't work", "what went wrong", "different this time", "burned", "disappointed"],
+            "immigrant_navigator": ["walk you through", "step by step", "first time", "the sat process"],
+            "suburban_optimizer": ["gpa", "1200", "1400", "fixes", "realistic"],
+            "cultural_investor": ["multiple resources", "one system", "consolidate", "mastery"],
+        }
+        keywords = _PERSONA_KEYWORDS.get(persona, [])
+        if keywords and any(kw in full_text for kw in keywords):
+            er_score = min(10.0, er_score + 0.5)
+
+    # Write back
+    bv["score"] = round(bv_score, 1)
+    cl["score"] = round(cl_score, 1)
+    vp["score"] = round(vp_score, 1)
+    er["score"] = round(er_score, 1)
+
+    return scores
+
+
 def evaluate_ad(
     ad_text: dict[str, Any],
     campaign_goal: str = "conversion",
     audience: str = "parents",
     ledger_path: str | None = None,
+    persona: str | None = None,
 ) -> EvaluationResult:
     """Evaluate an ad using 5-step CoT prompt (R3-Q6) with contrastive rationales (R3-Q10).
 
@@ -406,6 +502,8 @@ def evaluate_ad(
     raw = _call_gemini(prompt, ad_id)
 
     scores = raw["scores"]
+    # PB-06: Apply Nerdy-specific adjustments (penalties + bonuses)
+    scores = _apply_nerdy_adjustments(scores, ad_text, persona=persona)
     # P1-05: Use campaign-goal-adaptive weighting instead of equal weights
     flat_scores = {d: scores.get(d, {}).get("score", 5.0) for d in DIMENSIONS}
     weighted = evaluate_with_weights(flat_scores, campaign_goal)

@@ -7,6 +7,23 @@
 
 ---
 
+## PB-06: Nerdy-Calibrated Evaluator ✅
+
+### Plain-English Summary
+- `_apply_nerdy_adjustments()`: deterministic post-LLM penalties (your student → BV cap 4, SAT Prep → BV -1, fake urgency → BV -1.5, jargon → CL -1) and bonuses (conditional claim → VP +0.5, mechanism → VP +0.5, competitor data → VP +0.5, persona match → ER +0.5)
+- Nerdy calibration anchors in prompt (score 9/7/5/3 with Nerdy-specific examples)
+- `evaluate_ad()` accepts `persona` param for persona-aware scoring
+- 13 tests (penalties, bonuses, persona matching, clean copy, stacking, prompt content)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 16, 2026
+- **Ticket:** PB-06
+- **Tests:** 13 (all passing)
+- **Files:** `evaluate/evaluator.py`, `tests/test_evaluation/test_nerdy_evaluator.py`
+
+---
+
 ## PB-05: Update Ad Generator with Nerdy Messaging Rules ✅
 
 ### Plain-English Summary
