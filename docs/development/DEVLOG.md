@@ -7,6 +7,23 @@
 
 ---
 
+## PB-11: Creative Direction + Key Message Form Fields ✅
+
+### Plain-English Summary
+- SessionConfig: key_message, creative_brief (5 presets), copy_on_image toggle
+- Frontend: persona pre-fills key message, creative brief dropdown, copy-on-image toggle
+- Visual spec: 5 creative brief presets + copy_on_image text overlay
+- Pipeline: fields flow from session form → task → batch_processor → visual_spec
+- 8 tests all passing
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 17, 2026
+- **Ticket:** PB-11
+- **Tests:** 8 (all passing)
+
+---
+
 ## PB-10: Pipeline Config → Persona Flow ✅
 
 ### Plain-English Summary

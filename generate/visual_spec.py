@@ -99,12 +99,23 @@ _PERSONA_VISUAL_DIRECTION: dict[str, str] = {
 }
 
 
+_CREATIVE_BRIEF_DIRECTIONS: dict[str, str] = {
+    "gap_report": "Data dashboard aesthetic — INPUT/OUTPUT table, score charts, clean sans-serif. McKinsey one-pager. NO photos, NO lifestyle imagery. White/light background with one accent color.",
+    "ugc_testimonial": "UGC-style: phone-captured look, authentic expressions, real parent or student speaking directly to camera. Warm, natural lighting, casual setting.",
+    "before_after": "Split-screen before/after: left side shows frustration/low score, right side shows confidence/high score. Clear visual transformation. Score numbers prominent.",
+    "lifestyle": "Aspirational lifestyle scene: student celebrating, family together, campus life. Warm lighting, authentic emotions, achievement moments.",
+    "stat_focused": "Bold stat as hero element: large number (e.g., '10X', '200+', '$40K'), minimal supporting imagery. Clean typography, high contrast, data-forward.",
+}
+
+
 def extract_visual_spec(
     expanded_brief: dict[str, Any],
     campaign_goal: str,
     audience: str,
     ad_id: str,
     persona: str | None = None,
+    creative_brief: str = "auto",
+    copy_on_image: bool = False,
 ) -> VisualSpec:
     """Extract a structured visual spec from an expanded brief.
 
@@ -114,6 +125,8 @@ def extract_visual_spec(
         audience: "parents" or "students".
         ad_id: The ad identifier.
         persona: Optional persona key for persona-specific visual direction.
+        creative_brief: Creative brief preset (auto, gap_report, ugc_testimonial, etc.)
+        copy_on_image: Whether to include headline text in the image.
 
     Returns:
         VisualSpec with all fields populated.
@@ -129,6 +142,16 @@ def extract_visual_spec(
         persona_direction = f"\nPERSONA CREATIVE DIRECTION (override generic guidance with this):\n{_PERSONA_VISUAL_DIRECTION[persona]}"
         subject_hint = _PERSONA_VISUAL_DIRECTION[persona].split(".")[0]
 
+    # PB-11: Creative brief preset overrides persona direction
+    brief_direction = ""
+    if creative_brief and creative_brief != "auto" and creative_brief in _CREATIVE_BRIEF_DIRECTIONS:
+        brief_direction = f"\nCREATIVE BRIEF STYLE (highest priority — override all other visual guidance):\n{_CREATIVE_BRIEF_DIRECTIONS[creative_brief]}"
+
+    # PB-11: Copy on image
+    text_overlay_hint = ""
+    if copy_on_image:
+        text_overlay_hint = "\nINCLUDE TEXT OVERLAY: Generate text_overlay with the ad headline. The image MUST include readable text."
+
     prompt = f"""Extract a structured visual specification for an education/tutoring ad image.
 
 Brief context:
@@ -137,6 +160,8 @@ Brief context:
 - Campaign goal: {campaign_goal}
 - Key message: {expanded_brief.get('key_message', '')}
 {persona_direction}
+{brief_direction}
+{text_overlay_hint}
 
 Brand colors: {', '.join(_BRAND_COLORS)} (teal, navy, white)
 Mood: {mood}

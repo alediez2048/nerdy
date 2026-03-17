@@ -13,7 +13,7 @@ import type {
   Persona,
   SessionSummary,
 } from '../types/session'
-import { DEFAULT_CONFIG, PERSONA_LABELS } from '../types/session'
+import { DEFAULT_CONFIG, PERSONA_LABELS, PERSONA_KEY_MESSAGES, CREATIVE_BRIEF_OPTIONS } from '../types/session'
 
 export default function NewSessionForm() {
   const navigate = useNavigate()
@@ -59,6 +59,9 @@ export default function NewSessionForm() {
       image_enabled: c.image_enabled !== false,
       aspect_ratios: (c.aspect_ratios as AspectRatio[]) || ['1:1'],
       persona: (c.persona as Persona) || 'auto',
+      key_message: (c.key_message as string) || '',
+      creative_brief: (c.creative_brief as string) || 'auto',
+      copy_on_image: c.copy_on_image === true,
     })
     setShowClone(false)
   }
@@ -186,13 +189,55 @@ export default function NewSessionForm() {
             <label style={s.label}>Target Persona</label>
             <select
               value={config.persona}
-              onChange={(e) => update('persona', e.target.value as Persona)}
+              onChange={(e) => {
+                const p = e.target.value as Persona
+                update('persona', p)
+                // Pre-fill key message based on persona
+                const msg = PERSONA_KEY_MESSAGES[p] || ''
+                if (msg) update('key_message', msg)
+              }}
               style={s.input}
             >
               {(Object.entries(PERSONA_LABELS) as [Persona, string][]).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
             </select>
+          </div>
+
+          {/* Creative Direction */}
+          <div style={s.field}>
+            <label style={s.label}>Key Message</label>
+            <input
+              type="text"
+              value={config.key_message}
+              onChange={(e) => update('key_message', e.target.value)}
+              placeholder="What's the core message? (auto-fills from persona)"
+              style={s.input}
+            />
+          </div>
+
+          <div style={s.field}>
+            <label style={s.label}>Creative Brief</label>
+            <select
+              value={config.creative_brief}
+              onChange={(e) => update('creative_brief', e.target.value)}
+              style={s.input}
+            >
+              {CREATIVE_BRIEF_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={s.field}>
+            <label style={s.checkLabel}>
+              <input
+                type="checkbox"
+                checked={config.copy_on_image}
+                onChange={(e) => update('copy_on_image', e.target.checked)}
+              />
+              Include headline text on generated images
+            </label>
           </div>
 
           {/* Advanced toggle */}

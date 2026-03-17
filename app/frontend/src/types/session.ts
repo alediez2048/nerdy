@@ -18,6 +18,26 @@ export const PERSONA_LABELS: Record<Persona, string> = {
   burned_returner: 'Burned Returner',
 }
 
+export const PERSONA_KEY_MESSAGES: Record<Persona, string> = {
+  auto: '',
+  athlete_recruit: 'SAT score needed for scholarship eligibility',
+  suburban_optimizer: "Your child's SAT doesn't match their GPA",
+  immigrant_navigator: 'Expert guidance through US college admissions',
+  cultural_investor: 'One system to replace scattered resources',
+  system_optimizer: 'Close the score gap in 10 weeks',
+  neurodivergent_advocate: 'Tutoring that adapts to how your child learns',
+  burned_returner: "This time will be different — here's why",
+}
+
+export const CREATIVE_BRIEF_OPTIONS = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'gap_report', label: 'Gap Report (data dashboard)' },
+  { value: 'ugc_testimonial', label: 'UGC Testimonial' },
+  { value: 'before_after', label: 'Before/After Score' },
+  { value: 'lifestyle', label: 'Lifestyle / Aspirational' },
+  { value: 'stat_focused', label: 'Stat-Focused' },
+] as const
+
 export interface SessionConfig {
   audience: Audience
   campaign_goal: CampaignGoal
@@ -30,6 +50,9 @@ export interface SessionConfig {
   image_enabled: boolean
   aspect_ratios: AspectRatio[]
   persona: Persona
+  key_message: string
+  creative_brief: string
+  copy_on_image: boolean
 }
 
 export interface SessionCreate {
@@ -91,4 +114,7 @@ export const DEFAULT_CONFIG: SessionConfig = {
   image_enabled: true,
   aspect_ratios: ['1:1'],
   persona: 'auto',
+  key_message: '',
+  creative_brief: 'auto',
+  copy_on_image: false,
 }

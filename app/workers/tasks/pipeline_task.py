@@ -42,6 +42,9 @@ def run_pipeline_session(self, session_id: str) -> dict:
         image_enabled = config.get("image_enabled", True)
         persona_raw = config.get("persona", "auto")
         persona = persona_raw if persona_raw and persona_raw != "auto" else None
+        key_message = config.get("key_message", "")
+        creative_brief = config.get("creative_brief", "auto")
+        copy_on_image = config.get("copy_on_image", False)
         ledger_path = session_row.ledger_path or "data/ledger.jsonl"
 
         batch_size = min(10, ad_count)
@@ -65,6 +68,9 @@ def run_pipeline_session(self, session_id: str) -> dict:
             "improvable_range": [5.5, 7.0],
             "image_enabled": image_enabled,
             "persona": persona,
+            "key_message": key_message,
+            "creative_brief": creative_brief,
+            "copy_on_image": copy_on_image,
         }
 
         # Generate briefs

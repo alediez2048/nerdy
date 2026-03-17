@@ -58,6 +58,10 @@ class SessionConfig(BaseModel):
     image_enabled: bool = True
     aspect_ratios: list[AspectRatio] = Field(default_factory=lambda: [AspectRatio.square])
     persona: Persona = Persona.auto
+    # PB-11: Creative direction fields
+    key_message: str = ""
+    creative_brief: str = "auto"
+    copy_on_image: bool = False
 
 
 class SessionCreate(BaseModel):

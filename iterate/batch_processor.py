@@ -110,11 +110,17 @@ def process_batch(
 
     ledger_path = config.get("ledger_path", "data/ledger.jsonl")
     persona = config.get("persona")  # PB-10: persona from session config
+    key_message = config.get("key_message", "")  # PB-11: creative direction
+    creative_brief = config.get("creative_brief", "auto")
+    copy_on_image = config.get("copy_on_image", False)
 
     for brief in briefs:
         brief_id = brief.get("brief_id", "unknown")
         # Use persona from config, or from brief (CLI --persona sets it on brief)
         brief_persona = persona or brief.get("persona")
+        # PB-11: Inject key_message into brief if provided
+        if key_message and not brief.get("key_message"):
+            brief["key_message"] = key_message
         try:
             # Stage 1: Expand brief (with persona context)
             from generate.brief_expansion import expand_brief
@@ -177,6 +183,8 @@ def process_batch(
                     brief_seed=brief_seed,
                     ledger_path=ledger_path,
                     persona=brief_persona,
+                    creative_brief=creative_brief,
+                    copy_on_image=copy_on_image,
                 )
 
             if routing.decision == "publish":
@@ -239,6 +247,8 @@ def _generate_and_select_image(
     brief_seed: int,
     ledger_path: str,
     persona: str | None = None,
+    creative_brief: str = "auto",
+    copy_on_image: bool = False,
 ) -> str | None:
     """Generate 3 image variants, evaluate, and select the best one.
 
@@ -260,6 +270,8 @@ def _generate_and_select_image(
             audience=brief.get("audience", "parents"),
             ad_id=ad.ad_id,
             persona=persona,
+            creative_brief=creative_brief,
+            copy_on_image=copy_on_image,
         )
 
         # Step 2: Generate 3 image variants
