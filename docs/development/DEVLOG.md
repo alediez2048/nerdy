@@ -7,6 +7,30 @@
 
 ---
 
+## PB-08: Integration Test Suite — Nerdy Content Quality ✅
+
+### Plain-English Summary
+- Created `tests/test_pb/` with e2e pipeline tests and dashboard persona tests
+- `test_pb_e2e.py`: 5 tests — full pipeline chain (expand → generate → evaluate → compliance), zero-violation clean copy, bad copy caught, persona metadata flow, hook attribution
+- `test_persona_dashboard.py`: 4 tests — SessionConfig accepts persona, default auto, all 7 valid, invalid rejected
+- Combined with per-ticket tests: **89 total PB tests all passing**
+  - PB-01: 11 (brand KB)
+  - PB-02: 10 (hooks)
+  - PB-03: 19 (compliance)
+  - PB-04: 12 (expansion)
+  - PB-05: 15 (generation)
+  - PB-06: 13 (evaluator)
+  - PB-08: 9 (e2e + dashboard)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 16, 2026
+- **Ticket:** PB-08
+- **Tests:** 89 total PB tests (all passing)
+- **Files:** `tests/test_pb/__init__.py`, `tests/test_pb/test_pb_e2e.py`, `tests/test_pb/test_persona_dashboard.py`
+
+---
+
 ## PB-07: Persona Selector in Session Config + Dashboard Updates ✅
 
 ### Plain-English Summary
