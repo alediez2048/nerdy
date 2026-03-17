@@ -7,6 +7,26 @@
 
 ---
 
+## PB-02: Persona-Specific Hook Library ✅
+
+### Plain-English Summary
+- Created `data/hooks_library.json` with 113 proven hooks from the Nerdy supplementary, organized by persona and category
+- 15 categories: athlete, suburban_optimizer, scholarship, khan_failures, online_skeptic, urgency, immigrant, neurodivergent, test_anxiety, accountability, school_failed, education_investor, parent_relationship, sibling, burned_returner, system_optimizer
+- Each hook has: hook_id, persona, category, hook_text, psychology, cta_text, cta_style, funnel_position
+- `generate/hooks.py`: load_hooks(), get_hooks_for_persona(persona, n, seed), get_hooks_for_category(category, n, seed), get_all_personas(), get_all_categories()
+- Seed-based deterministic shuffling for diversity across pipeline runs
+- Added 4 system_optimizer hooks derived from the "Gap Report" creative brief (supplementary had no dedicated hook section for this persona)
+- 10 tests: count (80+), required fields, no duplicate IDs, persona filtering, seed determinism, seed diversity, all KB personas have 3+ hooks, category filtering, persona list, category list
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 16, 2026
+- **Ticket:** PB-02
+- **Tests:** 10 (all passing)
+- **Files:** `data/hooks_library.json`, `generate/hooks.py`, `tests/test_generation/test_hooks.py`
+
+---
+
 ## PB-01: Ingest Supplementary into Brand Knowledge Base ✅
 
 ### Plain-English Summary
