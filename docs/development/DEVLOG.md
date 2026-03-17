@@ -7,6 +7,25 @@
 
 ---
 
+## PB-04: Persona-Aware Brief Expansion ✅
+
+### Plain-English Summary
+- `expand_brief(brief, persona="athlete_recruit")` now injects persona psychology, proven hooks, offer positioning, and Nerdy messaging rules into the expansion prompt
+- Auto-resolves persona: parents → suburban_optimizer, students → None
+- Extended ExpandedBrief: `persona`, `suggested_hooks`, `offer_context`, `messaging_rules`
+- Offer context only injected for conversion campaigns
+- Ledger events include persona + hooks_used in outputs
+- 12 tests (persona resolution, profile loading, prompt content, full expand with mocked Gemini)
+
+### Metadata
+- **Status:** Complete
+- **Date:** March 16, 2026
+- **Ticket:** PB-04
+- **Tests:** 12 (all passing)
+- **Files:** `generate/brief_expansion.py`, `tests/test_generation/test_persona_expansion.py`
+
+---
+
 ## PB-03: Nerdy Language Compliance Rules ✅
 
 ### Plain-English Summary
