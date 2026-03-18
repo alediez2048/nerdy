@@ -20,7 +20,7 @@ KNOWN_BAD_ADS = [
 
 CLEAN_AD = (
     "Is your child's SAT score holding them back from their dream school? "
-    "Varsity Tutors pairs your student with expert 1-on-1 tutors who adapt "
+    "Varsity Tutors pairs your child with expert 1-on-1 tutors who adapt "
     "to how they learn. See the difference personalized prep can make. "
     "Start with a free practice test today."
 )

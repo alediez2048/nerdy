@@ -103,9 +103,11 @@ _COMPLIANCE_PATTERNS: list[tuple[str, str, str]] = [
     ("fear_language", r"(?i)\bdeficient\b", "critical"),
     ("fear_language", r"(?i)\b(?:don'?t|do\s+not)\s+let\s+them\s+fail\b", "critical"),
 
-    # --- Competitor references — downgraded to "info" (PB-03) ---
-    # Supplementary explicitly encourages competitor comparisons with real data.
-    # These are informational flags, not violations.
+    # --- Competitor references ---
+    # Negative-context competitor mentions are blocking.
+    ("competitor_reference", r"(?i)\b(?:Princeton\s+Review|Kaplan|Khan\s+Academy|Chegg|Sylvan(?:\s+Learning)?|Kumon|Mathnasium)\b.{0,30}\b(?:worse|bad|terrible|inferior)\b", "critical"),
+    ("competitor_reference", r"(?i)\b(?:worse|bad|terrible|inferior)\b.{0,30}\b(?:Princeton\s+Review|Kaplan|Khan\s+Academy|Chegg|Sylvan(?:\s+Learning)?|Kumon|Mathnasium)\b", "critical"),
+    # Neutral/factual competitor mentions are informational.
     ("competitor_reference", r"(?i)\bPrinceton\s+Review\b", "info"),
     ("competitor_reference", r"(?i)\bKaplan\b", "info"),
     ("competitor_reference", r"(?i)\bKhan\s+Academy\b", "info"),
@@ -114,7 +116,8 @@ _COMPLIANCE_PATTERNS: list[tuple[str, str, str]] = [
     ("competitor_reference", r"(?i)\bKumon\b", "info"),
     ("competitor_reference", r"(?i)\bMathnasium\b", "info"),
 
-    # --- Unverified pricing (original, kept as warning) ---
+    # --- Unverified pricing ---
+    # Standalone prices should block; competitor comparison data may still pass.
     ("unverified_pricing", r"\$\d+", "warning"),
 ]
 
@@ -144,9 +147,12 @@ def check_compliance(text: str) -> ComplianceResult:
             ))
 
     has_critical = any(v.severity == "critical" for v in violations)
+    has_competitor_reference = any(v.rule_name == "competitor_reference" for v in violations)
+    has_unverified_pricing = any(v.rule_name == "unverified_pricing" for v in violations)
+    pricing_blocks = has_unverified_pricing and not has_competitor_reference
 
     return ComplianceResult(
-        passes=not has_critical,
+        passes=not has_critical and not pricing_blocks,
         violations=violations,
     )
 

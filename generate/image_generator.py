@@ -14,7 +14,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from generate.visual_spec import VisualSpec, build_image_prompt
+from generate.visual_spec import VideoSpec, VisualSpec, build_image_prompt, build_video_prompt
+from iterate.ledger import log_event
 from iterate.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 # Model constants — Nano Banana Pro for quality, NB2 for cost-tier variants
 MODEL_NANO_BANANA_PRO = "nano-banana-pro-preview"
 MODEL_NANO_BANANA_2 = "gemini-2.5-flash-image"
+MODEL_VEO_31_FAST = "veo-3.1-fast"
 
 # Budget threshold: below this, all variants use NB2 regardless of type
 _BUDGET_THRESHOLD = 2.0
@@ -43,6 +45,25 @@ class ImageVariant:
     seed: int
     tokens_consumed: int = 0
     model_used: str = field(default_factory=lambda: MODEL_NANO_BANANA_PRO)
+
+
+@dataclass
+class VideoVariant:
+    """A single generated video variant."""
+
+    ad_id: str
+    variant_type: str
+    video_path: str
+    aspect_ratio: str
+    duration: float
+    audio_mode: str
+    prompt_used: str
+    seed: int
+    tokens_consumed: int = 0
+    model_used: str = MODEL_VEO_31_FAST
+
+
+_VIDEO_VARIANT_SEED_OFFSETS = {"anchor": 0, "alternative": 3000}
 
 
 def _call_image_api(
@@ -397,5 +418,115 @@ def generate_variants_routed(
 
         logger.info("Generated %s variant for %s via %s (seed=%d)",
                      variant_type, ad_id, model, variant_seed)
+
+    return variants
+
+
+def _call_video_api(
+    prompt: str,
+    duration: float,
+    aspect_ratio: str,
+    seed: int,
+    output_path: str,
+) -> str:
+    """Call Veo video generation and return output path."""
+    from generate_video.veo_client import generate_video
+
+    @dataclass
+    class _VideoRequest:
+        """Typed request object passed to Veo client."""
+
+        scene_description: str
+        pacing: str
+        mood: str
+        hook_action: str
+        subject_demographic: str
+        text_overlay_content: str
+        audio_mode: str
+        duration: int
+        aspect_ratio: str
+
+    req = _VideoRequest(
+        scene_description=prompt,
+        pacing="medium",
+        mood="authentic",
+        hook_action="opening hook in first 2 seconds",
+        subject_demographic="student or parent",
+        text_overlay_content="",
+        audio_mode="silent",
+        duration=int(duration),
+        aspect_ratio=aspect_ratio,
+    )
+
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _do_call() -> str:
+        result = generate_video(req, seed=seed, output_path=str(path))
+        return result.video_path
+
+    return retry_with_backoff(_do_call)
+
+
+def generate_video_variants(
+    video_spec: VideoSpec,
+    ad_id: str,
+    seed: int,
+    output_dir: str,
+    ledger_path: str | None = None,
+) -> list[VideoVariant]:
+    """Generate 2 Veo variants (anchor + alternative) for an ad."""
+    variants: list[VideoVariant] = []
+    for variant_type in ("anchor", "alternative"):
+        prompt = build_video_prompt(video_spec, variant_type=variant_type)
+        variant_seed = seed + _VIDEO_VARIANT_SEED_OFFSETS[variant_type]
+        filename = f"{ad_id}_{variant_type}_{video_spec.aspect_ratio.replace(':', 'x')}.mp4"
+        output_path = str(Path(output_dir) / filename)
+
+        try:
+            video_path = _call_video_api(
+                prompt=prompt,
+                duration=video_spec.duration,
+                aspect_ratio=video_spec.aspect_ratio,
+                seed=variant_seed,
+                output_path=output_path,
+            )
+        except Exception as e:
+            logger.error("Video generation failed for %s/%s: %s", ad_id, variant_type, e)
+            video_path = output_path
+
+        variant = VideoVariant(
+            ad_id=ad_id,
+            variant_type=variant_type,
+            video_path=video_path,
+            aspect_ratio=video_spec.aspect_ratio,
+            duration=video_spec.duration,
+            audio_mode=video_spec.audio_mode,
+            prompt_used=prompt,
+            seed=variant_seed,
+        )
+        variants.append(variant)
+
+        if ledger_path:
+            log_event(ledger_path, {
+                "event_type": "VideoGenerated",
+                "ad_id": ad_id,
+                "brief_id": video_spec.brief_id,
+                "cycle_number": 0,
+                "action": "video-generation",
+                "tokens_consumed": variant.tokens_consumed,
+                "model_used": variant.model_used,
+                "seed": str(variant_seed),
+                "inputs": {
+                    "variant_type": variant_type,
+                    "aspect_ratio": video_spec.aspect_ratio,
+                    "duration": video_spec.duration,
+                    "audio_mode": video_spec.audio_mode,
+                },
+                "outputs": {
+                    "video_path": video_path,
+                    "prompt_used": prompt,
+                },
+            })
 
     return variants

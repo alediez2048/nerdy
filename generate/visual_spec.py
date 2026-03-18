@@ -67,6 +67,51 @@ class VisualSpec:
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
+@dataclass
+class VideoSpec:
+    """Structured video specification for Veo generation (PC-01)."""
+
+    ad_id: str
+    brief_id: str
+    subject: str
+    setting: str
+    color_palette: list[str]
+    composition: str
+    campaign_goal_cue: str
+    text_overlay: str
+    scene_action: str
+    pacing: str
+    camera_style: str
+    audio_mode: str
+    duration: float = 6.0
+    text_overlay_sequence: list[str] | None = None
+    aspect_ratio: str = "9:16"
+    negative_prompt: str = _BRAND_SAFETY_NEGATIVE_PROMPT
+    style_direction: str = ""
+    persona_context: str = ""
+    preferred_cta: str = ""
+    messaging_rules: dict[str, Any] | None = None
+
+
+_PERSONA_VIDEO_DIRECTION: dict[str, str] = {
+    "athlete_recruit": "fast-paced competitive energy, campus/field imagery, urgency pacing, score countdown",
+    "suburban_optimizer": "calm organized before/after score progression with clean transitions",
+    "immigrant_navigator": "warm family scenes with step-by-step walkthrough and reassuring pace",
+    "cultural_investor": "technology-focused scene with data overlays and consolidation visual",
+    "system_optimizer": "dashboard-style visuals, minimal motion, clean typography",
+    "neurodivergent_advocate": "inclusive adaptive environment with comfortable setting and slow pace",
+    "burned_returner": "transformation narrative from frustration to confidence",
+}
+
+_CREATIVE_VIDEO_DIRECTION: dict[str, str] = {
+    "gap_report": "data overlay video with score and benchmark numbers animating on screen",
+    "ugc_testimonial": "handheld selfie-style testimonial with natural motion and authentic framing",
+    "before_after": "split-screen or timeline progression showing before/after transformation",
+}
+
+_ALTERNATIVE_PACING = {"fast": "medium", "medium": "slow", "slow": "medium"}
+
+
 def _call_gemini_for_spec(prompt: str) -> dict[str, Any]:
     """Call Gemini Flash to extract visual spec from brief."""
     from google import genai
@@ -268,3 +313,106 @@ def build_image_prompt(spec: VisualSpec, variant_type: str, creative_brief: str 
     base = f"{base}\n\nNegative: {negative_prompt}"
 
     return base
+
+
+def extract_video_spec(
+    expanded_brief: dict[str, Any],
+    campaign_goal: str,
+    audience: str,
+    ad_id: str,
+) -> VideoSpec:
+    """Extract a VideoSpec from the expanded brief with persona-aware defaults."""
+    brief_id = expanded_brief.get("brief_id", "unknown")
+    persona = str(expanded_brief.get("persona", "") or "")
+    creative_brief = str(expanded_brief.get("creative_brief", "auto") or "auto")
+    key_message = str(expanded_brief.get("key_message", "") or "")
+    product = str(expanded_brief.get("product", "SAT Tutoring") or "SAT Tutoring")
+    preferred_cta = str(expanded_brief.get("preferred_cta", "") or "")
+    messaging_rules = expanded_brief.get("messaging_rules")
+    if not isinstance(messaging_rules, dict):
+        messaging_rules = None
+
+    base_pacing = "fast" if campaign_goal == "conversion" else "medium"
+    camera_style = "handheld"
+    audio_mode = str(expanded_brief.get("video_audio_mode", "silent") or "silent").lower()
+    if audio_mode not in {"voiceover", "silent", "music"}:
+        audio_mode = "silent"
+
+    persona_direction = _PERSONA_VIDEO_DIRECTION.get(persona, "")
+    creative_direction = _CREATIVE_VIDEO_DIRECTION.get(creative_brief, "")
+    style_direction = ". ".join([s for s in [persona_direction, creative_direction] if s]).strip()
+
+    if audience == "parents":
+        subject = "Parent and high school student"
+        setting = "Home study area with SAT prep materials"
+    else:
+        subject = "High school student"
+        setting = "Focused study environment with laptop and notes"
+
+    scene_action = (
+        f"{subject} working through SAT prep milestones with visible momentum toward outcomes."
+    )
+    if persona_direction:
+        scene_action = f"{scene_action} Persona direction: {persona_direction}."
+
+    hook = str(expanded_brief.get("hook_text", "") or "").strip()
+    if not hook:
+        hook = key_message or f"{product} built for measurable progress"
+    value_prop = key_message or f"Personalized {product}"
+    cta = preferred_cta or "Learn More"
+    overlays = [hook, value_prop, cta]
+
+    return VideoSpec(
+        ad_id=ad_id,
+        brief_id=brief_id,
+        subject=subject,
+        setting=setting,
+        color_palette=_BRAND_COLORS,
+        composition="Vertical mobile-first framing with clear focal subject",
+        campaign_goal_cue=campaign_goal,
+        text_overlay=value_prop,
+        scene_action=scene_action,
+        pacing=base_pacing,
+        camera_style=camera_style,
+        audio_mode=audio_mode,
+        duration=6.0,
+        text_overlay_sequence=overlays,
+        aspect_ratio="9:16",
+        negative_prompt=_BRAND_SAFETY_NEGATIVE_PROMPT,
+        style_direction=style_direction,
+        persona_context=persona_direction,
+        preferred_cta=cta,
+        messaging_rules=messaging_rules,
+    )
+
+
+def build_video_prompt(spec: VideoSpec, variant_type: str) -> str:
+    """Build a Veo-oriented prompt from a VideoSpec."""
+    pacing = spec.pacing
+    scene_action = spec.scene_action
+    camera_style = spec.camera_style
+    if variant_type == "alternative":
+        pacing = _ALTERNATIVE_PACING.get(spec.pacing, "medium")
+        camera_style = "steady" if spec.camera_style == "handheld" else "handheld"
+        scene_action = f"{spec.scene_action} Alternate interpretation with different shot cadence."
+
+    overlays = spec.text_overlay_sequence or []
+    overlay_text = " -> ".join(overlays) if overlays else spec.text_overlay
+    rules_text = ""
+    if spec.messaging_rules:
+        dos = spec.messaging_rules.get("dos", [])
+        donts = spec.messaging_rules.get("donts", [])
+        rules_text = f"\nMessaging rules: DO {dos}; DO NOT {donts}."
+
+    return (
+        f"Generate a {spec.duration:.0f}-second UGC-style ad video in {spec.aspect_ratio}. "
+        f"Subject: {spec.subject}. Setting: {spec.setting}. "
+        f"Scene action: {scene_action}. "
+        f"Pacing: {pacing}. Camera: {camera_style}. Audio mode: {spec.audio_mode}. "
+        f"Text overlay sequence: {overlay_text}. "
+        f"Campaign goal cue: {spec.campaign_goal_cue}. "
+        f"Style direction: {spec.style_direction or 'authentic educational UGC'}. "
+        f"Closing CTA overlay: {spec.preferred_cta or 'Learn More'}. "
+        f"{rules_text} "
+        f"Negative: {spec.negative_prompt}"
+    )

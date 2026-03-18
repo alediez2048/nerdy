@@ -34,3 +34,9 @@ global_seed: "nerdy-p0-default"
 # API
 api_delay_seconds: 1.5  # Between calls to respect rate limits
 retry_max_attempts: 3
+
+# Video (PC-01)
+video_enabled: false
+video_duration: 6
+video_budget_per_ad: 2.0
+video_audio_mode: "silent"

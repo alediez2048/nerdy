@@ -14,6 +14,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from iterate.ledger import log_event
 from iterate.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ COHERENCE_DIMENSIONS = (
 )
 
 _INCOHERENCE_THRESHOLD = 6.0
+_VIDEO_MODEL = "gemini-2.0-flash"
 
 
 @dataclass
@@ -57,6 +59,55 @@ def _call_coherence_eval(image_path: str, prompt: str) -> dict[str, float]:
             model="gemini-2.0-flash",
             contents=[
                 types.Part.from_bytes(data=image_data, mime_type="image/png"),
+                prompt,
+            ],
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                max_output_tokens=512,
+            ),
+        )
+        text = response.text or ""
+        stripped = text.strip()
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped)
+        if match:
+            stripped = match.group(1).strip()
+        return json.loads(stripped)
+
+    return retry_with_backoff(_do_call)
+
+
+def _guess_video_mime_type(video_path: str) -> str:
+    """Infer a reasonable video MIME type from file extension."""
+    lowered = video_path.lower()
+    if lowered.endswith(".webm"):
+        return "video/webm"
+    if lowered.endswith(".mov"):
+        return "video/quicktime"
+    return "video/mp4"
+
+
+def _call_video_coherence_eval(video_path: str, prompt: str) -> dict[str, float]:
+    """Call Gemini Flash multimodal for video coherence evaluation."""
+    from google import genai
+    from google.genai import types
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not set in environment")
+
+    def _do_call() -> dict[str, float]:
+        client = genai.Client(api_key=api_key)
+
+        with open(video_path, "rb") as f:
+            video_data = f.read()
+
+        response = client.models.generate_content(
+            model=_VIDEO_MODEL,
+            contents=[
+                types.Part.from_bytes(
+                    data=video_data,
+                    mime_type=_guess_video_mime_type(video_path),
+                ),
                 prompt,
             ],
             config=types.GenerateContentConfig(
@@ -136,6 +187,91 @@ Output ONLY valid JSON:
         dimension_scores=dimension_scores,
         coherence_avg=coherence_avg,
     )
+
+
+def check_video_coherence(
+    copy: dict[str, Any],
+    video_path: str,
+    ad_id: str,
+    variant_type: str,
+    ledger_path: str | None = None,
+) -> CoherenceResult:
+    """Evaluate text-video coherence using the same 4-dimension structure."""
+    headline = copy.get("headline", "")
+    body = copy.get("primary_text", copy.get("body", ""))
+    description = copy.get("description", "")
+    cta = copy.get("cta_button", copy.get("cta", ""))
+
+    prompt = f"""Evaluate how well this short ad video matches its ad copy.
+
+Ad copy:
+- Headline: {headline}
+- Primary text: {body}
+- Description: {description}
+- CTA: {cta}
+
+Score each coherence dimension from 1 (completely mismatched) to 10 (perfectly aligned):
+1. message_alignment: Does the video reinforce the ad's core message?
+2. audience_match: Does the video appeal to the intended audience?
+3. emotional_consistency: Does the video's mood match the copy's tone?
+4. visual_narrative: Does the video tell a story consistent with the ad's value proposition?
+
+Output ONLY valid JSON:
+{{"message_alignment": <1-10>, "audience_match": <1-10>, "emotional_consistency": <1-10>, "visual_narrative": <1-10>}}"""
+
+    try:
+        raw = _call_video_coherence_eval(video_path, prompt)
+    except Exception as e:
+        logger.warning(
+            "Video coherence eval failed for %s/%s: %s, defaulting to mid-range",
+            ad_id,
+            variant_type,
+            e,
+        )
+        raw = {dim: 5.0 for dim in COHERENCE_DIMENSIONS}
+
+    dimension_scores: dict[str, float] = {}
+    for dim in COHERENCE_DIMENSIONS:
+        val = raw.get(dim, 5.0)
+        dimension_scores[dim] = float(min(10.0, max(1.0, float(val))))
+
+    coherence_avg = round(
+        sum(dimension_scores.values()) / len(COHERENCE_DIMENSIONS),
+        2,
+    )
+
+    result = CoherenceResult(
+        ad_id=ad_id,
+        variant_type=variant_type,
+        dimension_scores=dimension_scores,
+        coherence_avg=coherence_avg,
+    )
+
+    if ledger_path:
+        log_event(
+            ledger_path,
+            {
+                "event_type": "VideoCoherenceChecked",
+                "ad_id": ad_id,
+                "brief_id": "",
+                "cycle_number": 0,
+                "action": "video-coherence-evaluation",
+                "inputs": {
+                    "variant_type": variant_type,
+                    "video_path": video_path,
+                },
+                "outputs": {
+                    "dimension_scores": dimension_scores,
+                    "coherence_avg": coherence_avg,
+                },
+                "scores": dimension_scores,
+                "tokens_consumed": 0,
+                "model_used": _VIDEO_MODEL,
+                "seed": "",
+            },
+        )
+
+    return result
 
 
 def is_incoherent(result: CoherenceResult) -> bool:
