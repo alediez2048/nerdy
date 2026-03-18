@@ -293,6 +293,7 @@ def _generate_and_select_image(
 
         # Step 3: Evaluate each variant (attributes + coherence)
         variant_results: list[ImageVariantResult] = []
+        passing_variants: list[ImageVariantResult] = []
         ad_copy = {
             "headline": ad.headline,
             "body": ad.primary_text,
@@ -312,6 +313,23 @@ def _generate_and_select_image(
                 variant_type=variant.variant_type,
             )
 
+            if not attr_result.attributes.get("no_third_party_branding", True):
+                log_event(ledger_path, {
+                    "event_type": "BrandSafetyViolation",
+                    "ad_id": ad.ad_id,
+                    "brief_id": brief.get("brief_id", "unknown"),
+                    "cycle_number": 0,
+                    "action": "image-brand-safety-fail",
+                    "tokens_consumed": 0,
+                    "model_used": "gemini-2.0-flash",
+                    "seed": str(variant.seed),
+                    "inputs": {"variant_type": variant.variant_type},
+                    "outputs": {
+                        "variant_type": variant.variant_type,
+                        "description": "Visible third-party branding detected; regenerate with generic/unbranded items only.",
+                    },
+                })
+
             # Coherence check
             coherence = check_coherence(
                 copy=ad_copy,
@@ -327,14 +345,17 @@ def _generate_and_select_image(
             coherence_avg = coherence.average if hasattr(coherence, "average") else 0.5
             comp = compute_composite_score(attr_pct, coherence_avg / 10.0)
 
-            variant_results.append(ImageVariantResult(
+            variant_result = ImageVariantResult(
                 ad_id=ad.ad_id,
                 variant_type=variant.variant_type,
                 image_path=variant.image_path,
                 attribute_pass_pct=attr_pct,
                 coherence_avg=coherence_avg,
                 composite_score=comp,
-            ))
+            )
+            variant_results.append(variant_result)
+            if attr_result.meets_threshold:
+                passing_variants.append(variant_result)
 
             # Log variant evaluation
             log_event(ledger_path, {
@@ -355,7 +376,14 @@ def _generate_and_select_image(
             })
 
         # Step 4: Select best variant
-        selection = select_best_variant(variant_results)
+        if not passing_variants:
+            logger.warning(
+                "No image variants passed attributes for %s; skipping image selection",
+                ad.ad_id,
+            )
+            return None
+
+        selection = select_best_variant(passing_variants)
         winner_path = selection.winner.image_path if selection.winner else None
 
         logger.info(

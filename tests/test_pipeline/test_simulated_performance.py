@@ -105,7 +105,7 @@ class TestSaveOutput:
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             output_path = f.name
         try:
-            records = generate_and_save(ads, output_path=output_path, seed=42)
+            generate_and_save(ads, output_path=output_path, seed=42)
             assert os.path.exists(output_path)
             with open(output_path) as f:
                 data = json.load(f)

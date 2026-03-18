@@ -40,6 +40,10 @@ _ATTRIBUTE_FIX_SUGGESTIONS: dict[str, str] = {
         "Ensure no AI artifacts: no extra fingers, no warped text, no distorted "
         "faces, no impossible geometry."
     ),
+    "no_third_party_branding": (
+        "No visible third-party logos or brand names anywhere in the image. Use "
+        "generic/unbranded clothing, equipment, devices, and signage."
+    ),
 }
 
 _COHERENCE_FIX_SUGGESTIONS: dict[str, str] = {

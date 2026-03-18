@@ -37,6 +37,14 @@ _VARIANT_MODIFIERS = {
     ),
 }
 
+_BRAND_SAFETY_NEGATIVE_PROMPT = (
+    "IMPORTANT: No real brand logos, trademarks, or recognizable brand names "
+    "visible anywhere in the image. All clothing, equipment, materials, books, "
+    "devices, and signage must be generic/unbranded. No Nike, Adidas, Under "
+    "Armour, Apple, Samsung, Wilson, or any other identifiable brand. Use "
+    "plain/solid colored items instead."
+)
+
 
 @dataclass
 class VisualSpec:
@@ -198,7 +206,9 @@ Output ONLY valid JSON:
         color_palette = _BRAND_COLORS
 
     text_overlay = headline_text.strip() if copy_on_image else str(raw.get("text_overlay", "")).strip()
-    negative_prompt = "No competitor branding, no AI artifacts"
+    negative_prompt = (
+        f"No competitor branding, no AI artifacts. {_BRAND_SAFETY_NEGATIVE_PROMPT}"
+    )
     if not copy_on_image:
         negative_prompt = f"{negative_prompt}, no text in image"
 
@@ -251,6 +261,10 @@ def build_image_prompt(spec: VisualSpec, variant_type: str, creative_brief: str 
     if modifier:
         base = f"{base}\n\nVariant adjustment: {modifier}"
 
-    base = f"{base}\n\nNegative: {spec.negative_prompt}"
+    negative_prompt = spec.negative_prompt
+    if "no real brand logos" not in negative_prompt.lower():
+        negative_prompt = f"{negative_prompt}. {_BRAND_SAFETY_NEGATIVE_PROMPT}"
+
+    base = f"{base}\n\nNegative: {negative_prompt}"
 
     return base

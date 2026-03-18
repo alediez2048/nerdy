@@ -81,7 +81,6 @@ def generate_simulated_dataset(
     Returns:
         List of MetaPerformanceRecord objects with realistic distributions.
     """
-    rng = random.Random(seed)
     records: list[MetaPerformanceRecord] = []
     placements = ["feed", "stories", "reels"]
 

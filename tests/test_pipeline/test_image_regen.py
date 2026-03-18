@@ -113,6 +113,20 @@ def test_regen_spec_includes_fix_suggestion() -> None:
     assert new_spec["subject"] == "Student studying"
 
 
+def test_regen_spec_reinforces_no_brands_on_brand_safety_failure() -> None:
+    """Brand-safety failures reinforce the unbranded requirement in regen guidance."""
+    original_spec = {"subject": "Athletic student", "setting": "Campus field"}
+    diag = RegenDiagnostic(
+        failure_type="attribute",
+        weakest_dimension="no_third_party_branding",
+        fix_suggestion="No visible third-party logos or brand names. Use generic/unbranded clothing and equipment.",
+    )
+    new_spec = build_regen_spec(original_spec, diag)
+    guidance = new_spec["regen_guidance"].lower()
+    assert "no_third_party_branding" in guidance
+    assert "generic/unbranded" in guidance or "unbranded" in guidance
+
+
 # --- Budget Tracking ---
 
 

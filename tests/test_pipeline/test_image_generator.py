@@ -107,6 +107,16 @@ def test_build_image_prompt_always_includes_negative() -> None:
         assert "no competitor" in prompt.lower() or "negative" in prompt.lower()
 
 
+def test_build_image_prompt_includes_brand_safety_negative_prompt() -> None:
+    """All prompts explicitly prohibit real third-party branding."""
+    spec = _mock_visual_spec()
+    for variant_type in VARIANT_TYPES:
+        prompt = build_image_prompt(spec, variant_type)
+        lowered = prompt.lower()
+        assert "no real brand logos" in lowered
+        assert "generic/unbranded" in lowered
+
+
 def test_build_image_prompt_different_for_each_variant() -> None:
     """Each variant type produces a different prompt."""
     spec = _mock_visual_spec()

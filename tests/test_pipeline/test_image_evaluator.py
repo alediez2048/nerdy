@@ -16,7 +16,14 @@ from evaluate.image_selector import (
     select_best_variant,
 )
 
-ATTRIBUTES = ("age_appropriate", "lighting", "diversity", "brand_consistent", "no_artifacts")
+ATTRIBUTES = (
+    "age_appropriate",
+    "lighting",
+    "diversity",
+    "brand_consistent",
+    "no_artifacts",
+    "no_third_party_branding",
+)
 
 
 def _make_attribute_result(
@@ -25,12 +32,14 @@ def _make_attribute_result(
     """Build an ImageAttributeResult with given pass/fail flags."""
     if passes is None:
         passes = {a: True for a in ATTRIBUTES}
+    pass_pct = sum(passes.values()) / len(passes)
+    meets_threshold = pass_pct >= 0.8 and passes.get("no_third_party_branding", True)
     return ImageAttributeResult(
         ad_id="ad_001",
         variant_type="anchor",
         attributes=passes,
-        attribute_pass_pct=sum(passes.values()) / len(passes),
-        meets_threshold=sum(passes.values()) / len(passes) >= 0.8,
+        attribute_pass_pct=pass_pct,
+        meets_threshold=meets_threshold,
     )
 
 
@@ -54,28 +63,37 @@ def _make_variant_result(
 
 
 def test_attribute_result_all_pass() -> None:
-    """All 5 attributes passing gives 100% pass rate."""
+    """All attributes passing gives 100% pass rate."""
     result = _make_attribute_result()
     assert result.attribute_pass_pct == 1.0
     assert result.meets_threshold is True
 
 
 def test_attribute_result_4_of_5_passes() -> None:
-    """4/5 attributes = 80% = meets threshold."""
+    """80% pass rate still meets threshold when hard-fail attribute passes."""
     passes = {a: True for a in ATTRIBUTES}
     passes["no_artifacts"] = False
     result = _make_attribute_result(passes)
-    assert abs(result.attribute_pass_pct - 0.8) < 0.01
+    assert abs(result.attribute_pass_pct - (5 / 6)) < 0.01
     assert result.meets_threshold is True
 
 
-def test_attribute_result_3_of_5_fails() -> None:
-    """3/5 attributes = 60% = below threshold."""
+def test_attribute_result_below_threshold_fails() -> None:
+    """Pass rate below 80% fails overall."""
     passes = {a: True for a in ATTRIBUTES}
     passes["no_artifacts"] = False
     passes["diversity"] = False
     result = _make_attribute_result(passes)
-    assert abs(result.attribute_pass_pct - 0.6) < 0.01
+    assert abs(result.attribute_pass_pct - (4 / 6)) < 0.01
+    assert result.meets_threshold is False
+
+
+def test_attribute_result_branding_hard_fail() -> None:
+    """Third-party branding fails overall even above threshold."""
+    passes = {a: True for a in ATTRIBUTES}
+    passes["no_third_party_branding"] = False
+    result = _make_attribute_result(passes)
+    assert abs(result.attribute_pass_pct - (5 / 6)) < 0.01
     assert result.meets_threshold is False
 
 
@@ -88,6 +106,7 @@ def test_evaluate_image_attributes_returns_result(mock_call: MagicMock) -> None:
         "diversity": True,
         "brand_consistent": True,
         "no_artifacts": False,
+        "no_third_party_branding": True,
     }
     result = evaluate_image_attributes(
         image_path="/tmp/test.png",
@@ -96,8 +115,29 @@ def test_evaluate_image_attributes_returns_result(mock_call: MagicMock) -> None:
         variant_type="anchor",
     )
     assert isinstance(result, ImageAttributeResult)
-    assert result.attribute_pass_pct == 0.8
+    assert result.attribute_pass_pct == 0.83
     assert result.meets_threshold is True
+
+
+@patch("evaluate.image_evaluator._call_multimodal_eval")
+def test_evaluate_image_attributes_branding_failure_rejects(mock_call: MagicMock) -> None:
+    """Visible third-party branding causes rejection, not just score reduction."""
+    mock_call.return_value = {
+        "age_appropriate": True,
+        "lighting": True,
+        "diversity": True,
+        "brand_consistent": True,
+        "no_artifacts": True,
+        "no_third_party_branding": False,
+    }
+    result = evaluate_image_attributes(
+        image_path="/tmp/test.png",
+        visual_spec={"subject": "Student studying"},
+        ad_id="ad_001",
+        variant_type="anchor",
+    )
+    assert result.attribute_pass_pct == 0.83
+    assert result.meets_threshold is False
 
 
 # --- Composite Score Tests ---

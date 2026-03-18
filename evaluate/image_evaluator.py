@@ -24,9 +24,11 @@ VISUAL_ATTRIBUTES = (
     "diversity",
     "brand_consistent",
     "no_artifacts",
+    "no_third_party_branding",
 )
 
 _PASS_THRESHOLD = 0.8  # 4 of 5 attributes must pass
+_REQUIRED_ATTRIBUTES = {"no_third_party_branding"}
 
 
 @dataclass
@@ -94,7 +96,7 @@ def evaluate_image_attributes(
     Returns:
         ImageAttributeResult with per-attribute pass/fail and overall pass rate.
     """
-    prompt = f"""Evaluate this education/tutoring advertisement image against these 5 binary attributes.
+    prompt = f"""Evaluate this education/tutoring advertisement image against these 6 binary attributes.
 Visual spec context: Subject: {visual_spec.get('subject', 'student')}, Setting: {visual_spec.get('setting', 'study environment')}
 
 For each attribute, answer true (passes) or false (fails):
@@ -104,9 +106,10 @@ For each attribute, answer true (passes) or false (fails):
 3. diversity: Is there inclusive representation? Not a concern if no people visible.
 4. brand_consistent: Does it match Varsity Tutors visual identity (teal/navy/white)? No competitor branding visible.
 5. no_artifacts: Are there no AI artifacts (extra fingers, warped text, distorted faces, impossible geometry)?
+6. no_third_party_branding: No visible third-party brand logos, names, or trademarked imagery anywhere in the image. Clothing, equipment, devices, and signage must be generic/unbranded.
 
 Output ONLY valid JSON:
-{{"age_appropriate": true/false, "lighting": true/false, "diversity": true/false, "brand_consistent": true/false, "no_artifacts": true/false}}"""
+{{"age_appropriate": true/false, "lighting": true/false, "diversity": true/false, "brand_consistent": true/false, "no_artifacts": true/false, "no_third_party_branding": true/false}}"""
 
     try:
         raw = _call_multimodal_eval(image_path, prompt)
@@ -121,12 +124,15 @@ Output ONLY valid JSON:
         attributes[attr] = bool(val)
 
     pass_count = sum(attributes.values())
-    pass_pct = pass_count / len(VISUAL_ATTRIBUTES)
+    pass_pct = round(pass_count / len(VISUAL_ATTRIBUTES), 2)
+    meets_threshold = pass_pct >= _PASS_THRESHOLD and all(
+        attributes.get(attr, True) for attr in _REQUIRED_ATTRIBUTES
+    )
 
     return ImageAttributeResult(
         ad_id=ad_id,
         variant_type=variant_type,
         attributes=attributes,
-        attribute_pass_pct=round(pass_pct, 2),
-        meets_threshold=pass_pct >= _PASS_THRESHOLD,
+        attribute_pass_pct=pass_pct,
+        meets_threshold=meets_threshold,
     )
