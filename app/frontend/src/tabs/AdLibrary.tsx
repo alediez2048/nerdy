@@ -7,6 +7,7 @@ import Badge, { StatusBadge } from '../components/Badge'
 
 interface Ad {
   ad_id: string
+  instance_id: string
   copy: Record<string, string>
   scores: Record<string, number>
   aggregate_score: number
@@ -55,16 +56,17 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
       ) : (
         <div style={s.grid}>
           {filtered.map((ad) => {
-            const isExpanded = expanded.has(ad.ad_id)
+            const uid = ad.instance_id || ad.ad_id
+            const isExpanded = expanded.has(uid)
             const toggle = () => setExpanded((prev) => {
               const next = new Set(prev)
-              next.has(ad.ad_id) ? next.delete(ad.ad_id) : next.add(ad.ad_id)
+              next.has(uid) ? next.delete(uid) : next.add(uid)
               return next
             })
             if (isExpanded) {
               return (
                 <div
-                  key={ad.ad_id}
+                  key={uid}
                   onClick={toggle}
                   style={{ ...s.card, ...s.cardExpanded }}
                 >
@@ -125,7 +127,7 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
             }
             return (
               <div
-                key={ad.ad_id}
+                key={uid}
                 onClick={toggle}
                 style={s.card}
               >

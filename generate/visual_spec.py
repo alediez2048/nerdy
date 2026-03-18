@@ -117,6 +117,7 @@ def extract_visual_spec(
     creative_brief: str = "auto",
     copy_on_image: bool = False,
     aspect_ratio: str = "1:1",
+    headline_text: str = "",
 ) -> VisualSpec:
     """Extract a structured visual spec from an expanded brief.
 
@@ -128,6 +129,7 @@ def extract_visual_spec(
         persona: Optional persona key for persona-specific visual direction.
         creative_brief: Creative brief preset (auto, gap_report, ugc_testimonial, etc.)
         copy_on_image: Whether to include headline text in the image.
+        headline_text: Generated ad headline to use as deterministic overlay text.
 
     Returns:
         VisualSpec with all fields populated.
@@ -195,6 +197,11 @@ Output ONLY valid JSON:
     if not isinstance(color_palette, list):
         color_palette = _BRAND_COLORS
 
+    text_overlay = headline_text.strip() if copy_on_image else str(raw.get("text_overlay", "")).strip()
+    negative_prompt = "No competitor branding, no AI artifacts"
+    if not copy_on_image:
+        negative_prompt = f"{negative_prompt}, no text in image"
+
     spec = VisualSpec(
         ad_id=ad_id,
         brief_id=brief_id,
@@ -203,8 +210,9 @@ Output ONLY valid JSON:
         color_palette=color_palette,
         composition=raw.get("composition", "Centered, balanced"),
         campaign_goal_cue=raw.get("campaign_goal_cue", mood),
-        text_overlay=raw.get("text_overlay", ""),
+        text_overlay=text_overlay,
         aspect_ratio=aspect_ratio,
+        negative_prompt=negative_prompt,
     )
     return spec
 

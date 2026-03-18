@@ -31,10 +31,15 @@ def _get_session(db: Session, session_id: str, user_id: str) -> SessionModel:
 
 
 def _get_dashboard_data(session: SessionModel) -> dict:
-    """Get full dashboard data, falling back to global ledger if no session ledger."""
-    ledger_path = session.ledger_path or DEFAULT_LEDGER
-    if not Path(ledger_path).exists():
-        ledger_path = DEFAULT_LEDGER
+    """Get dashboard data scoped to this session's own ledger.
+
+    Returns empty data when the session ledger doesn't exist yet (e.g.
+    pipeline is pending or just started) instead of falling back to the
+    global ledger, which would leak ads from other sessions.
+    """
+    ledger_path = session.ledger_path
+    if not ledger_path or not Path(ledger_path).exists():
+        return {}
 
     try:
         from output.export_dashboard import build_dashboard_data

@@ -277,6 +277,7 @@ def _generate_and_select_image(
             creative_brief=creative_brief,
             copy_on_image=copy_on_image,
             aspect_ratio=aspect_ratio,
+            headline_text=ad.headline,
         )
 
         # Step 2: Generate 3 image variants

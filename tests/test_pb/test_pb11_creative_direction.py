@@ -4,7 +4,11 @@
 from unittest.mock import patch
 
 from app.api.schemas.session import SessionConfig
-from generate.visual_spec import _CREATIVE_BRIEF_DIRECTIONS, extract_visual_spec
+from generate.visual_spec import (
+    _CREATIVE_BRIEF_DIRECTIONS,
+    build_image_prompt,
+    extract_visual_spec,
+)
 
 
 def _mock_visual_spec():
@@ -78,6 +82,42 @@ def test_visual_spec_copy_on_image():
         spec = extract_visual_spec(brief, "conversion", "parents", "ad_test", copy_on_image=True)
 
     assert spec is not None
+
+
+def test_visual_spec_copy_on_image_uses_generated_headline():
+    brief = {"product": "SAT Tutoring", "audience": "parents", "campaign_goal": "conversion"}
+
+    with patch("generate.visual_spec._call_gemini_for_spec", return_value={**_mock_visual_spec(), "text_overlay": "Model guessed text"}):
+        spec = extract_visual_spec(
+            brief,
+            "conversion",
+            "parents",
+            "ad_test",
+            copy_on_image=True,
+            headline_text="Real Generated Headline",
+        )
+
+    assert spec.text_overlay == "Real Generated Headline"
+    assert "no text in image" not in spec.negative_prompt.lower()
+
+
+def test_build_image_prompt_includes_overlay_text_when_enabled():
+    brief = {"product": "SAT Tutoring", "audience": "parents", "campaign_goal": "conversion"}
+
+    with patch("generate.visual_spec._call_gemini_for_spec", return_value=_mock_visual_spec()):
+        spec = extract_visual_spec(
+            brief,
+            "conversion",
+            "parents",
+            "ad_test",
+            copy_on_image=True,
+            headline_text="Raise Your Score",
+        )
+
+    prompt = build_image_prompt(spec, "anchor")
+
+    assert 'Raise Your Score' in prompt
+    assert "no text in image" not in prompt.lower()
 
 
 # --- Pipeline config extraction ---

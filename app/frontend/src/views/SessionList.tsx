@@ -77,13 +77,19 @@ export default function SessionList() {
   const hasMore = offset + PAGE_SIZE < total
   const runningCount = sessions.filter((session) => session.status === 'running').length
   const completedCount = sessions.filter((session) => session.status === 'completed').length
-  const attentionCount = sessions.filter((session) => session.status === 'failed').length
-  const pendingCount = sessions.filter((session) => session.status === 'pending').length
+  const totalSessionCost = sessions.reduce((sum, session) => {
+    const results = session.results_summary
+    const completedCost = typeof results?.cost_so_far === 'number' ? results.cost_so_far : 0
+    const liveCost = typeof session.progress_summary?.cost_so_far === 'number'
+      ? session.progress_summary.cost_so_far
+      : 0
+    return sum + Math.max(completedCost, liveCost)
+  }, 0)
   const stats = [
     { label: 'Loaded Sessions', value: sessions.length, tone: colors.white },
     { label: 'Running Now', value: runningCount, tone: colors.cyan },
     { label: 'Completed', value: completedCount, tone: colors.mint },
-    { label: 'Pending / Failed', value: pendingCount + attentionCount, tone: colors.yellow },
+    { label: 'Total Session Cost', value: `$${totalSessionCost.toFixed(2)}`, tone: colors.yellow },
   ]
 
   return (
