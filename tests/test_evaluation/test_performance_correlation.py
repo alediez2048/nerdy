@@ -5,7 +5,6 @@ from evaluate.performance_correlation import (
     DimensionPerformanceMatrix,
     compute_dimension_performance_matrix,
     format_performance_matrix,
-    _generate_findings,
 )
 from evaluate.correlation import DIMENSIONS
 from evaluate.performance_schema import MetaPerformanceRecord

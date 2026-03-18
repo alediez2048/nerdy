@@ -9,7 +9,7 @@ Reuses _pearson_r from evaluate.correlation (no scipy dependency).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from evaluate.correlation import DIMENSIONS, _pearson_r
 from evaluate.performance_schema import MetaPerformanceRecord

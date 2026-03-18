@@ -1,6 +1,7 @@
 # Ad-Ops-Autopilot — Session CRUD API (PA-04)
 import secrets
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -13,6 +14,7 @@ from app.api.schemas.session import (
     SessionDetail,
     SessionListResponse,
     SessionSummary,
+    SessionUpdate,
 )
 from app.db import get_db, init_db
 from app.models.session import Session as SessionModel
@@ -43,6 +45,35 @@ def _get_user_session(db: Session, session_id: str, user_id: str) -> SessionMode
     if not row:
         raise HTTPException(status_code=404, detail="Session not found")
     return row
+
+
+def _get_session_ad_preview(session_row: SessionModel) -> dict | None:
+    """Return the earliest ad preview for a session when a ledger exists."""
+    ledger_path = session_row.ledger_path
+    if not ledger_path or not Path(ledger_path).exists():
+        return None
+
+    try:
+        from iterate.ledger import read_events
+        from output.export_dashboard import _build_ad_library
+
+        library = _build_ad_library(read_events(ledger_path))
+        if not library:
+            return None
+
+        first_ad = min(library, key=lambda item: item.get("created_at", ""))
+        copy = first_ad.get("copy", {})
+        return {
+            "ad_id": first_ad.get("ad_id", ""),
+            "image_url": first_ad.get("image_url"),
+            "primary_text": copy.get("primary_text", ""),
+            "headline": copy.get("headline", ""),
+            "cta_button": copy.get("cta_button"),
+            "status": first_ad.get("status", "in_progress"),
+            "aggregate_score": first_ad.get("aggregate_score", 0.0),
+        }
+    except Exception:
+        return None
 
 
 @router.post("", response_model=SessionDetail, status_code=201)
@@ -126,6 +157,8 @@ def list_sessions(
                 config=row.config or {},
                 created_at=row.created_at,
                 progress_summary=progress_summary,
+                results_summary=row.results_summary,
+                ad_preview=_get_session_ad_preview(row),
             )
         )
 
@@ -141,6 +174,26 @@ def get_session(
     """Get session detail. Per-user isolation enforced."""
     init_db()
     return _get_user_session(db, session_id, user["user_id"])
+
+
+@router.patch("/{session_id}", response_model=SessionDetail)
+def update_session(
+    session_id: str,
+    body: SessionUpdate,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_current_user)],
+) -> SessionModel:
+    """Update editable session metadata such as display name."""
+    init_db()
+    row = _get_user_session(db, session_id, user["user_id"])
+    normalized_name = body.name.strip()
+    if not normalized_name:
+        raise HTTPException(status_code=400, detail="Session name cannot be empty")
+
+    row.name = normalized_name
+    db.commit()
+    db.refresh(row)
+    return row
 
 
 @router.delete("/{session_id}", status_code=204)

@@ -71,6 +71,12 @@ class SessionCreate(BaseModel):
     config: SessionConfig
 
 
+class SessionUpdate(BaseModel):
+    """Request body for PATCH /sessions/{id}."""
+
+    name: str = Field(min_length=1, max_length=256)
+
+
 class ProgressSummary(BaseModel):
     """Progress summary for running sessions (from Redis)."""
 
@@ -80,6 +86,18 @@ class ProgressSummary(BaseModel):
     ads_published: int = 0
     current_score_avg: float = 0.0
     cost_so_far: float = 0.0
+
+
+class SessionAdPreview(BaseModel):
+    """Lightweight first-ad preview for session cards."""
+
+    ad_id: str = ""
+    image_url: str | None = None
+    primary_text: str = ""
+    headline: str = ""
+    cta_button: str | None = None
+    status: str = "in_progress"
+    aggregate_score: float = 0.0
 
 
 class SessionSummary(BaseModel):
@@ -94,6 +112,8 @@ class SessionSummary(BaseModel):
     config: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
     progress_summary: ProgressSummary | None = None
+    results_summary: dict[str, Any] | None = None
+    ad_preview: SessionAdPreview | None = None
 
 
 class SessionDetail(BaseModel):

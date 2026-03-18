@@ -7,7 +7,7 @@ false positives (high score, low performance) and missed performers (low score, 
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from evaluate.performance_schema import MetaPerformanceRecord
 

@@ -1,7 +1,6 @@
 """Tests for evaluator accuracy report (PF-05)."""
 
 from evaluate.accuracy_report import (
-    AccuracyReport,
     ConfusionMatrix,
     compute_accuracy,
     format_accuracy_report,

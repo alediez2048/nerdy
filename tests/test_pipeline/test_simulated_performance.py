@@ -5,7 +5,6 @@ import os
 import tempfile
 
 from data.simulated_performance import (
-    BASE_CTR,
     generate_simulated_dataset,
     generate_and_save,
 )

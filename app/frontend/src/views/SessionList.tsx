@@ -75,20 +75,49 @@ export default function SessionList() {
   }
 
   const hasMore = offset + PAGE_SIZE < total
+  const runningCount = sessions.filter((session) => session.status === 'running').length
+  const completedCount = sessions.filter((session) => session.status === 'completed').length
+  const attentionCount = sessions.filter((session) => session.status === 'failed').length
+  const pendingCount = sessions.filter((session) => session.status === 'pending').length
+  const stats = [
+    { label: 'Loaded Sessions', value: sessions.length, tone: colors.white },
+    { label: 'Running Now', value: runningCount, tone: colors.cyan },
+    { label: 'Completed', value: completedCount, tone: colors.mint },
+    { label: 'Pending / Failed', value: pendingCount + attentionCount, tone: colors.yellow },
+  ]
 
   return (
-    <div style={s.page}>
+    <div style={s.pageBg}>
       <div style={s.container}>
         {/* Header */}
         <div style={s.header}>
-          <h1 style={s.title}>Sessions</h1>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button onClick={() => navigate('/dashboard')} style={s.dashboardBtn}>
-              Dashboard
-            </button>
-            <button onClick={() => navigate('/sessions/new')} style={s.newBtn}>
-              + New Session
-            </button>
+          <div style={s.headerTop}>
+            <div>
+              <div style={s.breadcrumb}>
+                <span onClick={() => navigate('/dashboard')} style={s.breadcrumbLink}>Dashboard</span>
+                <span style={{ color: colors.muted }}> / </span>
+                <span style={{ color: colors.white }}>Sessions</span>
+              </div>
+              <h1 style={s.title}>Sessions</h1>
+              <p style={s.description}>
+                Every session is a pipeline run. Use this view to scan recent work, spot runs that need attention,
+                and jump into completed dashboards or live sessions faster.
+              </p>
+            </div>
+            <div style={s.headerActions}>
+              <button onClick={() => navigate('/sessions/new')} style={s.newBtn}>
+                + New Session
+              </button>
+            </div>
+          </div>
+
+          <div style={s.summaryGrid}>
+            {stats.map((stat) => (
+              <div key={stat.label} style={s.summaryCard}>
+                <div style={{ ...s.summaryValue, color: stat.tone }}>{stat.value}</div>
+                <div style={s.summaryLabel}>{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -113,9 +142,16 @@ export default function SessionList() {
           </div>
         ) : (
           <>
+            <p style={s.count}>
+              Showing {sessions.length} of {total} sessions
+            </p>
             <div style={s.grid}>
               {sessions.map((session) => (
-                <SessionCard key={session.session_id} session={session} onDelete={handleDelete} />
+                <SessionCard
+                  key={session.session_id}
+                  session={session}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
 
@@ -131,9 +167,6 @@ export default function SessionList() {
               </div>
             )}
 
-            <p style={s.count}>
-              Showing {sessions.length} of {total} sessions
-            </p>
           </>
         )}
       </div>
@@ -142,40 +175,56 @@ export default function SessionList() {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page: {
+  pageBg: {
     minHeight: '100vh',
+    width: '100%',
     background: colors.ink,
     fontFamily: font.family,
-    padding: '40px 20px',
   },
   container: {
-    maxWidth: '900px',
+    maxWidth: '1100px',
     margin: '0 auto',
+    padding: '84px 20px 32px',
   },
   header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: '24px',
   },
+  breadcrumb: {
+    marginBottom: '8px',
+    fontSize: '13px',
+  },
+  breadcrumbLink: {
+    color: colors.cyan,
+    cursor: 'pointer',
+  },
+  headerTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '16px',
+    flexWrap: 'wrap',
+    marginBottom: '24px',
+  },
+  headerActions: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
   title: {
-    fontSize: '32px',
+    fontSize: '28px',
     fontWeight: 700,
-    margin: 0,
+    margin: '0 0 4px',
     background: `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
   },
-  dashboardBtn: {
-    padding: '10px 24px',
-    borderRadius: radii.button,
-    border: `1px solid ${colors.cyan}`,
-    background: 'transparent',
-    color: colors.cyan,
-    fontWeight: 600,
-    fontSize: '14px',
-    cursor: 'pointer',
-    fontFamily: font.family,
+  description: {
+    maxWidth: '720px',
+    color: colors.muted,
+    fontSize: '13px',
+    lineHeight: '1.6',
+    margin: '10px 0 0',
   },
   newBtn: {
     padding: '10px 24px',
@@ -188,9 +237,31 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontFamily: font.family,
   },
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    gap: '12px',
+    marginBottom: 0,
+  },
+  summaryCard: {
+    background: colors.surface,
+    borderRadius: radii.card,
+    padding: '18px 16px',
+    border: `1px solid ${colors.muted}18`,
+  },
+  summaryValue: {
+    fontSize: '26px',
+    fontWeight: 700,
+    lineHeight: 1.1,
+  },
+  summaryLabel: {
+    fontSize: '12px',
+    color: colors.muted,
+    marginTop: '8px',
+  },
   grid: {
-    display: 'flex',
-    flexDirection: 'column',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
     gap: '12px',
   },
   error: { color: colors.red, fontSize: '14px' },
@@ -224,9 +295,9 @@ const s: Record<string, React.CSSProperties> = {
     fontFamily: font.family,
   },
   count: {
-    textAlign: 'center',
+    textAlign: 'left',
     color: colors.muted,
-    fontSize: '12px',
-    marginTop: '12px',
+    fontSize: '13px',
+    margin: '0 0 12px',
   },
 }

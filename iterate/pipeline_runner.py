@@ -55,7 +55,10 @@ class PipelineConfig:
     output_dir: str = "output/ads"
     dry_run: bool = False
     global_seed: str = "nerdy_p1_20"
-    persona: str | None = None  # PB-07: persona key or None for auto
+    persona: str | None = None
+    audience: str | None = None
+    campaign_goal: str | None = None
+    key_message: str = ""
 
 
 @dataclass
@@ -73,10 +76,12 @@ class RunSummary:
 
 
 def generate_briefs(config: PipelineConfig) -> list[dict[str, Any]]:
-    """Generate a set of diverse ad briefs for pipeline execution.
+    """Generate ad briefs driven by session config.
 
-    Alternates audiences and campaign goals across products to ensure
-    coverage of all combinations.
+    When the session specifies audience and campaign_goal, all briefs use
+    those values (the user chose them). Products still rotate for variety.
+    When audience/goal are not set (CLI mode), falls back to the original
+    alternating behaviour.
 
     Args:
         config: Pipeline configuration.
@@ -87,17 +92,21 @@ def generate_briefs(config: PipelineConfig) -> list[dict[str, Any]]:
     total = config.num_batches * config.batch_size
     briefs: list[dict[str, Any]] = []
 
+    session_audience = config.audience
+    session_goal = config.campaign_goal
+
     for i in range(total):
         product = _PRODUCTS[i % len(_PRODUCTS)]
-        audience = _AUDIENCES[i % len(_AUDIENCES)]
-        goal = _CAMPAIGN_GOALS[(i // 2) % len(_CAMPAIGN_GOALS)]
+        audience = session_audience or _AUDIENCES[i % len(_AUDIENCES)]
+        goal = session_goal or _CAMPAIGN_GOALS[(i // 2) % len(_CAMPAIGN_GOALS)]
 
+        default_msg = f"Expert {product} — personalized 1-on-1 sessions"
         brief: dict[str, Any] = {
             "brief_id": f"brief_{i + 1:03d}",
             "product": product,
             "audience": audience,
             "campaign_goal": goal,
-            "key_message": f"Expert {product} — personalized 1-on-1 sessions",
+            "key_message": config.key_message or default_msg,
             "platform": "facebook",
         }
         if config.persona:

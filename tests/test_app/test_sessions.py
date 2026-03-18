@@ -194,6 +194,36 @@ def test_list_sessions_filter_by_status(alice):
     assert resp.json()["total"] == 1
 
 
+def test_list_sessions_includes_ad_preview(alice):
+    create_resp = _create(alice)
+    sid = create_resp.json()["session_id"]
+
+    from app.models.session import Session as SessionModel
+    db = _TestSessionLocal()
+    row = db.query(SessionModel).filter(SessionModel.session_id == sid).first()
+    assert row is not None
+    row.results_summary = {"ads_generated": 1, "ads_published": 1, "avg_score": 7.4}
+    db.commit()
+    db.close()
+
+    with patch("app.api.routes.sessions._get_session_ad_preview", return_value={
+        "ad_id": "ad_001",
+        "image_url": "/images/ad_001.png",
+        "primary_text": "Preview copy",
+        "headline": "Preview headline",
+        "cta_button": "Learn More",
+        "status": "published",
+        "aggregate_score": 7.4,
+    }):
+        resp = alice.get("/sessions")
+
+    assert resp.status_code == 200
+    session = resp.json()["sessions"][0]
+    assert session["results_summary"]["ads_generated"] == 1
+    assert session["ad_preview"]["headline"] == "Preview headline"
+    assert session["ad_preview"]["image_url"] == "/images/ad_001.png"
+
+
 # --- Pagination ---
 
 
@@ -243,6 +273,31 @@ def test_get_session_other_user_returns_404():
     for p in patches_b:
         p.stop()
     app.dependency_overrides.clear()
+
+
+# --- Update ---
+
+
+def test_update_session_name_own(alice):
+    create_resp = _create(alice)
+    sid = create_resp.json()["session_id"]
+
+    resp = alice.patch(f"/sessions/{sid}", json={"name": "Renamed Session"})
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Renamed Session"
+
+    get_resp = alice.get(f"/sessions/{sid}")
+    assert get_resp.status_code == 200
+    assert get_resp.json()["name"] == "Renamed Session"
+
+
+def test_update_session_name_blank_returns_400(alice):
+    create_resp = _create(alice)
+    sid = create_resp.json()["session_id"]
+
+    resp = alice.patch(f"/sessions/{sid}", json={"name": "   "})
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "Session name cannot be empty"
 
 
 # --- Delete ---

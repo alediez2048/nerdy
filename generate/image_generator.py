@@ -110,6 +110,7 @@ def generate_variants(
     ad_id: str,
     seed: int,
     output_dir: str,
+    creative_brief: str = "auto",
 ) -> list[ImageVariant]:
     """Generate all 3 image variants for an ad.
 
@@ -118,6 +119,7 @@ def generate_variants(
         ad_id: The ad identifier.
         seed: Base seed for reproducibility.
         output_dir: Directory to save images.
+        creative_brief: Creative brief key for style override in image prompt.
 
     Returns:
         List of 3 ImageVariant objects.
@@ -126,7 +128,7 @@ def generate_variants(
     spec_hash = visual_spec.spec_hash()
 
     for variant_type in VARIANT_TYPES:
-        prompt = build_image_prompt(visual_spec, variant_type)
+        prompt = build_image_prompt(visual_spec, variant_type, creative_brief=creative_brief)
         variant_seed = seed + _VARIANT_SEED_OFFSETS[variant_type]
         filename = f"{ad_id}_{variant_type}_{visual_spec.aspect_ratio.replace(':', 'x')}.png"
         output_path = str(Path(output_dir) / filename)
@@ -343,6 +345,7 @@ def generate_variants_routed(
     seed: int,
     output_dir: str,
     budget_remaining: float | None = None,
+    creative_brief: str = "auto",
 ) -> list[ImageVariant]:
     """Generate all 3 image variants using model routing.
 
@@ -354,6 +357,7 @@ def generate_variants_routed(
         seed: Base seed for reproducibility.
         output_dir: Directory to save images.
         budget_remaining: Remaining budget in dollars, or None.
+        creative_brief: Creative brief key for style override in image prompt.
 
     Returns:
         List of 3 ImageVariant objects with model_used populated.
@@ -362,7 +366,7 @@ def generate_variants_routed(
     spec_hash = visual_spec.spec_hash()
 
     for variant_type in VARIANT_TYPES:
-        prompt = build_image_prompt(visual_spec, variant_type)
+        prompt = build_image_prompt(visual_spec, variant_type, creative_brief=creative_brief)
         variant_seed = seed + _VARIANT_SEED_OFFSETS[variant_type]
         model = select_image_model(variant_type, budget_remaining)
         filename = f"{ad_id}_{variant_type}_{visual_spec.aspect_ratio.replace(':', 'x')}.png"

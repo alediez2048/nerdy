@@ -120,8 +120,8 @@ def process_batch(
         brief_id = brief.get("brief_id", "unknown")
         # Use persona from config, or from brief (CLI --persona sets it on brief)
         brief_persona = persona or brief.get("persona")
-        # PB-11: Inject key_message into brief if provided
-        if key_message and not brief.get("key_message"):
+        # PB-11: Session key_message always overrides auto-generated defaults
+        if key_message:
             brief["key_message"] = key_message
         try:
             # Stage 1: Expand brief (with persona context)
@@ -130,10 +130,10 @@ def process_batch(
 
             # Stage 2: Generate ad copy (per-brief seed for structural diversity)
             from generate.ad_generator import generate_ad
-            from generate.seeds import get_ad_seed, load_global_seed
-            global_seed = load_global_seed()
+            from generate.seeds import get_ad_seed
+            global_seed = config.get("global_seed", "default-global-seed")
             brief_seed = get_ad_seed(global_seed, brief_id, 0)
-            ad = generate_ad(expanded, seed=brief_seed)
+            ad = generate_ad(expanded, seed=brief_seed, creative_brief=creative_brief)
             result.generated += 1
 
             # Log AdGenerated to session ledger (copy data for dashboard)
@@ -287,6 +287,7 @@ def _generate_and_select_image(
             ad_id=ad.ad_id,
             seed=brief_seed,
             output_dir=output_dir,
+            creative_brief=creative_brief,
         )
 
         # Step 3: Evaluate each variant (attributes + coherence)

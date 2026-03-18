@@ -114,12 +114,25 @@ def test_pipeline_task_updates_status():
     mock_row = MagicMock()
     mock_row.session_id = "sess_task"
     mock_row.status = "pending"
+    mock_row.config = {"ad_count": 10, "cycle_count": 3, "quality_threshold": 7.0}
+    mock_row.ledger_path = "data/ledger.jsonl"
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_row
+
+    # Mock batch processing result
+    mock_batch_result = MagicMock()
+    mock_batch_result.generated = 10
+    mock_batch_result.published = 8
+    mock_batch_result.discarded = 2
+    mock_batch_result.regenerated = 1
 
     with (
         patch("app.workers.tasks.pipeline_task.SessionLocal", return_value=mock_db_session),
         patch("app.workers.tasks.pipeline_task.init_db"),
         patch("app.workers.tasks.pipeline_task.publish_progress"),
+        patch("iterate.pipeline_runner.generate_briefs", return_value=[{"brief": i} for i in range(10)]),
+        patch("iterate.batch_processor.create_batches", return_value=[[{"brief": i} for i in range(10)]]),
+        patch("iterate.batch_processor.process_batch", return_value=mock_batch_result),
+        patch("iterate.batch_processor.write_batch_checkpoint"),
     ):
         result = run_pipeline_session("sess_task")
 

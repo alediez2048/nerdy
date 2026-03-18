@@ -40,9 +40,36 @@ function ThemeToggle() {
   )
 }
 
+function SiteLogo() {
+  return (
+    <a
+      href="/sessions"
+      style={{
+        position: 'fixed',
+        top: '16px',
+        left: '16px',
+        zIndex: 9999,
+        display: 'block',
+      }}
+      aria-label="Go to Sessions"
+    >
+      <img
+        src="/nerdy-logo.png"
+        alt="Nerdy"
+        style={{
+          width: '92px',
+          height: 'auto',
+          display: 'block',
+        }}
+      />
+    </a>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <SiteLogo />
       <ThemeToggle />
       <Routes>
         <Route path="/" element={<Navigate to="/sessions" replace />} />

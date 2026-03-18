@@ -2,6 +2,7 @@
 """Tests for curated set CRUD, reorder, annotation, edit tracking, and ZIP export."""
 
 import io
+import json
 import tempfile
 import zipfile
 from contextlib import asynccontextmanager
@@ -202,8 +203,40 @@ def test_export_zip(client):
     sid = _seed_session()
     client.post(f"/sessions/{sid}/curated", json={})
     client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_zip", "position": 1})
+    client.patch(f"/sessions/{sid}/curated/ads/ad_zip", json={
+        "edited_copy": {
+            "primary_text": {"original": "Old copy", "edited": "New exported copy"},
+        }
+    })
 
-    resp = client.get(f"/sessions/{sid}/curated/export")
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_image:
+        tmp_image.write(b"fake-image-bytes")
+        tmp_image.flush()
+        image_path = tmp_image.name
+
+    try:
+        asset_map = {
+            "ad_zip": {
+                "ad_id": "ad_zip",
+                "copy": {
+                    "primary_text": "Old copy",
+                    "headline": "Original headline",
+                    "description": "Description text",
+                    "cta_button": "Learn More",
+                },
+                "image_path": image_path,
+                "status": "published",
+                "aggregate_score": 7.8,
+                "created_at": "2026-03-17T00:00:00+00:00",
+            }
+        }
+
+        with patch("app.api.routes.curation._load_curated_ad_assets", return_value=asset_map):
+            resp = client.get(f"/sessions/{sid}/curated/export")
+    finally:
+        import os
+        os.unlink(image_path)
+
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/zip"
 
@@ -213,3 +246,19 @@ def test_export_zip(client):
         assert "curated_export/summary.json" in names
         assert "curated_export/manifest.csv" in names
         assert any("ad_zip" in n for n in names)
+        assert "curated_export/ads/01_ad_zip/copy.json" in names
+        assert "curated_export/ads/01_ad_zip/copy.txt" in names
+        assert "curated_export/ads/01_ad_zip/original_copy.json" in names
+        assert "curated_export/ads/01_ad_zip/edited_copy.json" in names
+        assert "curated_export/ads/01_ad_zip/image.png" in names
+
+        copy_json = json.loads(zf.read("curated_export/ads/01_ad_zip/copy.json"))
+        assert copy_json["primary_text"] == "New exported copy"
+        assert copy_json["headline"] == "Original headline"
+
+        copy_txt = zf.read("curated_export/ads/01_ad_zip/copy.txt").decode()
+        assert "New exported copy" in copy_txt
+        assert "Original headline" in copy_txt
+
+        summary = json.loads(zf.read("curated_export/summary.json"))
+        assert summary["images_included"] == 1

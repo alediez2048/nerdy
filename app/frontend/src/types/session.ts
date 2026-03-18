@@ -69,6 +69,16 @@ export interface ProgressSummary {
   cost_so_far: number
 }
 
+export interface SessionAdPreview {
+  ad_id: string
+  image_url: string | null
+  primary_text: string
+  headline: string
+  cta_button: string | null
+  status: string
+  aggregate_score: number
+}
+
 export interface SessionSummary {
   id: number
   session_id: string
@@ -77,6 +87,8 @@ export interface SessionSummary {
   config: Record<string, unknown>
   created_at: string
   progress_summary: ProgressSummary | null
+  results_summary?: Record<string, unknown> | null
+  ad_preview?: SessionAdPreview | null
 }
 
 export interface SessionDetail {

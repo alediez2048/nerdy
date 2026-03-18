@@ -1,8 +1,8 @@
 // PA-09: Session detail — 7-tab dashboard
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { colors, font } from '../design/tokens'
-import { getSession } from '../api/sessions'
+import { colors, font, radii } from '../design/tokens'
+import { getSession, updateSessionName } from '../api/sessions'
 import { StatusBadge } from '../components/Badge'
 import ShareButton from '../components/ShareButton'
 import type { SessionDetail as SessionDetailType } from '../types/session'
@@ -33,6 +33,10 @@ export default function SessionDetail() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [session, setSession] = useState<SessionDetailType | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [draftName, setDraftName] = useState('')
+  const [isSavingName, setIsSavingName] = useState(false)
+  const [renameError, setRenameError] = useState<string | null>(null)
 
   const activeTab = (searchParams.get('tab') as TabKey) || 'overview'
 
@@ -42,6 +46,12 @@ export default function SessionDetail() {
       .then(setSession)
       .catch((e) => setError(e.message))
   }, [sessionId])
+
+  useEffect(() => {
+    if (session) {
+      setDraftName(session.name || session.session_id)
+    }
+  }, [session])
 
   if (error) {
     return (
@@ -63,6 +73,32 @@ export default function SessionDetail() {
     setSearchParams({ tab })
   }
 
+  const handleSaveName = async () => {
+    if (!sessionId) return
+    const normalized = draftName.trim()
+    if (!normalized) {
+      setRenameError('Session name cannot be empty')
+      return
+    }
+    try {
+      setIsSavingName(true)
+      setRenameError(null)
+      const updated = await updateSessionName(sessionId, normalized)
+      setSession(updated)
+      setIsEditingName(false)
+    } catch (e) {
+      setRenameError(e instanceof Error ? e.message : 'Failed to rename session')
+    } finally {
+      setIsSavingName(false)
+    }
+  }
+
+  const handleCancelName = () => {
+    setDraftName(session.name || session.session_id)
+    setRenameError(null)
+    setIsEditingName(false)
+  }
+
   return (
     <div style={s.pageBg}>
       <div style={s.pageInner}>
@@ -76,7 +112,37 @@ export default function SessionDetail() {
         {/* Session header */}
         <div style={s.header}>
           <div style={{ flex: 1 }}>
-            <h1 style={s.title}>{session.name || session.session_id}</h1>
+            {isEditingName ? (
+              <div style={s.renameRow}>
+                <input
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  style={s.renameInput}
+                  placeholder="Session name"
+                  autoFocus
+                />
+                <button onClick={handleSaveName} style={s.renameSaveBtn} disabled={isSavingName}>
+                  {isSavingName ? 'Saving...' : 'Save'}
+                </button>
+                <button onClick={handleCancelName} style={s.renameCancelBtn} disabled={isSavingName}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div style={s.titleRow}>
+                <h1 style={s.title}>{session.name || session.session_id}</h1>
+                <button
+                  onClick={() => {
+                    setIsEditingName(true)
+                    setRenameError(null)
+                  }}
+                  style={s.renameBtn}
+                >
+                  Rename
+                </button>
+              </div>
+            )}
+            {renameError && <div style={s.renameError}>{renameError}</div>}
             <div style={s.meta}>
               <StatusBadge status={session.status} />
               <span style={{ color: colors.muted, fontSize: '13px' }}>
@@ -84,7 +150,9 @@ export default function SessionDetail() {
               </span>
             </div>
           </div>
-          <ShareButton sessionId={sessionId!} />
+          <div style={s.headerActions}>
+            <ShareButton sessionId={sessionId!} />
+          </div>
         </div>
 
         {/* Tab navigation */}
@@ -125,14 +193,91 @@ const s: Record<string, React.CSSProperties> = {
   pageInner: {
     maxWidth: '1000px',
     margin: '0 auto',
-    padding: '32px 20px',
+    padding: '84px 20px 32px',
   },
   breadcrumb: { marginBottom: '16px', fontSize: '13px' },
   breadcrumbLink: { color: colors.cyan, cursor: 'pointer' },
-  header: { marginBottom: '24px' },
+  header: {
+    marginBottom: '24px',
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '16px',
+    flexWrap: 'wrap',
+  },
+  headerActions: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '12px',
+    marginLeft: 'auto',
+  },
+  titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
+    marginBottom: '8px',
+  },
   title: {
     fontSize: '28px', fontWeight: 700, margin: '0 0 8px',
     color: colors.white,
+  },
+  renameBtn: {
+    padding: '6px 12px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.muted}30`,
+    background: 'transparent',
+    color: colors.muted,
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontFamily: font.family,
+  },
+  renameRow: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: '8px',
+  },
+  renameInput: {
+    minWidth: '260px',
+    flex: 1,
+    maxWidth: '420px',
+    padding: '10px 14px',
+    borderRadius: radii.input,
+    border: `1px solid ${colors.cyan}40`,
+    background: colors.ink,
+    color: colors.white,
+    fontSize: '14px',
+    fontFamily: font.family,
+    outline: 'none',
+  },
+  renameSaveBtn: {
+    padding: '10px 14px',
+    borderRadius: radii.button,
+    border: 'none',
+    background: `${colors.cyan}20`,
+    color: colors.cyan,
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: 600,
+    fontFamily: font.family,
+  },
+  renameCancelBtn: {
+    padding: '10px 14px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.muted}30`,
+    background: 'transparent',
+    color: colors.muted,
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontFamily: font.family,
+  },
+  renameError: {
+    color: colors.red,
+    fontSize: '12px',
+    marginBottom: '8px',
   },
   meta: { display: 'flex', alignItems: 'center', gap: '12px' },
   tabBar: {

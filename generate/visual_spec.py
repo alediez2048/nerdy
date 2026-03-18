@@ -209,25 +209,35 @@ Output ONLY valid JSON:
     return spec
 
 
-def build_image_prompt(spec: VisualSpec, variant_type: str) -> str:
+def build_image_prompt(spec: VisualSpec, variant_type: str, creative_brief: str = "auto") -> str:
     """Convert a visual spec into a text prompt for image generation.
 
     Args:
         spec: The VisualSpec to convert.
         variant_type: One of "anchor", "tone_shift", "composition_shift".
+        creative_brief: Creative brief key for style override.
 
     Returns:
         Text prompt for Nano Banana Pro.
     """
+    style_override = _CREATIVE_BRIEF_DIRECTIONS.get(creative_brief, "")
+    if style_override:
+        style_line = style_override
+    else:
+        style_line = "Clean, modern, professional photography for social media ad."
+
     base = (
-        f"Professional education advertisement photo. "
+        f"Education advertisement image. "
         f"Subject: {spec.subject}. "
         f"Setting: {spec.setting}. "
         f"Color palette: {', '.join(spec.color_palette)}. "
         f"Composition: {spec.composition}. "
         f"Mood: {spec.campaign_goal_cue}. "
-        f"Style: Clean, modern, professional photography for social media ad."
+        f"Style: {style_line}"
     )
+
+    if spec.text_overlay:
+        base = f"{base}\n\nText overlay: Include the following text prominently in the image: \"{spec.text_overlay}\""
 
     modifier = _VARIANT_MODIFIERS.get(variant_type, "")
     if modifier:

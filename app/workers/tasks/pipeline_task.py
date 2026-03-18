@@ -76,6 +76,10 @@ def run_pipeline_session(self, session_id: str) -> dict:
             "aspect_ratios": aspect_ratios,
         }
 
+        # Session-level audience / campaign_goal
+        audience_raw = config.get("audience")
+        campaign_goal_raw = config.get("campaign_goal")
+
         # Generate briefs
         pconfig = PipelineConfig(
             num_batches=num_batches,
@@ -85,6 +89,9 @@ def run_pipeline_session(self, session_id: str) -> dict:
             dry_run=False,
             global_seed=f"session_{session_id}",
             persona=persona,
+            audience=audience_raw if audience_raw and audience_raw != "auto" else None,
+            campaign_goal=campaign_goal_raw if campaign_goal_raw and campaign_goal_raw != "auto" else None,
+            key_message=key_message,
         )
         briefs = generate_briefs(pconfig)
         batches = create_batches(briefs, batch_size)

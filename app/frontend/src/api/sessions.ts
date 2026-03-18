@@ -62,6 +62,18 @@ export async function getSession(
   return handleResponse<SessionDetail>(resp)
 }
 
+export async function updateSessionName(
+  sessionId: string,
+  name: string,
+): Promise<SessionDetail> {
+  const resp = await fetch(`${BASE}/${sessionId}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify({ name }),
+  })
+  return handleResponse<SessionDetail>(resp)
+}
+
 export async function deleteSession(sessionId: string): Promise<void> {
   const resp = await fetch(`${BASE}/${sessionId}`, {
     method: 'DELETE',

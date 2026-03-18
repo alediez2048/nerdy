@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from iterate.ledger import read_events
@@ -17,6 +17,96 @@ from iterate.ledger import read_events
 logger = logging.getLogger(__name__)
 
 DIMENSIONS = ("clarity", "value_proposition", "cta", "brand_voice", "emotional_resonance")
+_TIME_WINDOWS: dict[str, timedelta] = {
+    "day": timedelta(days=1),
+    "month": timedelta(days=30),
+    "year": timedelta(days=365),
+}
+
+
+def _session_id_from_ledger_path(ledger_path: str) -> str | None:
+    path = Path(ledger_path)
+    if path.parent.name == "sessions":
+        return path.stem
+    if path.parent.parent.name == "sessions":
+        return path.parent.name
+    return None
+
+
+def _dedupe_events_by_checkpoint(events: list[dict]) -> list[dict]:
+    """Deduplicate merged ledger events by checkpoint_id when available."""
+    deduped: list[dict] = []
+    by_checkpoint: dict[str, dict] = {}
+    for event in events:
+        checkpoint_id = event.get("checkpoint_id")
+        if checkpoint_id:
+            existing = by_checkpoint.get(checkpoint_id)
+            if existing is not None:
+                if not existing.get("source_session_id") and event.get("source_session_id"):
+                    existing["source_session_id"] = event.get("source_session_id")
+                    existing["source_label"] = event.get("source_label")
+                continue
+            by_checkpoint[checkpoint_id] = event
+        deduped.append(event)
+    return deduped
+
+
+def _parse_event_timestamp(value: object) -> datetime | None:
+    """Parse ISO timestamps from ledger events."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        normalized = value.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(normalized)
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def filter_events_by_timeframe(
+    events: list[dict],
+    timeframe: str = "all",
+    now: datetime | None = None,
+) -> list[dict]:
+    """Filter ledger events to a relative time window."""
+    if timeframe == "all":
+        return events
+
+    delta = _TIME_WINDOWS.get(timeframe)
+    if delta is None:
+        return events
+
+    reference = now or datetime.now(timezone.utc)
+    cutoff = reference - delta
+    filtered: list[dict] = []
+    for event in events:
+        ts = _parse_event_timestamp(event.get("timestamp"))
+        if ts is not None and ts >= cutoff:
+            filtered.append(event)
+    return filtered
+
+
+def merge_ledger_events(
+    ledger_paths: list[str],
+    session_labels: dict[str, str] | None = None,
+) -> list[dict]:
+    """Merge events from multiple ledgers and retain source session metadata."""
+    merged_events: list[dict] = []
+    for ledger_path in ledger_paths:
+        session_id = _session_id_from_ledger_path(ledger_path)
+        source_label = (
+            session_labels.get(session_id, session_id)
+            if session_id and session_labels
+            else (session_id or "Global ledger")
+        )
+        for event in read_events(ledger_path):
+            event_copy = dict(event)
+            event_copy["source_session_id"] = session_id
+            event_copy["source_label"] = source_label
+            merged_events.append(event_copy)
+    return _dedupe_events_by_checkpoint(merged_events)
 
 
 def _build_pipeline_summary(events: list[dict]) -> dict:
@@ -231,153 +321,261 @@ def _build_dimension_deep_dive(events: list[dict]) -> dict:
 
 
 def _build_ad_library(events: list[dict]) -> list[dict]:
-    """Panel 5: All ads with copy, scores, rationales."""
-    # Find all unique ad_ids — filter out test/reference/calibration ads
-    _SKIP_PREFIXES = ("batch_", "test_", "ref_", "adv_", "golden_")
-    ad_ids: list[str] = []
-    seen: set[str] = set()
-    for e in events:
-        aid = e.get("ad_id")
-        if aid and aid not in seen and not any(aid.startswith(p) for p in _SKIP_PREFIXES):
-            ad_ids.append(aid)
-            seen.add(aid)
+    """Panel 5: All created ad instances with copy, scores, and status.
 
-    # Status map
-    status_map: dict[str, str] = {}
-    for e in events:
-        if e.get("event_type") == "AdPublished":
-            status_map[e["ad_id"]] = "published"
-        elif e.get("event_type") == "AdDiscarded":
-            status_map[e["ad_id"]] = "discarded"
+    Unlike the export-oriented ad library, the global dashboard should show
+    every created ad instance, not just the latest state per deterministic
+    ad_id. This matters because the pipeline reuses ad_ids across repeated
+    runs of the same brief/seed combination, so collapsing by ad_id hides a
+    large share of creation history.
+    """
+    # Find all creation events — filter out test/reference/calibration ads
+    _SKIP_PREFIXES = ("batch_", "test_", "ref_", "adv_", "golden_")
+    creation_events_by_ad: dict[str, list[int]] = {}
+    for idx, e in enumerate(events):
+        aid = e.get("ad_id")
+        etype = e.get("event_type")
+        if (
+            aid
+            and etype in {"AdGenerated", "AdRegenerated"}
+            and not any(aid.startswith(p) for p in _SKIP_PREFIXES)
+        ):
+            creation_events_by_ad.setdefault(aid, []).append(idx)
 
     library: list[dict] = []
-    for ad_id in ad_ids:
-        ad_events = [e for e in events if e.get("ad_id") == ad_id]
+    for ad_id, indices in creation_events_by_ad.items():
+        for occurrence_idx, start_idx in enumerate(indices):
+            end_idx = indices[occurrence_idx + 1] if occurrence_idx + 1 < len(indices) else len(events)
+            creation_event = events[start_idx]
+            instance_events = [
+                event
+                for event in events[start_idx:end_idx]
+                if event.get("ad_id") == ad_id
+            ]
 
-        # Get latest evaluation
-        evals = [e for e in ad_events if e.get("event_type") == "AdEvaluated"]
-        evals.sort(key=lambda x: x.get("cycle_number", 0))
-        latest_eval = evals[-1] if evals else None
+            evals = [e for e in instance_events if e.get("event_type") == "AdEvaluated"]
+            latest_eval = evals[-1] if evals else None
+            copy_data = creation_event.get("outputs", {})
+            raw_scores = latest_eval.get("outputs", {}).get("scores", {}) if latest_eval else {}
 
-        # Get generation event for copy
-        gen_events = [e for e in ad_events if e.get("event_type") == "AdGenerated"]
-        gen = gen_events[0] if gen_events else None
+            scores: dict[str, float] = {}
+            rationale: dict[str, str] = {}
+            for dim in DIMENSIONS:
+                val = raw_scores.get(dim)
+                if isinstance(val, dict):
+                    scores[dim] = val.get("score", 0)
+                    rationale[dim] = val.get("rationale", "")
+                elif isinstance(val, (int, float)):
+                    scores[dim] = float(val)
 
-        # Get copy from latest generation or regeneration
-        regen_events = [e for e in ad_events if e.get("event_type") == "AdRegenerated"]
-        regen_events.sort(key=lambda x: x.get("cycle_number", 0))
-        copy_source = regen_events[-1] if regen_events else gen
+            aggregate = latest_eval.get("outputs", {}).get("aggregate_score", 0.0) if latest_eval else 0.0
+            cycle_count = max(
+                (e.get("cycle_number", 0) for e in instance_events),
+                default=creation_event.get("cycle_number", 0),
+            )
 
-        copy_data = copy_source.get("outputs", {}) if copy_source else {}
-        raw_scores = latest_eval.get("outputs", {}).get("scores", {}) if latest_eval else {}
-        # Flatten nested score dicts to plain numbers for dashboard
-        scores: dict[str, float] = {}
-        rationale: dict[str, str] = {}
-        for dim in DIMENSIONS:
-            val = raw_scores.get(dim)
-            if isinstance(val, dict):
-                scores[dim] = val.get("score", 0)
-                rationale[dim] = val.get("rationale", "")
-            elif isinstance(val, (int, float)):
-                scores[dim] = float(val)
-        aggregate = latest_eval.get("outputs", {}).get("aggregate_score", 0.0) if latest_eval else 0.0
-        cycle_count = max((e.get("cycle_number", 0) for e in ad_events), default=1)
+            status = "in_progress"
+            if any(e.get("event_type") == "AdPublished" for e in instance_events):
+                status = "published"
+            elif any(e.get("event_type") == "AdDiscarded" for e in instance_events):
+                status = "discarded"
 
-        # Extract winning image from LAST AdPublished event (latest run has image)
-        pub_events = [e for e in ad_events if e.get("event_type") == "AdPublished"]
-        pub_event = pub_events[-1] if pub_events else None
-        image_path = None
-        image_url = None
-        if pub_event:
-            winning = pub_event.get("outputs", {}).get("winning_image")
-            if winning:
-                image_path = winning
-                filename = Path(winning).name
-                image_url = f"/images/{filename}"
+            pub_events = [e for e in instance_events if e.get("event_type") == "AdPublished"]
+            pub_event = pub_events[-1] if pub_events else None
+            image_path = None
+            image_url = None
+            if pub_event:
+                winning = pub_event.get("outputs", {}).get("winning_image")
+                if winning:
+                    image_path = winning
+                    filename = Path(winning).name
+                    image_url = f"/images/{filename}"
 
-        # Skip ads with no copy data (test artifacts, orphaned events)
-        has_copy = copy_data.get("primary_text") or copy_data.get("headline")
-        has_scores = bool(scores)
-        if not has_copy and not has_scores:
-            continue
+            # Only use the disk fallback when this ad_id appears once in the
+            # ledger history. Reused deterministic ad_ids cannot be reliably
+            # mapped back to a single historical image file.
+            if not image_url and len(indices) == 1:
+                matches = sorted(
+                    Path("output/images").glob(f"{ad_id}_*.png"),
+                    key=lambda path: path.stat().st_mtime,
+                    reverse=True,
+                )
+                if matches:
+                    image_path = str(matches[0])
+                    image_url = f"/images/{matches[0].name}"
 
-        library.append({
-            "ad_id": ad_id,
-            "brief_id": gen.get("brief_id", "") if gen else "",
-            "copy": copy_data,
-            "scores": scores,
-            "aggregate_score": aggregate,
-            "rationale": rationale,
-            "status": status_map.get(ad_id, "in_progress"),
-            "cycle_count": cycle_count,
-            "image_path": image_path,
-            "image_url": image_url,
-        })
+            has_copy = copy_data.get("primary_text") or copy_data.get("headline")
+            has_scores = bool(scores)
+            if not has_copy and not has_scores:
+                continue
 
+            library.append({
+                "instance_id": creation_event.get("checkpoint_id", f"{ad_id}:{occurrence_idx + 1}"),
+                "created_at": creation_event.get("timestamp", ""),
+                "ad_id": ad_id,
+                "brief_id": creation_event.get("brief_id", ""),
+                "session_id": creation_event.get("source_session_id"),
+                "session_label": creation_event.get("source_label", "Global ledger"),
+                "copy": copy_data,
+                "scores": scores,
+                "aggregate_score": aggregate,
+                "rationale": rationale,
+                "status": status,
+                "cycle_count": cycle_count,
+                "image_path": image_path,
+                "image_url": image_url,
+            })
+
+    library.sort(key=lambda item: item.get("created_at", ""), reverse=True)
     return library
 
 
-def _build_token_economics(ledger_path: str) -> dict:
+def build_global_ad_library(ledger_paths: list[str]) -> list[dict]:
+    """Build ad library across multiple ledgers for the global dashboard."""
+    return _build_ad_library(merge_ledger_events(ledger_paths))
+
+
+def _build_token_economics(ledger_path: str, events: list[dict] | None = None) -> dict:
     """Panel 6: Cost attribution + marginal analysis."""
-    from iterate.token_tracker import get_token_summary
+    if events is None:
+        from iterate.token_tracker import get_token_summary
 
-    summary = get_token_summary(ledger_path)
+        summary = get_token_summary(ledger_path)
 
-    # Marginal analysis
-    marginal: dict = {}
-    try:
-        from iterate.marginal_analysis import get_marginal_dashboard_data
-        marginal = get_marginal_dashboard_data(ledger_path)
-    except Exception:
-        pass
+        marginal: dict = {}
+        try:
+            from iterate.marginal_analysis import get_marginal_dashboard_data
+            marginal = get_marginal_dashboard_data(ledger_path)
+        except Exception:
+            pass
+
+        return {
+            "by_stage": summary.by_stage,
+            "by_model": summary.by_model,
+            "cost_per_published": round(summary.cost_per_published, 2) if summary.cost_per_published != float("inf") else 0,
+            "marginal_analysis": marginal,
+        }
+
+    from iterate.token_tracker import get_stage_from_event
+
+    by_stage: dict[str, int] = defaultdict(int)
+    by_model: dict[str, int] = defaultdict(int)
+    total_tokens = 0
+    published = 0
+    for event in events:
+        tokens = int(event.get("tokens_consumed", 0) or 0)
+        total_tokens += tokens
+        by_stage[get_stage_from_event(event)] += tokens
+        by_model[event.get("model_used", "unknown")] += tokens
+        if event.get("event_type") == "AdPublished":
+            published += 1
 
     return {
-        "by_stage": summary.by_stage,
-        "by_model": summary.by_model,
-        "cost_per_published": round(summary.cost_per_published, 2) if summary.cost_per_published != float("inf") else 0,
-        "marginal_analysis": marginal,
+        "by_stage": dict(by_stage),
+        "by_model": dict(by_model),
+        "cost_per_published": round(total_tokens / published, 2) if published > 0 else 0,
+        "marginal_analysis": {},
     }
 
 
-def _build_system_health(ledger_path: str) -> dict:
+def _build_system_health(ledger_path: str, events: list[dict] | None = None) -> dict:
     """Panel 7: SPC + confidence + compliance."""
-    # SPC
+    source_events = events if events is not None else read_events(ledger_path)
+
     spc_data: dict = {"batch_averages": [], "ucl": None, "lcl": None, "mean": None, "breach_indices": []}
     try:
-        from evaluate.spc_monitor import get_control_chart_data
-        chart = get_control_chart_data(ledger_path)
+        from evaluate.spc_monitor import compute_control_limits, is_in_control
+
+        batch_averages: list[float] = []
+        for event in source_events:
+            if event.get("event_type") != "BatchCompleted":
+                continue
+            outputs = event.get("outputs", {})
+            avg = outputs.get("batch_average", outputs.get("batch_avg_score"))
+            if isinstance(avg, (int, float)):
+                batch_averages.append(float(avg))
+
+        limits = compute_control_limits(batch_averages)
+        breach_indices: list[int] = []
+        if limits is not None:
+            for idx, avg in enumerate(batch_averages):
+                if not is_in_control(avg, limits):
+                    breach_indices.append(idx)
+
         spc_data = {
-            "batch_averages": chart.batch_averages,
-            "ucl": chart.ucl,
-            "lcl": chart.lcl,
-            "mean": chart.mean,
-            "breach_indices": chart.breach_indices,
+            "batch_averages": batch_averages,
+            "ucl": limits.ucl if limits else None,
+            "lcl": limits.lcl if limits else None,
+            "mean": limits.mean if limits else None,
+            "breach_indices": breach_indices,
         }
     except Exception:
         pass
 
-    # Confidence stats
     confidence: dict = {}
     try:
-        from evaluate.confidence_router import get_confidence_stats
-        stats = get_confidence_stats(ledger_path)
+        counts = {
+            "autonomous": 0,
+            "flagged": 0,
+            "human_required": 0,
+            "brand_safety_stop": 0,
+        }
+
+        routed_events = [e for e in source_events if e.get("event_type") == "ConfidenceRouted"]
+        if routed_events:
+            for event in routed_events:
+                level = event.get("outputs", {}).get("confidence_level", "")
+                if level in counts:
+                    counts[level] += 1
+        else:
+            eval_events = [e for e in source_events if e.get("event_type") == "AdEvaluated"]
+            for event in eval_events:
+                outputs = event.get("outputs", {})
+                scores = outputs.get("scores", {})
+                flags = outputs.get("flags", [])
+                if any("floor_violation" in str(flag) for flag in flags):
+                    counts["brand_safety_stop"] += 1
+                    continue
+
+                confidences: list[float] = []
+                for dim_data in scores.values():
+                    if isinstance(dim_data, dict):
+                        conf = dim_data.get("confidence")
+                        if isinstance(conf, (int, float)):
+                            confidences.append(float(conf))
+
+                if not confidences:
+                    counts["autonomous"] += 1
+                    continue
+
+                avg_conf = sum(confidences) / len(confidences)
+                if avg_conf >= 7:
+                    counts["autonomous"] += 1
+                elif avg_conf >= 5:
+                    counts["flagged"] += 1
+                else:
+                    counts["human_required"] += 1
+
+        total = sum(counts.values())
+
+        def _pct(value: int) -> float:
+            return round(value / total * 100, 1) if total > 0 else 0.0
+
         confidence = {
-            "autonomous_count": stats.autonomous_count,
-            "flagged_count": stats.flagged_count,
-            "human_required_count": stats.human_required_count,
-            "brand_safety_count": stats.brand_safety_count,
-            "total": stats.total,
-            "autonomous_pct": stats.autonomous_pct,
-            "flagged_pct": stats.flagged_pct,
-            "human_required_pct": stats.human_required_pct,
+            "autonomous_count": counts["autonomous"],
+            "flagged_count": counts["flagged"],
+            "human_required_count": counts["human_required"],
+            "brand_safety_count": counts["brand_safety_stop"],
+            "total": total,
+            "autonomous_pct": _pct(counts["autonomous"]),
+            "flagged_pct": _pct(counts["flagged"]),
+            "human_required_pct": _pct(counts["human_required"]),
         }
     except Exception:
         pass
 
-    # Compliance stats
-    events = read_events(ledger_path)
-    compliance_pass = sum(1 for e in events if e.get("event_type") == "AdPublished")
-    compliance_fail = sum(1 for e in events if e.get("event_type") == "AdDiscarded")
+    compliance_pass = sum(1 for e in source_events if e.get("event_type") == "AdPublished")
+    compliance_fail = sum(1 for e in source_events if e.get("event_type") == "AdDiscarded")
 
     return {
         "spc": spc_data,
@@ -402,6 +600,22 @@ def _build_competitive_intel(ledger_path: str) -> dict:
         return {}
 
 
+def build_dashboard_data_from_events(events: list[dict], ledger_path: str) -> dict:
+    """Build the complete dashboard data structure from preloaded events."""
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "ledger_path": ledger_path,
+        "pipeline_summary": _build_pipeline_summary(events),
+        "iteration_cycles": _build_iteration_cycles(events),
+        "quality_trends": _build_quality_trends(events),
+        "dimension_deep_dive": _build_dimension_deep_dive(events),
+        "ad_library": _build_ad_library(events),
+        "token_economics": _build_token_economics(ledger_path, events),
+        "system_health": _build_system_health(ledger_path, events),
+        "competitive_intel": _build_competitive_intel(ledger_path),
+    }
+
+
 def build_dashboard_data(ledger_path: str) -> dict:
     """Build the complete dashboard data structure from a ledger.
 
@@ -413,18 +627,7 @@ def build_dashboard_data(ledger_path: str) -> dict:
     """
     events = read_events(ledger_path)
 
-    return {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "ledger_path": ledger_path,
-        "pipeline_summary": _build_pipeline_summary(events),
-        "iteration_cycles": _build_iteration_cycles(events),
-        "quality_trends": _build_quality_trends(events),
-        "dimension_deep_dive": _build_dimension_deep_dive(events),
-        "ad_library": _build_ad_library(events),
-        "token_economics": _build_token_economics(ledger_path),
-        "system_health": _build_system_health(ledger_path),
-        "competitive_intel": _build_competitive_intel(ledger_path),
-    }
+    return build_dashboard_data_from_events(events, ledger_path)
 
 
 def export_dashboard(

@@ -8,7 +8,7 @@ Extends evaluate/dimensions.py — produces compatible WeightProfile instances.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from evaluate.correlation import DIMENSIONS
 from evaluate.dimensions import (
@@ -19,7 +19,6 @@ from evaluate.dimensions import (
 )
 from evaluate.performance_correlation import (
     DimensionPerformanceMatrix,
-    PERFORMANCE_METRICS,
 )
 from iterate.ledger import log_event
 

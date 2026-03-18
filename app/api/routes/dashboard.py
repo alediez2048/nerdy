@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.db import get_db, init_db
+from app.db import SessionLocal, get_db, init_db
 from app.models.session import Session as SessionModel
 
 router = APIRouter()
@@ -148,14 +148,36 @@ global_dashboard_router = APIRouter()
 
 
 @global_dashboard_router.get("/global")
-def get_global_dashboard() -> dict[str, Any]:
+def get_global_dashboard(timeframe: str = "all") -> dict[str, Any]:
     """Full dashboard data from the global ledger — no auth required."""
     ledger = Path(DEFAULT_LEDGER)
     if not ledger.exists():
         return {}
     try:
-        from output.export_dashboard import build_dashboard_data
-        return build_dashboard_data(str(ledger))
+        from output.export_dashboard import (
+            build_dashboard_data_from_events,
+            filter_events_by_timeframe,
+            merge_ledger_events,
+        )
+        session_ledgers = sorted(Path("data/sessions").glob("*/ledger.jsonl"))
+        ledger_paths = [str(ledger), *[str(path) for path in session_ledgers]]
+        session_labels: dict[str, str] = {}
+        init_db()
+        db = SessionLocal()
+        try:
+            session_rows = db.query(SessionModel.session_id, SessionModel.name).all()
+            session_labels = {
+                session_id: (name or session_id)
+                for session_id, name in session_rows
+            }
+        finally:
+            db.close()
+
+        merged_events = merge_ledger_events(ledger_paths, session_labels=session_labels)
+        filtered_events = filter_events_by_timeframe(merged_events, timeframe)
+        data = build_dashboard_data_from_events(filtered_events, "merged")
+        data["timeframe"] = timeframe
+        return data
     except Exception as e:
         logger.warning("Failed to build global dashboard: %s", e)
         raise HTTPException(status_code=500, detail="Failed to build dashboard data")

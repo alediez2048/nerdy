@@ -58,6 +58,39 @@ VALID_CTAS = frozenset({
 # Audience normalization for pattern query (brief uses parent/parents, patterns use parents/students/both)
 _AUDIENCE_MAP = {"parent": "parents", "parents": "parents", "student": "students", "students": "students"}
 
+_CREATIVE_BRIEF_COPY_DIRECTIONS: dict[str, str] = {
+    "gap_report": (
+        "Write in an analytical, data-forward tone. Lead with a diagnostic insight "
+        "or score gap. Use numbers, percentages, and comparisons. Frame the ad as "
+        "a performance report — 'Here's where your child stands, here's the gap, "
+        "here's the plan.' No flowery language. Short, direct sentences."
+    ),
+    "ugc_testimonial": (
+        "Write as if a real parent or student is sharing their experience. Use first "
+        "person ('My daughter...', 'I was worried...'). Conversational, authentic "
+        "tone — not polished marketing copy. Include a specific detail or moment "
+        "that makes it feel real. End with a genuine recommendation, not a hard sell."
+    ),
+    "before_after": (
+        "Structure the copy as a transformation story. Start with the 'before' "
+        "state (frustration, low score, anxiety) then pivot to the 'after' (confidence, "
+        "score jump, readiness). Use a clear contrast. Include specific numbers for "
+        "the score improvement. The hook should hint at the transformation."
+    ),
+    "lifestyle": (
+        "Write aspirational, warm copy that paints a picture of life after SAT success. "
+        "Focus on the emotional outcome — not just the score, but what it means "
+        "(college acceptance, scholarship, family pride). Use vivid, sensory language. "
+        "The tone should feel celebratory and forward-looking."
+    ),
+    "stat_focused": (
+        "Lead with a bold, attention-grabbing statistic. The number IS the hook. "
+        "Keep supporting copy minimal and punchy. Every sentence should reinforce "
+        "the stat. Use short paragraphs or single-line statements. The CTA should "
+        "feel like the obvious next step after seeing the number."
+    ),
+}
+
 
 @dataclass
 class GeneratedAd:
@@ -143,6 +176,7 @@ def _select_structural_atoms(
 def _build_generation_prompt(
     expanded_brief: ExpandedBrief,
     atoms: list[dict[str, Any]],
+    creative_brief: str = "auto",
 ) -> str:
     """Construct recombination prompt with Nerdy rules, persona context, and Meta ad structure."""
     brief = expanded_brief.original_brief
@@ -209,6 +243,13 @@ def _build_generation_prompt(
 
     voice_block = persona_voice or get_voice_for_prompt(audience)
 
+    creative_direction_block = ""
+    if creative_brief and creative_brief != "auto" and creative_brief in _CREATIVE_BRIEF_COPY_DIRECTIONS:
+        creative_direction_block = f"""
+## CREATIVE BRIEF STYLE (highest priority — override default tone)
+{_CREATIVE_BRIEF_COPY_DIRECTIONS[creative_brief]}
+"""
+
     return f"""You are writing a Meta (Facebook/Instagram) ad for Varsity Tutors SAT Tutoring. Use the reference-decompose-recombine approach: draw from proven structural patterns, adapt and recombine — do NOT copy verbatim.
 
 ## NERDY LANGUAGE RULES (MANDATORY)
@@ -244,7 +285,7 @@ Hook (1 scroll-stopping sentence) → Short pattern interrupt explanation (2–3
 - CTA button: Best fit from: {cta_hint}{persona_cta}
 
 {voice_block}
-
+{creative_direction_block}
 Output ONLY valid JSON (no markdown, no code fences):
 {{
   "primary_text": "<full primary text>",
@@ -359,6 +400,7 @@ def generate_ad(
     seed: int | None = None,
     cycle_number: int = 0,
     ledger_path: str | None = None,
+    creative_brief: str = "auto",
 ) -> GeneratedAd:
     """Generate Meta ad copy from expanded brief using reference-decompose-recombine.
 
@@ -370,6 +412,7 @@ def generate_ad(
         seed: Optional seed for deterministic ad_id. If None, derived from brief_id + cycle.
         cycle_number: Regeneration cycle (0 = first draft).
         ledger_path: Override ledger path.
+        creative_brief: Creative brief style to influence copy tone and structure.
 
     Returns:
         GeneratedAd with all 4 Meta components, compatible with P1-04 evaluator.
@@ -385,7 +428,7 @@ def generate_ad(
     ad_id = f"ad_{brief_id}_c{cycle_number}_{actual_seed}"
 
     atoms = _select_structural_atoms(campaign_goal, audience, ad_seed=actual_seed)
-    prompt = _build_generation_prompt(expanded_brief, atoms)
+    prompt = _build_generation_prompt(expanded_brief, atoms, creative_brief=creative_brief)
 
     def _do_call() -> str:
         return _call_gemini(prompt)

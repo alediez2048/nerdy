@@ -5,10 +5,9 @@ import tempfile
 
 from evaluate.performance_correlation import DimensionPerformanceMatrix
 from evaluate.correlation import DIMENSIONS
-from evaluate.dimensions import AWARENESS_WEIGHTS, CONVERSION_WEIGHTS
+from evaluate.dimensions import AWARENESS_WEIGHTS
 from evaluate.weight_recalibrator import (
     MIN_WEIGHT,
-    RecalibrationReport,
     compare_profiles,
     log_recalibration,
     recalibrate_weights,

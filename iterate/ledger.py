@@ -62,20 +62,29 @@ def log_event(ledger_path: str, event: dict) -> None:
             f.write(json.dumps(event, default=str) + "\n")
         finally:
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    _ledger_cache.clear()
 
 
 _ledger_logger = logging.getLogger(__name__)
+_ledger_cache: dict[tuple[str, int, int], list[dict]] = {}
+_malformed_line_warnings: set[tuple[str, int, int, int]] = set()
 
 
 def read_events(ledger_path: str) -> list[dict]:
     """Read all events from the ledger. Returns [] if file does not exist.
 
     Skips malformed lines (e.g. truncated JSON from mid-stream crashes)
-    and logs a warning for each.
+    and logs a warning once per malformed line for a given file version.
     """
     path = Path(ledger_path)
     if not path.exists():
         return []
+
+    stat = path.stat()
+    cache_key = (str(path.resolve()), stat.st_mtime_ns, stat.st_size)
+    cached = _ledger_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     events: list[dict] = []
     with open(path) as f:
@@ -86,7 +95,13 @@ def read_events(ledger_path: str) -> list[dict]:
             try:
                 events.append(json.loads(stripped))
             except json.JSONDecodeError:
-                _ledger_logger.warning("Skipping malformed ledger line %d in %s", lineno, ledger_path)
+                warning_key = (*cache_key, lineno)
+                if warning_key not in _malformed_line_warnings:
+                    _ledger_logger.warning("Skipping malformed ledger line %d in %s", lineno, ledger_path)
+                    _malformed_line_warnings.add(warning_key)
+
+    _ledger_cache.clear()
+    _ledger_cache[cache_key] = events
     return events
 
 

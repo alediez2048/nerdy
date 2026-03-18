@@ -38,8 +38,12 @@ interface BatchScore {
 }
 
 interface Ad {
+  instance_id: string
+  created_at: string
   ad_id: string
   brief_id: string
+  session_id?: string | null
+  session_label?: string
   copy: Record<string, string>
   scores: Record<string, number>
   aggregate_score: number
@@ -64,6 +68,14 @@ const TABS = [
 ] as const
 
 type TabKey = typeof TABS[number]['key']
+const TIMEFRAMES = ['all', 'day', 'month', 'year'] as const
+type TimeframeKey = typeof TIMEFRAMES[number]
+const TIMEFRAME_LABELS: Record<TimeframeKey, string> = {
+  all: 'All Time',
+  day: 'Last 24 Hours',
+  month: 'Last 30 Days',
+  year: 'Last 12 Months',
+}
 
 // Theme is now handled globally via App.tsx ThemeToggle
 
@@ -75,12 +87,20 @@ export default function GlobalDashboard() {
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const activeTab = (searchParams.get('tab') as TabKey) || 'summary'
+  const rawTimeframe = searchParams.get('timeframe')
+  const timeframe: TimeframeKey = TIMEFRAMES.includes(rawTimeframe as TimeframeKey)
+    ? (rawTimeframe as TimeframeKey)
+    : 'all'
 
   useEffect(() => {
-    fetchGlobalDashboard().then(setData).catch((e) => setError(e.message))
-  }, [])
+    setError(null)
+    fetchGlobalDashboard(timeframe)
+      .then((result) => setData(result))
+      .catch((e) => setError(e.message))
+  }, [timeframe])
 
-  const setTab = (tab: TabKey) => setSearchParams({ tab })
+  const setTab = (tab: TabKey) => setSearchParams({ tab, timeframe })
+  const setTimeframe = (next: TimeframeKey) => setSearchParams({ tab: activeTab, timeframe: next })
 
   if (error) {
     return (
@@ -102,14 +122,33 @@ export default function GlobalDashboard() {
       <div style={s.pageInner}>
         {/* Header */}
         <div style={s.header}>
-          <div>
-            <span onClick={() => navigate('/sessions')} style={s.backLink}>Sessions</span>
-            <span style={{ color: colors.muted }}> / </span>
-            <span style={{ color: colors.white }}>Global Dashboard</span>
+          <div style={s.headerTopRow}>
+            <div>
+              <button onClick={() => navigate('/dashboard')} style={s.breadcrumbBtn}>Dashboard</button>
+              <span style={{ color: colors.muted }}> / </span>
+              <button onClick={() => navigate('/sessions')} style={s.breadcrumbCurrentBtn}>Sessions</button>
+            </div>
+            <div style={s.timeframeGroup}>
+              {TIMEFRAMES.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setTimeframe(option)}
+                  style={timeframe === option ? s.timeframeBtnActive : s.timeframeBtn}
+                >
+                  {TIMEFRAME_LABELS[option]}
+                </button>
+              ))}
+            </div>
           </div>
-          <h1 style={s.title}>Performance Dashboard</h1>
-          <p style={{ color: colors.muted, fontSize: '13px', margin: 0 }}>
-            All pipeline data across every session
+          <h1 style={s.title}>Global Dashboard</h1>
+          <p style={{ color: colors.muted, fontSize: '13px', margin: 0, maxWidth: '720px', lineHeight: '1.6' }}>
+            Aggregated view of every ad generation session. Metrics are read from the
+            global decision ledger — the append-only log of every generation, evaluation,
+            regeneration, and publish event across all sessions. Use this to track overall
+            pipeline efficiency, quality trends, and cost-per-publishable-ad over time.
+          </p>
+          <p style={s.timeframeSummary}>
+            Showing <strong>{TIMEFRAME_LABELS[timeframe]}</strong> of pipeline activity.
           </p>
         </div>
 
@@ -146,28 +185,45 @@ export default function GlobalDashboard() {
 
 function PipelineSummaryTab({ data }: { data: Record<string, unknown> }) {
   const ps = (data.pipeline_summary || {}) as PipelineSummary
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
   const metrics = [
-    { label: 'Ads Generated', value: ps.total_ads_generated ?? 0, color: colors.white },
-    { label: 'Ads Published', value: ps.total_ads_published ?? 0, color: colors.mint },
-    { label: 'Publish Rate', value: ps.publish_rate ? `${(ps.publish_rate * 100).toFixed(0)}%` : '0%', color: colors.cyan },
-    { label: 'Avg Score', value: ps.avg_score?.toFixed(1) ?? '0.0', color: colors.yellow },
-    { label: 'Total Batches', value: ps.total_batches ?? 0, color: colors.white },
-    { label: 'Total Tokens', value: (ps.total_tokens ?? 0).toLocaleString(), color: colors.white },
-    { label: 'Total Cost', value: `$${(ps.total_cost_usd ?? 0).toFixed(2)}`, color: colors.yellow },
-    { label: 'Ads Discarded', value: ps.total_ads_discarded ?? 0, color: colors.red },
+    { label: 'Ads Generated', value: ps.total_ads_generated ?? 0, color: colors.white,
+      tip: 'Total ad variants created across all sessions and cycles, including regeneration attempts.' },
+    { label: 'Ads Published', value: ps.total_ads_published ?? 0, color: colors.mint,
+      tip: 'Ads that scored above the quality threshold (7.0+) and passed all 3 compliance layers.' },
+    { label: 'Publish Rate', value: ps.publish_rate ? `${(ps.publish_rate * 100).toFixed(0)}%` : '0%', color: colors.cyan,
+      tip: 'Percentage of generated ads that met the publish threshold. Higher rates mean better briefs and fewer wasted tokens.' },
+    { label: 'Avg Score', value: ps.avg_score?.toFixed(1) ?? '0.0', color: colors.yellow,
+      tip: 'Mean weighted score across all 5 dimensions (Clarity, Value Prop, CTA, Brand Voice, Emotional Resonance) for published ads.' },
+    { label: 'Total Batches', value: ps.total_batches ?? 0, color: colors.white,
+      tip: 'Number of batch processing rounds completed. Each batch generates, evaluates, and optionally regenerates up to 10 ads.' },
+    { label: 'Total Tokens', value: (ps.total_tokens ?? 0).toLocaleString(), color: colors.white,
+      tip: 'Sum of input + output tokens consumed across all LLM calls (generation, evaluation, regeneration) and image API calls.' },
+    { label: 'Total Cost', value: `$${(ps.total_cost_usd ?? 0).toFixed(2)}`, color: colors.yellow,
+      tip: 'Estimated API spend based on token counts and per-model pricing (Flash for drafts, Pro for improvable-range ads).' },
+    { label: 'Ads Discarded', value: ps.total_ads_discarded ?? 0, color: colors.red,
+      tip: 'Ads that failed to meet the quality threshold after all regeneration cycles, or were rejected by compliance filters.' },
   ]
 
   return (
     <div style={s.kpiGrid}>
-      {metrics.map((m) => (
-        <div key={m.label} style={s.kpiCard}>
+      {metrics.map((m, i) => (
+        <div
+          key={m.label}
+          style={{ ...s.kpiCard, ...(hoveredIdx === i ? s.kpiCardHover : {}) }}
+          onMouseEnter={() => setHoveredIdx(i)}
+          onMouseLeave={() => setHoveredIdx(null)}
+        >
           <div style={{ fontSize: '28px', fontWeight: 700, color: m.color, fontFamily: font.family }}>
             {String(m.value)}
           </div>
           <div style={{ fontSize: '12px', color: colors.muted, marginTop: '6px', fontFamily: font.family }}>
             {m.label}
           </div>
+          {hoveredIdx === i && (
+            <div style={s.kpiTooltip}>{m.tip}</div>
+          )}
         </div>
       ))}
     </div>
@@ -182,42 +238,49 @@ function IterationCyclesTab({ data }: { data: Record<string, unknown> }) {
   if (cycles.length === 0) return <p style={{ color: colors.muted }}>No iteration data available</p>
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-      {cycles.map((c) => {
-        const delta = c.score_after - c.score_before
-        const improved = delta > 0
-        return (
-          <div key={c.ad_id} style={s.cycleCard}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: colors.muted, fontFamily: font.family }}>{c.ad_id}</span>
-              <StatusBadge status={c.action_taken} />
+    <div>
+      <h3 style={s.heading}>How To Read Iteration Cycles</h3>
+      <p style={s.sectionDescription}>
+        Each card shows one regeneration pass for an ad. <strong>Before</strong> is the score prior to feedback,
+        <strong> After</strong> is the score after revision, and the green or red number in the middle is the net
+        change. <strong>Weakest</strong> identifies the lowest-scoring dimension that likely triggered the rewrite,
+        helping you see which dimensions most often limit publishability across the whole pipeline.
+      </p>
+      <div style={s.cycleGrid}>
+        {cycles.map((c) => {
+          const delta = c.score_after - c.score_before
+          const improved = delta > 0
+          return (
+            <div key={c.ad_id} style={s.cycleCard}>
+              <div style={s.cycleHeader}>
+                <span style={s.cycleAdId} title={c.ad_id}>{c.ad_id}</span>
+                <StatusBadge status={c.action_taken} />
+              </div>
+              <div style={s.cycleMetrics}>
+                <div style={s.cycleMetricBlock}>
+                  <div style={s.cycleMetricLabel}>Before</div>
+                  <div style={s.cycleMetricValue}>
+                    {c.score_before.toFixed(1)}
+                  </div>
+                </div>
+                <div style={{ ...s.cycleDelta, color: improved ? colors.mint : colors.red }}>
+                  {improved ? '+' : ''}{delta.toFixed(1)}
+                </div>
+                <div style={s.cycleMetricBlock}>
+                  <div style={s.cycleMetricLabel}>After</div>
+                  <div style={s.cycleMetricValue}>
+                    {c.score_after.toFixed(1)}
+                  </div>
+                </div>
+              </div>
+              <div style={s.cycleFooter}>
+                <div style={s.cycleMetricLabel}>Weakest</div>
+                <div style={s.cycleWeakest}>{c.weakest_dimension.replace(/_/g, ' ')}</div>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '10px' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: colors.muted }}>Before</div>
-                <div style={{ fontSize: '20px', fontWeight: 700, color: colors.white, fontFamily: font.family }}>
-                  {c.score_before.toFixed(1)}
-                </div>
-              </div>
-              <div style={{ fontSize: '18px', color: improved ? colors.mint : colors.red, fontFamily: font.family }}>
-                {improved ? '+' : ''}{delta.toFixed(1)}
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: colors.muted }}>After</div>
-                <div style={{ fontSize: '20px', fontWeight: 700, color: colors.white, fontFamily: font.family }}>
-                  {c.score_after.toFixed(1)}
-                </div>
-              </div>
-              <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                <div style={{ fontSize: '11px', color: colors.muted }}>Weakest</div>
-                <div style={{ fontSize: '13px', color: colors.yellow, fontFamily: font.family }}>
-                  {c.weakest_dimension.replace(/_/g, ' ')}
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -234,6 +297,13 @@ function QualityTrendsTab({ data }: { data: Record<string, unknown> }) {
       {/* Batch scores table */}
       <div style={s.section}>
         <h3 style={s.heading}>Batch Scores</h3>
+        <p style={s.sectionDescription}>
+          This table summarizes pipeline performance one batch at a time. Each row represents a batch of ads
+          processed together, usually 10 at a time. <strong>Avg Score</strong> is the mean quality score for that batch,
+          <strong> Threshold</strong> is the publish cutoff in effect for that batch, <strong>Published</strong> shows how many
+          ads cleared that bar, and <strong>Pub Rate</strong> shows the percentage that made it through. <strong>Tokens</strong>
+          helps you compare quality output against model spend, so you can spot batches that were expensive but underperformed.
+        </p>
         {batchScores.length === 0 ? (
           <p style={{ color: colors.muted }}>No batch data yet</p>
         ) : (
@@ -318,9 +388,14 @@ function DimensionDeepDiveTab({ data }: { data: Record<string, unknown> }) {
       {/* Dimension averages */}
       <div style={s.section}>
         <h3 style={s.heading}>Dimension Averages</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+        <p style={s.sectionDescription}>
+          This section shows the average score for each of the five evaluation dimensions across all scored ads in
+          the global ledger. It helps you see where the system is consistently strong or weak at a glance.
+          The small <strong>n</strong> value under each card is the number of scored examples used to compute that average.
+        </p>
+        <div style={s.dimensionAvgGrid}>
           {Object.entries(dimAvgs).map(([dim, { avg, count }]) => (
-            <div key={dim} style={s.kpiCard}>
+            <div key={dim} style={s.dimensionAvgCard}>
               <div style={{ fontSize: '22px', fontWeight: 700, color: avg >= 7 ? colors.mint : avg >= 5 ? colors.yellow : colors.red, fontFamily: font.family }}>
                 {avg.toFixed(1)}
               </div>
@@ -389,39 +464,85 @@ function DimensionDeepDiveTab({ data }: { data: Record<string, unknown> }) {
 function AdLibraryTab({ data }: { data: Record<string, unknown> }) {
   const ads = (data.ad_library || []) as Ad[]
   const [filter, setFilter] = useState('')
+  const [sessionFilter, setSessionFilter] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
+
+  const sessionOptions = Array.from(
+    new Map(
+      ads.map((ad) => {
+        const id = ad.session_id || 'global'
+        const label = ad.session_label || ad.session_id || 'Global ledger'
+        return [id, { id, label }]
+      })
+    ).values()
+  ).sort((a, b) => a.label.localeCompare(b.label))
 
   const filtered = ads
     .filter((a) => !filter || a.status === filter)
+    .filter((a) => !sessionFilter || (a.session_id || 'global') === sessionFilter)
     .sort((a, b) => b.aggregate_score - a.aggregate_score)
 
   return (
     <div>
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {['', 'published', 'in_progress', 'discarded'].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            style={filter === f ? s.filterActive : s.filterBtn}
+      <h3 style={s.heading}>How To Read Ad Library</h3>
+      <p style={{ ...s.sectionDescription, marginBottom: '12px' }}>
+        Showing every created ad instance across the global ledger and per-session ledgers. If the pipeline re-generated
+        the same deterministic `ad_id` in different runs, each creation appears as its own card here.
+      </p>
+      <div style={s.adLibraryControls}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {['', 'published', 'in_progress', 'discarded'].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              style={filter === f ? s.filterActive : s.filterBtn}
+            >
+              {f || 'All'} ({f ? ads.filter((a) => a.status === f).length : ads.length})
+            </button>
+          ))}
+        </div>
+        <label style={s.sessionFilterWrap}>
+          <span style={s.sessionFilterLabel}>Session</span>
+          <select
+            value={sessionFilter}
+            onChange={(e) => setSessionFilter(e.target.value)}
+            style={s.sessionSelect}
           >
-            {f || 'All'} ({f ? ads.filter((a) => a.status === f).length : ads.length})
-          </button>
-        ))}
+            <option value="">All sessions ({sessionOptions.length})</option>
+            {sessionOptions.map((session) => (
+              <option key={session.id} value={session.id}>
+                {session.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {filtered.length === 0 ? (
         <p style={{ color: colors.muted }}>No ads found</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={s.adGrid}>
           {filtered.map((ad) => (
             <div
-              key={ad.ad_id}
-              onClick={() => setExpanded(expanded === ad.ad_id ? null : ad.ad_id)}
-              style={s.adCard}
+              key={ad.instance_id}
+              onClick={() => setExpanded(expanded === ad.instance_id ? null : ad.instance_id)}
+              style={{
+                ...s.adCard,
+                ...(expanded === ad.instance_id ? s.adCardExpanded : {}),
+              }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontSize: '12px', color: colors.muted }}>{ad.ad_id}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '12px', color: colors.muted }}>{ad.ad_id}</span>
+                  <span style={{ fontSize: '11px', color: colors.cyan }}>
+                    {ad.session_label || ad.session_id || 'global'}
+                  </span>
+                  {ad.created_at && (
+                    <span style={{ fontSize: '11px', color: colors.muted }}>
+                      {new Date(ad.created_at).toLocaleString()}
+                    </span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <StatusBadge status={ad.status} />
                   <Badge label={ad.aggregate_score.toFixed(1)} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
@@ -440,7 +561,7 @@ function AdLibraryTab({ data }: { data: Record<string, unknown> }) {
                 />
               )}
 
-              {expanded === ad.ad_id && (
+              {expanded === ad.instance_id && (
                 <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.muted}20`, fontSize: '13px', color: colors.white }}>
                   {ad.copy?.headline && <p><strong>Headline:</strong> {ad.copy.headline}</p>}
                   {ad.copy?.description && <p><strong>Description:</strong> {ad.copy.description}</p>}
@@ -483,6 +604,12 @@ function TokenEconomicsTab({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div>
+      <h3 style={s.heading}>How To Read Token Economics</h3>
+      <p style={s.sectionDescription}>
+        This tab explains where model spend is going across the pipeline. It helps you compare output quality against
+        token consumption so you can spot expensive stages, understand which models are driving cost, and estimate how
+        much compute it takes to produce one publishable ad.
+      </p>
       {costPerPub !== undefined && costPerPub > 0 && (
         <div style={{ textAlign: 'center', padding: '24px', background: colors.surface, borderRadius: radii.card, marginBottom: '24px' }}>
           <div style={{ fontSize: '36px', fontWeight: 700, color: colors.yellow, fontFamily: font.family }}>
@@ -491,16 +618,28 @@ function TokenEconomicsTab({ data }: { data: Record<string, unknown> }) {
           <div style={{ fontSize: '14px', color: colors.muted, marginTop: '8px', fontFamily: font.family }}>
             Cost Per Published Ad
           </div>
+          <p style={{ ...s.sectionDescription, margin: '10px auto 0', textAlign: 'center', maxWidth: '620px' }}>
+            This is the average token cost required to get one ad over the publish threshold. Lower is more efficient;
+            higher means the system is spending more generation, evaluation, or regeneration effort per successful ad.
+          </p>
         </div>
       )}
 
       <div style={s.section}>
         <h3 style={s.heading}>Cost by Pipeline Stage</h3>
+        <p style={s.sectionDescription}>
+          Shows which parts of the workflow are consuming the most tokens, such as generation, evaluation, or
+          regeneration. Use this to identify stages where quality gains may not justify the extra spend.
+        </p>
         <CostBars data={byStage} barColor={colors.yellow} />
       </div>
 
       <div style={s.section}>
         <h3 style={s.heading}>Cost by Model</h3>
+        <p style={s.sectionDescription}>
+          Compares spend by model family. This is useful for checking whether higher-cost models are concentrated in
+          borderline ads and whether the current routing strategy is using expensive tokens where they actually help.
+        </p>
         <CostBars data={byModel} barColor={colors.cyan} />
       </div>
     </div>
@@ -544,9 +683,21 @@ function SystemHealthTab({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div>
+      <h3 style={s.heading}>How To Read System Health</h3>
+      <p style={s.sectionDescription}>
+        This tab monitors whether the pipeline is behaving consistently and safely over time. It combines statistical
+        process control, confidence routing, and compliance outcomes so you can see whether quality is stable, whether
+        ads are being trusted appropriately, and whether safety checks are catching problems before publish.
+      </p>
       {/* SPC */}
       <div style={s.section}>
         <h3 style={s.heading}>SPC Control Chart</h3>
+        <p style={s.sectionDescription}>
+          SPC tracks whether batch quality is staying within a normal operating range. <strong>Mean</strong> is the
+          average batch score, while <strong>UCL</strong> and <strong>LCL</strong> are the upper and lower control
+          limits. A breach suggests the evaluator or generation system may be drifting, improving unusually fast, or
+          degrading unexpectedly.
+        </p>
         <div style={{ display: 'flex', gap: '32px', padding: '16px', background: colors.surface, borderRadius: radii.card }}>
           <StatBox label="Mean" value={spc.mean != null ? (spc.mean as number).toFixed(2) : '-'} />
           <StatBox label="UCL" value={spc.ucl != null ? (spc.ucl as number).toFixed(2) : '-'} color={colors.red} />
@@ -582,6 +733,11 @@ function SystemHealthTab({ data }: { data: Record<string, unknown> }) {
       {Object.keys(confidence).length > 0 && (
         <div style={s.section}>
           <h3 style={s.heading}>Confidence Routing</h3>
+          <p style={s.sectionDescription}>
+            Confidence routing shows how often the system can act autonomously versus how often it should escalate.
+            High autonomous rates suggest stable evaluator confidence; high flagged or human-required rates can indicate
+            ambiguous ads, weak prompts, or a need for tighter calibration.
+          </p>
           <div style={{ display: 'flex', gap: '32px', padding: '16px', background: colors.surface, borderRadius: radii.card }}>
             <StatBox label="Autonomous" value={`${confidence.autonomous_pct || 0}%`} color={colors.mint} />
             <StatBox label="Flagged" value={`${confidence.flagged_pct || 0}%`} color={colors.yellow} />
@@ -595,6 +751,11 @@ function SystemHealthTab({ data }: { data: Record<string, unknown> }) {
       {Object.keys(compliance).length > 0 && (
         <div style={s.section}>
           <h3 style={s.heading}>Compliance</h3>
+          <p style={s.sectionDescription}>
+            Compliance summarizes how many ads were checked by the safety pipeline and how many passed. This helps you
+            see whether policy failures are rare exceptions or a recurring quality issue that needs upstream prompt or
+            filtering changes.
+          </p>
           <div style={{ display: 'flex', gap: '32px', padding: '16px', background: colors.surface, borderRadius: radii.card }}>
             <StatBox label="Checked" value={String(compliance.total_checked || 0)} />
             <StatBox label="Passed" value={String(compliance.passed || 0)} color={colors.mint} />
@@ -709,15 +870,72 @@ const s: Record<string, React.CSSProperties> = {
   pageInner: {
     maxWidth: '1100px',
     margin: '0 auto',
-    padding: '32px 20px',
+    padding: '84px 20px 32px',
   },
   header: { marginBottom: '24px' },
-  backLink: { color: colors.cyan, cursor: 'pointer', fontSize: '13px' },
+  headerTopRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '16px',
+    flexWrap: 'wrap',
+    marginBottom: '4px',
+  },
+  breadcrumbBtn: {
+    color: colors.cyan,
+    fontSize: '13px',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 0,
+    fontFamily: font.family,
+  },
+  breadcrumbCurrentBtn: {
+    color: colors.white,
+    fontSize: '13px',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 0,
+    fontFamily: font.family,
+  },
   title: {
     fontSize: '28px', fontWeight: 700, margin: '8px 0 4px',
     background: `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
+  },
+  timeframeGroup: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  timeframeBtn: {
+    padding: '8px 12px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.muted}40`,
+    background: 'transparent',
+    color: colors.muted,
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontFamily: font.family,
+  },
+  timeframeBtnActive: {
+    padding: '8px 12px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.cyan}`,
+    background: `${colors.cyan}18`,
+    color: colors.cyan,
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontFamily: font.family,
+  },
+  timeframeSummary: {
+    color: colors.muted,
+    fontSize: '12px',
+    margin: '10px 0 0',
+    fontFamily: font.family,
   },
   tabBar: {
     display: 'flex', gap: '4px', marginBottom: '24px', overflowX: 'auto',
@@ -737,6 +955,30 @@ const s: Record<string, React.CSSProperties> = {
   },
   tabContent: { minHeight: '300px' },
   section: { marginBottom: '24px' },
+  sectionDescription: {
+    color: colors.muted,
+    fontSize: '13px',
+    lineHeight: '1.6',
+    margin: '0 0 16px',
+    maxWidth: '780px',
+    fontFamily: font.family,
+  },
+  dimensionAvgGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+    gap: '12px',
+  },
+  dimensionAvgCard: {
+    background: colors.surface,
+    borderRadius: radii.card,
+    padding: '20px 16px',
+    minHeight: '108px',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heading: { fontSize: '16px', fontWeight: 600, color: colors.white, margin: '0 0 12px', fontFamily: font.family },
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' },
   kpiCard: {
@@ -744,12 +986,130 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: radii.card,
     padding: '20px',
     textAlign: 'center',
+    position: 'relative',
+    cursor: 'default',
+    transition: 'border-color 0.15s ease',
+    border: '1px solid transparent',
+  },
+  kpiCardHover: {
+    borderColor: `${colors.cyan}60`,
+  },
+  kpiTooltip: {
+    position: 'absolute',
+    left: '50%',
+    bottom: 'calc(100% + 8px)',
+    transform: 'translateX(-50%)',
+    background: colors.ink,
+    border: `1px solid ${colors.muted}40`,
+    borderRadius: radii.input,
+    padding: '10px 14px',
+    fontSize: '12px',
+    lineHeight: '1.5',
+    color: colors.white,
+    fontFamily: font.family,
+    width: '240px',
+    textAlign: 'left',
+    zIndex: 10,
+    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+  },
+  cycleGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '10px',
+    alignItems: 'start',
   },
   cycleCard: {
     background: colors.surface,
     borderRadius: radii.input,
-    padding: '14px 18px',
+    padding: '12px 14px',
     fontFamily: font.family,
+    minWidth: 0,
+  },
+  cycleHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  cycleAdId: {
+    fontSize: '12px',
+    color: colors.muted,
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  cycleMetrics: {
+    display: 'grid',
+    gridTemplateColumns: '1fr auto 1fr',
+    gap: '10px',
+    alignItems: 'center',
+    marginTop: '10px',
+  },
+  cycleMetricBlock: {
+    textAlign: 'center',
+    minWidth: 0,
+  },
+  cycleMetricLabel: {
+    fontSize: '11px',
+    color: colors.muted,
+  },
+  cycleMetricValue: {
+    fontSize: '18px',
+    fontWeight: 700,
+    color: colors.white,
+    fontFamily: font.family,
+  },
+  cycleDelta: {
+    fontSize: '16px',
+    fontFamily: font.family,
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
+  },
+  cycleFooter: {
+    marginTop: '10px',
+    paddingTop: '10px',
+    borderTop: `1px solid ${colors.muted}16`,
+  },
+  cycleWeakest: {
+    fontSize: '13px',
+    color: colors.yellow,
+    fontFamily: font.family,
+    textTransform: 'capitalize',
+  },
+  adLibraryControls: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '16px',
+    flexWrap: 'wrap',
+  },
+  sessionFilterWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  sessionFilterLabel: {
+    fontSize: '12px',
+    color: colors.muted,
+    fontFamily: font.family,
+  },
+  sessionSelect: {
+    padding: '8px 12px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.muted}40`,
+    background: colors.surface,
+    color: colors.white,
+    fontSize: '12px',
+    fontFamily: font.family,
+    outline: 'none',
+  },
+  adGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: '12px',
+    alignItems: 'start',
   },
   adCard: {
     background: colors.surface,
@@ -757,6 +1117,11 @@ const s: Record<string, React.CSSProperties> = {
     padding: '14px 18px',
     cursor: 'pointer',
     fontFamily: font.family,
+    minHeight: '220px',
+    overflow: 'hidden',
+  },
+  adCardExpanded: {
+    minHeight: 'unset',
   },
   filterBtn: {
     padding: '6px 14px', borderRadius: radii.button, border: `1px solid ${colors.muted}40`,

@@ -6,10 +6,9 @@ format. Produces a self-contained HTML snippet for the 9th dashboard panel.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from evaluate.correlation import DIMENSIONS
-from evaluate.performance_correlation import PERFORMANCE_METRICS
 from iterate.ledger import read_events_filtered
 
 
