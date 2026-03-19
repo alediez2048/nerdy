@@ -113,6 +113,7 @@ def create_session(
 def list_sessions(
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[dict, Depends(get_current_user)],
+    session_type: str | None = Query(default=None),
     audience: str | None = Query(default=None),
     campaign_goal: str | None = Query(default=None),
     status: str | None = Query(default=None),
@@ -124,6 +125,8 @@ def list_sessions(
     query = db.query(SessionModel).filter(SessionModel.user_id == user["user_id"])
 
     # Apply filters on JSON config fields
+    if session_type:
+        query = query.filter(SessionModel.config["session_type"].as_string() == session_type)
     if audience:
         query = query.filter(SessionModel.config["audience"].as_string() == audience)
     if campaign_goal:

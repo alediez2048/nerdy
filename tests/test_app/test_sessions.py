@@ -342,3 +342,121 @@ def test_delete_session_other_user_returns_404():
     for p in patches_a2:
         p.stop()
     app.dependency_overrides.clear()
+
+
+# --- PC-00: SessionType + video fields ---
+
+
+def test_session_type_defaults_to_image(alice):
+    """Sessions without session_type default to 'image' (backward compatible)."""
+    resp = _create(alice)
+    assert resp.status_code == 201
+    assert resp.json()["config"]["session_type"] == "image"
+
+
+def test_create_video_session(alice):
+    resp = alice.post("/sessions", json={
+        "config": {
+            "session_type": "video",
+            "audience": "students",
+            "campaign_goal": "awareness",
+            "video_count": 5,
+            "video_duration": 5,
+            "video_audio_mode": "with_audio",
+            "video_aspect_ratio": "16:9",
+        },
+    })
+    assert resp.status_code == 201
+    cfg = resp.json()["config"]
+    assert cfg["session_type"] == "video"
+    assert cfg["video_count"] == 5
+    assert cfg["video_duration"] == 5
+    assert cfg["video_audio_mode"] == "with_audio"
+    assert cfg["video_aspect_ratio"] == "16:9"
+
+
+def test_video_count_out_of_range_returns_422(alice):
+    resp = alice.post("/sessions", json={
+        "config": {
+            "session_type": "video",
+            "audience": "parents",
+            "campaign_goal": "conversion",
+            "video_count": 25,
+        },
+    })
+    assert resp.status_code == 422
+
+
+def test_video_duration_out_of_range_returns_422(alice):
+    resp = alice.post("/sessions", json={
+        "config": {
+            "session_type": "video",
+            "audience": "parents",
+            "campaign_goal": "conversion",
+            "video_duration": 30,
+        },
+    })
+    assert resp.status_code == 422
+
+
+def test_invalid_session_type_returns_422(alice):
+    resp = alice.post("/sessions", json={
+        "config": {
+            "session_type": "audio",
+            "audience": "parents",
+            "campaign_goal": "conversion",
+        },
+    })
+    assert resp.status_code == 422
+
+
+def test_image_session_ignores_video_fields(alice):
+    """Image sessions accept video fields but they're just defaults."""
+    resp = alice.post("/sessions", json={
+        "config": {
+            "session_type": "image",
+            "audience": "parents",
+            "campaign_goal": "conversion",
+            "ad_count": 10,
+        },
+    })
+    assert resp.status_code == 201
+    cfg = resp.json()["config"]
+    assert cfg["session_type"] == "image"
+    assert cfg["video_count"] == 3
+    assert cfg["ad_count"] == 10
+
+
+def test_video_advanced_fields_default_empty(alice):
+    """Advanced video fields default to empty strings."""
+    resp = alice.post("/sessions", json={
+        "config": {
+            "session_type": "video",
+            "audience": "students",
+            "campaign_goal": "conversion",
+        },
+    })
+    assert resp.status_code == 201
+    cfg = resp.json()["config"]
+    assert cfg["video_scene"] == ""
+    assert cfg["video_visual_style"] == ""
+    assert cfg["video_camera_movement"] == ""
+    assert cfg["video_negative_prompt"] == ""
+
+
+def test_video_session_with_advanced_fields(alice):
+    resp = alice.post("/sessions", json={
+        "config": {
+            "session_type": "video",
+            "audience": "parents",
+            "campaign_goal": "awareness",
+            "video_scene": "Parent and student celebrating",
+            "video_visual_style": "UGC realistic",
+            "video_camera_movement": "handheld",
+            "video_negative_prompt": "no text, no logos",
+        },
+    })
+    assert resp.status_code == 201
+    cfg = resp.json()["config"]
+    assert cfg["video_scene"] == "Parent and student celebrating"
+    assert cfg["video_camera_movement"] == "handheld"

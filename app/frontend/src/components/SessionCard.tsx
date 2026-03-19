@@ -54,9 +54,14 @@ export default function SessionCard({
       </div>
 
       <div style={s.badges}>
+        {config.session_type === 'video'
+          ? <Badge label="Video" color={colors.lightPurple} />
+          : <Badge label="Image" color={colors.cyan} />}
         {audience && <Badge label={audience.charAt(0).toUpperCase() + audience.slice(1)} color={colors.cyan} />}
         {goal && <Badge label={goal.charAt(0).toUpperCase() + goal.slice(1)} color={colors.mint} />}
-        {adCount > 0 && <Badge label={`${adCount} ads`} color={colors.muted} />}
+        {config.session_type === 'video'
+          ? (config.video_count as number) > 0 && <Badge label={`${config.video_count} videos`} color={colors.muted} />
+          : adCount > 0 && <Badge label={`${adCount} ads`} color={colors.muted} />}
         {typeof config.persona === 'string' && config.persona !== 'auto' && (
           <Badge label={String(config.persona).replace(/_/g, ' ')} color={colors.lightPurple} />
         )}

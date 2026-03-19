@@ -1,4 +1,4 @@
-# Ad-Ops-Autopilot — Session schemas (PA-04)
+# Ad-Ops-Autopilot — Session schemas (PA-04, PC-00)
 from datetime import datetime
 from enum import Enum
 from typing import Any
@@ -44,9 +44,15 @@ class Persona(str, Enum):
     burned_returner = "burned_returner"
 
 
-class SessionConfig(BaseModel):
-    """Typed session configuration — matches PRD Section 4.7.2 + PB-07."""
+class SessionType(str, Enum):
+    image = "image"
+    video = "video"
 
+
+class SessionConfig(BaseModel):
+    """Typed session configuration — matches PRD Section 4.7.2 + PB-07 + PC-00."""
+
+    session_type: SessionType = SessionType.image
     audience: Audience
     campaign_goal: CampaignGoal
     ad_count: int = Field(default=50, ge=1, le=200)
@@ -62,6 +68,20 @@ class SessionConfig(BaseModel):
     key_message: str = ""
     creative_brief: str = "auto"
     copy_on_image: bool = False
+    # PC-00: Video session fields (ignored when session_type=image)
+    video_count: int = Field(default=3, ge=1, le=20)
+    video_duration: int = Field(default=10, ge=5, le=10)
+    video_audio_mode: str = "silent"
+    video_aspect_ratio: str = "9:16"
+    video_scene: str = ""
+    video_visual_style: str = ""
+    video_camera_movement: str = ""
+    video_subject_action: str = ""
+    video_setting: str = ""
+    video_lighting_mood: str = ""
+    video_audio_detail: str = ""
+    video_color_palette: str = ""
+    video_negative_prompt: str = ""
 
 
 class SessionCreate(BaseModel):

@@ -2,6 +2,7 @@
 import { colors, radii, font } from '../design/tokens'
 
 export interface Filters {
+  session_type: string
   audience: string
   campaign_goal: string
   status: string
@@ -13,13 +14,14 @@ interface Props {
 }
 
 const FILTER_OPTIONS: { key: keyof Filters; label: string; options: string[] }[] = [
+  { key: 'session_type', label: 'Type', options: ['', 'image', 'video'] },
   { key: 'audience', label: 'Audience', options: ['', 'parents', 'students'] },
   { key: 'campaign_goal', label: 'Goal', options: ['', 'awareness', 'conversion'] },
   { key: 'status', label: 'Status', options: ['', 'pending', 'running', 'completed', 'failed'] },
 ]
 
 export default function SessionFilters({ filters, onChange }: Props) {
-  const hasFilters = filters.audience || filters.campaign_goal || filters.status
+  const hasFilters = filters.session_type || filters.audience || filters.campaign_goal || filters.status
   const statusOptions = ['', 'pending', 'running', 'completed', 'failed']
 
   return (
@@ -33,7 +35,7 @@ export default function SessionFilters({ filters, onChange }: Props) {
         </div>
         {hasFilters && (
           <button
-            onClick={() => onChange({ audience: '', campaign_goal: '', status: '' })}
+            onClick={() => onChange({ session_type: '', audience: '', campaign_goal: '', status: '' })}
             style={s.clear}
           >
             Clear all
@@ -51,10 +53,20 @@ export default function SessionFilters({ filters, onChange }: Props) {
             {status ? status.replace(/_/g, ' ') : 'all statuses'}
           </button>
         ))}
+        <span style={{ width: '1px', background: `${colors.muted}30`, margin: '0 4px' }} />
+        {['', 'image', 'video'].map((t) => (
+          <button
+            key={t || 'all-types'}
+            onClick={() => onChange({ ...filters, session_type: t })}
+            style={filters.session_type === t ? s.chipActive : s.chip}
+          >
+            {t ? t : 'all types'}
+          </button>
+        ))}
       </div>
 
       <div style={s.controlsRow}>
-        {FILTER_OPTIONS.filter(({ key }) => key !== 'status').map(({ key, label, options }) => (
+        {FILTER_OPTIONS.filter(({ key }) => key !== 'status' && key !== 'session_type').map(({ key, label, options }) => (
           <div key={key} style={s.group}>
             <label style={s.label}>{label}</label>
             <select

@@ -16,6 +16,7 @@ export default function SessionList() {
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
   const [filters, setFilters] = useState<Filters>({
+    session_type: '',
     audience: '',
     campaign_goal: '',
     status: '',
@@ -29,6 +30,7 @@ export default function SessionList() {
       try {
         if (!append) setLoading(true)
         const res = await listSessions({
+          session_type: filters.session_type || undefined,
           audience: filters.audience || undefined,
           campaign_goal: filters.campaign_goal || undefined,
           status: filters.status || undefined,

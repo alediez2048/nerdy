@@ -1,19 +1,21 @@
-// PA-05: Brief configuration form with progressive disclosure
+// PA-05 + PC-00: Brief configuration form with progressive disclosure + video track
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { colors, radii, font } from '../design/tokens'
 import { createSession, listSessions } from '../api/sessions'
 import type {
   SessionConfig,
+  SessionType,
   Audience,
   CampaignGoal,
   DimensionWeights,
   ModelTier,
   AspectRatio,
+  VideoAspectRatio,
   Persona,
   SessionSummary,
 } from '../types/session'
-import { DEFAULT_CONFIG, PERSONA_LABELS, PERSONA_KEY_MESSAGES, CREATIVE_BRIEF_OPTIONS } from '../types/session'
+import { DEFAULT_CONFIG, PERSONA_LABELS, PERSONA_KEY_MESSAGES, CREATIVE_BRIEF_OPTIONS, CAMERA_MOVEMENT_OPTIONS } from '../types/session'
 
 export default function NewSessionForm() {
   const navigate = useNavigate()
@@ -39,6 +41,7 @@ export default function NewSessionForm() {
   const cloneFrom = (session: SessionSummary) => {
     const c = session.config as Record<string, unknown>
     setConfig({
+      session_type: (c.session_type as SessionType) || 'image',
       audience: (c.audience as Audience) || 'parents',
       campaign_goal: (c.campaign_goal as CampaignGoal) || 'conversion',
       ad_count: (c.ad_count as number) || 50,
@@ -53,6 +56,19 @@ export default function NewSessionForm() {
       key_message: (c.key_message as string) || '',
       creative_brief: (c.creative_brief as string) || 'auto',
       copy_on_image: c.copy_on_image === true,
+      video_count: (c.video_count as number) || 3,
+      video_duration: (c.video_duration as number) || 10,
+      video_audio_mode: (c.video_audio_mode as string) || 'silent',
+      video_aspect_ratio: (c.video_aspect_ratio as VideoAspectRatio) || '9:16',
+      video_scene: (c.video_scene as string) || '',
+      video_visual_style: (c.video_visual_style as string) || '',
+      video_camera_movement: (c.video_camera_movement as string) || '',
+      video_subject_action: (c.video_subject_action as string) || '',
+      video_setting: (c.video_setting as string) || '',
+      video_lighting_mood: (c.video_lighting_mood as string) || '',
+      video_audio_detail: (c.video_audio_detail as string) || '',
+      video_color_palette: (c.video_color_palette as string) || '',
+      video_negative_prompt: (c.video_negative_prompt as string) || '',
     })
     setShowClone(false)
   }
@@ -108,6 +124,30 @@ export default function NewSessionForm() {
         )}
 
         <form onSubmit={handleSubmit}>
+          {/* Session type toggle */}
+          <div style={s.field}>
+            <label style={s.label}>Session Type <span style={s.required}>*</span></label>
+            <div style={s.toggleGroup}>
+              {(['image', 'video'] as SessionType[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => update('session_type', t)}
+                  style={config.session_type === t
+                    ? (t === 'video' ? s.toggleActiveVideo : s.toggleActive)
+                    : s.toggle}
+                >
+                  {t === 'image' ? 'Image Ads' : 'Video Ads'}
+                </button>
+              ))}
+            </div>
+            <div style={s.hint}>
+              {config.session_type === 'image'
+                ? 'Generate copy + image ads for Meta feed placements'
+                : 'Generate copy + video ads for Stories/Reels placements'}
+            </div>
+          </div>
+
           {/* Session name */}
           <div style={s.field}>
             <label style={s.label}>Session Name (optional)</label>
@@ -120,7 +160,7 @@ export default function NewSessionForm() {
             />
           </div>
 
-          {/* Required: Audience */}
+          {/* Shared fields: Audience */}
           <div style={s.field}>
             <label style={s.label}>
               Audience <span style={s.required}>*</span>
@@ -139,7 +179,7 @@ export default function NewSessionForm() {
             </div>
           </div>
 
-          {/* Required: Campaign Goal */}
+          {/* Shared fields: Campaign Goal */}
           <div style={s.field}>
             <label style={s.label}>
               Campaign Goal <span style={s.required}>*</span>
@@ -160,22 +200,7 @@ export default function NewSessionForm() {
             </div>
           </div>
 
-          {/* Required: Ad Count */}
-          <div style={s.field}>
-            <label style={s.label}>
-              Ad Count <span style={s.required}>*</span>
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={200}
-              value={config.ad_count}
-              onChange={(e) => update('ad_count', Number(e.target.value))}
-              style={s.input}
-            />
-          </div>
-
-          {/* Persona selector */}
+          {/* Shared: Persona selector */}
           <div style={s.field}>
             <label style={s.label}>Target Persona</label>
             <select
@@ -183,7 +208,6 @@ export default function NewSessionForm() {
               onChange={(e) => {
                 const p = e.target.value as Persona
                 update('persona', p)
-                // Pre-fill key message based on persona
                 const msg = PERSONA_KEY_MESSAGES[p] || ''
                 if (msg) update('key_message', msg)
               }}
@@ -195,7 +219,7 @@ export default function NewSessionForm() {
             </select>
           </div>
 
-          {/* Creative Direction */}
+          {/* Shared: Key Message */}
           <div style={s.field}>
             <label style={s.label}>Key Message</label>
             <input
@@ -207,160 +231,287 @@ export default function NewSessionForm() {
             />
           </div>
 
-          <div style={s.field}>
-            <label style={s.label}>Creative Brief</label>
-            <select
-              value={config.creative_brief}
-              onChange={(e) => update('creative_brief', e.target.value)}
-              style={s.input}
-            >
-              {CREATIVE_BRIEF_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={s.field}>
-            <label style={s.checkLabel}>
-              <input
-                type="checkbox"
-                checked={config.copy_on_image}
-                onChange={(e) => update('copy_on_image', e.target.checked)}
-              />
-              Include headline text on generated images
-            </label>
-          </div>
-
-          {/* Advanced toggle */}
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            style={s.advancedToggle}
-          >
-            {showAdvanced ? '▼' : '▶'} Advanced Settings
-          </button>
-
-          {showAdvanced && (
-            <div style={s.advancedSection}>
-              {/* Cycle count */}
+          {/* ===== IMAGE-ONLY FIELDS ===== */}
+          {config.session_type === 'image' && (
+            <>
               <div style={s.field}>
-                <label style={s.label}>Cycle Count</label>
+                <label style={s.label}>
+                  Ad Count <span style={s.required}>*</span>
+                </label>
                 <input
                   type="number"
                   min={1}
-                  max={10}
-                  value={config.cycle_count}
-                  onChange={(e) => update('cycle_count', Number(e.target.value))}
+                  max={200}
+                  value={config.ad_count}
+                  onChange={(e) => update('ad_count', Number(e.target.value))}
                   style={s.input}
                 />
               </div>
 
-              {/* Quality threshold */}
               <div style={s.field}>
-                <label style={s.label}>Quality Threshold</label>
-                <input
-                  type="number"
-                  min={5.0}
-                  max={10.0}
-                  step={0.1}
-                  value={config.quality_threshold}
-                  onChange={(e) =>
-                    update('quality_threshold', Number(e.target.value))
-                  }
-                  style={s.input}
-                />
-              </div>
-
-              {/* Dimension weights */}
-              <div style={s.field}>
-                <label style={s.label}>Dimension Weights</label>
+                <label style={s.label}>Creative Brief</label>
                 <select
-                  value={config.dimension_weights}
-                  onChange={(e) =>
-                    update('dimension_weights', e.target.value as DimensionWeights)
-                  }
+                  value={config.creative_brief}
+                  onChange={(e) => update('creative_brief', e.target.value)}
                   style={s.input}
                 >
-                  <option value="equal">Equal</option>
-                  <option value="awareness_profile">Awareness Profile</option>
-                  <option value="conversion_profile">Conversion Profile</option>
+                  {CREATIVE_BRIEF_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
 
-              {/* Model tier */}
               <div style={s.field}>
-                <label style={s.label}>Model Tier</label>
+                <label style={s.checkLabel}>
+                  <input
+                    type="checkbox"
+                    checked={config.copy_on_image}
+                    onChange={(e) => update('copy_on_image', e.target.checked)}
+                  />
+                  Include headline text on generated images
+                </label>
+              </div>
+
+              {/* Image Advanced Settings */}
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                style={s.advancedToggle}
+              >
+                {showAdvanced ? '▼' : '▶'} Advanced Settings
+              </button>
+
+              {showAdvanced && (
+                <div style={s.advancedSection}>
+                  <div style={s.field}>
+                    <label style={s.label}>Cycle Count</label>
+                    <input type="number" min={1} max={10} value={config.cycle_count}
+                      onChange={(e) => update('cycle_count', Number(e.target.value))} style={s.input} />
+                  </div>
+                  <div style={s.field}>
+                    <label style={s.label}>Quality Threshold</label>
+                    <input type="number" min={5.0} max={10.0} step={0.1} value={config.quality_threshold}
+                      onChange={(e) => update('quality_threshold', Number(e.target.value))} style={s.input} />
+                  </div>
+                  <div style={s.field}>
+                    <label style={s.label}>Dimension Weights</label>
+                    <select value={config.dimension_weights}
+                      onChange={(e) => update('dimension_weights', e.target.value as DimensionWeights)} style={s.input}>
+                      <option value="equal">Equal</option>
+                      <option value="awareness_profile">Awareness Profile</option>
+                      <option value="conversion_profile">Conversion Profile</option>
+                    </select>
+                  </div>
+                  <div style={s.field}>
+                    <label style={s.label}>Model Tier</label>
+                    <div style={s.toggleGroup}>
+                      {(['standard', 'premium'] as ModelTier[]).map((opt) => (
+                        <button key={opt} type="button" onClick={() => update('model_tier', opt)}
+                          style={config.model_tier === opt ? s.toggleActive : s.toggle}>
+                          {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={s.field}>
+                    <label style={s.label}>Budget Cap (USD)</label>
+                    <input type="number" min={1} step={0.5} value={config.budget_cap_usd ?? ''}
+                      onChange={(e) => update('budget_cap_usd', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="No limit" style={s.input} />
+                  </div>
+                  <div style={s.field}>
+                    <label style={s.checkLabel}>
+                      <input type="checkbox" checked={config.image_enabled}
+                        onChange={(e) => update('image_enabled', e.target.checked)} />
+                      Enable image generation
+                    </label>
+                  </div>
+                  <div style={s.field}>
+                    <label style={s.label}>Aspect Ratio</label>
+                    <div style={s.checkGroup}>
+                      {(['1:1', '4:5', '9:16'] as AspectRatio[]).map((ratio) => (
+                        <label key={ratio} style={s.checkLabel}>
+                          <input type="radio" name="aspect_ratio"
+                            checked={config.aspect_ratio === ratio}
+                            onChange={() => update('aspect_ratio', ratio)} />
+                          {ratio}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ===== VIDEO-ONLY FIELDS ===== */}
+          {config.session_type === 'video' && (
+            <>
+              <div style={s.field}>
+                <label style={s.label}>
+                  Video Count <span style={s.required}>*</span>
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={config.video_count}
+                  onChange={(e) => update('video_count', Number(e.target.value))}
+                  style={s.input}
+                />
+                <div style={s.hint}>~$0.49/video (silent) or ~$0.98/video (with audio)</div>
+              </div>
+
+              <div style={s.field}>
+                <label style={s.label}>Duration</label>
                 <div style={s.toggleGroup}>
-                  {(['standard', 'premium'] as ModelTier[]).map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => update('model_tier', opt)}
-                      style={
-                        config.model_tier === opt ? s.toggleActive : s.toggle
-                      }
-                    >
-                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                  {[5, 10].map((d) => (
+                    <button key={d} type="button"
+                      onClick={() => update('video_duration', d)}
+                      style={config.video_duration === d ? s.toggleActiveVideo : s.toggle}>
+                      {d}s
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Budget cap */}
               <div style={s.field}>
-                <label style={s.label}>Budget Cap (USD)</label>
-                <input
-                  type="number"
-                  min={1}
-                  step={0.5}
-                  value={config.budget_cap_usd ?? ''}
-                  onChange={(e) =>
-                    update(
-                      'budget_cap_usd',
-                      e.target.value ? Number(e.target.value) : null,
-                    )
-                  }
-                  placeholder="No limit"
-                  style={s.input}
-                />
+                <label style={s.label}>Audio</label>
+                <div style={s.toggleGroup}>
+                  {[{ v: 'silent', l: 'Silent' }, { v: 'with_audio', l: 'With Audio' }].map(({ v, l }) => (
+                    <button key={v} type="button"
+                      onClick={() => update('video_audio_mode', v)}
+                      style={config.video_audio_mode === v ? s.toggleActiveVideo : s.toggle}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+                <div style={s.hint}>
+                  {config.video_audio_mode === 'silent'
+                    ? 'No dialogue or music — text overlays carry the message'
+                    : 'AI-generated audio — doubles credit cost'}
+                </div>
               </div>
 
-              {/* Image enabled */}
-              <div style={s.field}>
-                <label style={s.checkLabel}>
-                  <input
-                    type="checkbox"
-                    checked={config.image_enabled}
-                    onChange={(e) => update('image_enabled', e.target.checked)}
-                  />
-                  Enable image generation
-                </label>
-              </div>
-
-              {/* Aspect ratio */}
               <div style={s.field}>
                 <label style={s.label}>Aspect Ratio</label>
                 <div style={s.checkGroup}>
-                  {(['1:1', '4:5', '9:16'] as AspectRatio[]).map((ratio) => (
+                  {(['9:16', '16:9', '1:1'] as VideoAspectRatio[]).map((ratio) => (
                     <label key={ratio} style={s.checkLabel}>
-                      <input
-                        type="radio"
-                        name="aspect_ratio"
-                        checked={config.aspect_ratio === ratio}
-                        onChange={() => update('aspect_ratio', ratio)}
-                      />
-                      {ratio}
+                      <input type="radio" name="video_aspect_ratio"
+                        checked={config.video_aspect_ratio === ratio}
+                        onChange={() => update('video_aspect_ratio', ratio)} />
+                      {ratio}{ratio === '9:16' ? ' (Stories/Reels)' : ratio === '16:9' ? ' (YouTube/Web)' : ' (Feed)'}
                     </label>
                   ))}
                 </div>
               </div>
-            </div>
+
+              {/* Video Advanced Settings — 8-part prompt framework */}
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                style={s.advancedToggle}
+              >
+                {showAdvanced ? '▼' : '▶'} Advanced Video Settings
+              </button>
+
+              {showAdvanced && (
+                <div style={s.advancedSection}>
+                  <div style={s.hint}>
+                    Leave blank to auto-generate from persona and key message. Fill in for full creative control.
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Scene</label>
+                    <textarea value={config.video_scene}
+                      onChange={(e) => update('video_scene', e.target.value)}
+                      placeholder="One-sentence summary: e.g. 'Parent and student celebrate SAT score at kitchen table'"
+                      style={s.textarea} rows={2} />
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Visual Style</label>
+                    <input type="text" value={config.video_visual_style}
+                      onChange={(e) => update('video_visual_style', e.target.value)}
+                      placeholder="UGC realistic, shot on phone"
+                      style={s.input} />
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Camera Movement</label>
+                    <select value={config.video_camera_movement}
+                      onChange={(e) => update('video_camera_movement', e.target.value)}
+                      style={s.input}>
+                      {CAMERA_MOVEMENT_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Subject & Action</label>
+                    <textarea value={config.video_subject_action}
+                      onChange={(e) => update('video_subject_action', e.target.value)}
+                      placeholder="Who is in the scene and what are they doing?"
+                      style={s.textarea} rows={2} />
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Background / Setting</label>
+                    <input type="text" value={config.video_setting}
+                      onChange={(e) => update('video_setting', e.target.value)}
+                      placeholder="Bright home study area, afternoon sunlight"
+                      style={s.input} />
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Lighting & Mood</label>
+                    <input type="text" value={config.video_lighting_mood}
+                      onChange={(e) => update('video_lighting_mood', e.target.value)}
+                      placeholder="Natural, soft morning light"
+                      style={s.input} />
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Audio Detail</label>
+                    <textarea value={config.video_audio_detail}
+                      onChange={(e) => update('video_audio_detail', e.target.value)}
+                      placeholder="Ambient classroom sounds, no dialogue"
+                      style={s.textarea} rows={2} />
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Color Palette</label>
+                    <input type="text" value={config.video_color_palette}
+                      onChange={(e) => update('video_color_palette', e.target.value)}
+                      placeholder="Brand teal #17e2ea, navy #0a2240"
+                      style={s.input} />
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Negative Prompt</label>
+                    <textarea value={config.video_negative_prompt}
+                      onChange={(e) => update('video_negative_prompt', e.target.value)}
+                      placeholder="no text, no subtitles, no brand logos"
+                      style={s.textarea} rows={2} />
+                  </div>
+
+                  <div style={s.field}>
+                    <label style={s.label}>Budget Cap (USD)</label>
+                    <input type="number" min={1} step={0.5} value={config.budget_cap_usd ?? ''}
+                      onChange={(e) => update('budget_cap_usd', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="No limit" style={s.input} />
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {error && <p style={s.error}>{error}</p>}
 
           <button type="submit" disabled={loading} style={s.submit}>
-            {loading ? 'Creating...' : 'Create Session'}
+            {loading ? 'Creating...' : config.session_type === 'video' ? 'Create Video Session' : 'Create Session'}
           </button>
         </form>
       </div>
@@ -439,6 +590,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '14px',
     fontFamily: font.family,
   },
+  toggleActiveVideo: {
+    padding: '8px 20px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.lightPurple}`,
+    background: `${colors.lightPurple}20`,
+    color: colors.lightPurple,
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontFamily: font.family,
+  },
   advancedToggle: {
     background: 'none',
     border: 'none',
@@ -453,6 +614,23 @@ const styles: Record<string, React.CSSProperties> = {
     borderTop: `1px solid ${colors.muted}20`,
     paddingTop: '16px',
     marginBottom: '16px',
+  },
+  hint: {
+    fontSize: '12px',
+    color: colors.muted,
+    marginTop: '6px',
+  },
+  textarea: {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: radii.input,
+    border: `1px solid ${colors.muted}40`,
+    background: colors.ink,
+    color: colors.white,
+    fontSize: '14px',
+    fontFamily: font.family,
+    boxSizing: 'border-box' as const,
+    resize: 'vertical' as const,
   },
   checkLabel: {
     display: 'flex',

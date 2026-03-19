@@ -37,6 +37,7 @@ export async function createSession(
 }
 
 export async function listSessions(params?: {
+  session_type?: string
   audience?: string
   campaign_goal?: string
   status?: string
@@ -44,6 +45,7 @@ export async function listSessions(params?: {
   limit?: number
 }): Promise<SessionListResponse> {
   const query = new URLSearchParams()
+  if (params?.session_type) query.set('session_type', params.session_type)
   if (params?.audience) query.set('audience', params.audience)
   if (params?.campaign_goal) query.set('campaign_goal', params.campaign_goal)
   if (params?.status) query.set('status', params.status)

@@ -1,10 +1,12 @@
-// Ad-Ops-Autopilot — Session types (matches backend schemas from PA-04)
+// Ad-Ops-Autopilot — Session types (matches backend schemas from PA-04, PC-00)
 
+export type SessionType = 'image' | 'video'
 export type Audience = 'parents' | 'students'
 export type CampaignGoal = 'awareness' | 'conversion'
 export type DimensionWeights = 'awareness_profile' | 'conversion_profile' | 'equal'
 export type ModelTier = 'standard' | 'premium'
 export type AspectRatio = '1:1' | '4:5' | '9:16'
+export type VideoAspectRatio = '9:16' | '16:9' | '1:1'
 export type Persona = 'auto' | 'athlete_recruit' | 'suburban_optimizer' | 'immigrant_navigator' | 'cultural_investor' | 'system_optimizer' | 'neurodivergent_advocate' | 'burned_returner'
 
 export const PERSONA_LABELS: Record<Persona, string> = {
@@ -38,7 +40,17 @@ export const CREATIVE_BRIEF_OPTIONS = [
   { value: 'stat_focused', label: 'Stat-Focused' },
 ] as const
 
+export const CAMERA_MOVEMENT_OPTIONS = [
+  { value: '', label: 'Auto' },
+  { value: 'handheld', label: 'Handheld (UGC)' },
+  { value: 'dolly-in', label: 'Dolly-in' },
+  { value: 'tracking', label: 'Tracking Shot' },
+  { value: 'static', label: 'Static' },
+  { value: 'slow-motion', label: 'Slow Motion' },
+] as const
+
 export interface SessionConfig {
+  session_type: SessionType
   audience: Audience
   campaign_goal: CampaignGoal
   ad_count: number
@@ -53,6 +65,19 @@ export interface SessionConfig {
   key_message: string
   creative_brief: string
   copy_on_image: boolean
+  video_count: number
+  video_duration: number
+  video_audio_mode: string
+  video_aspect_ratio: VideoAspectRatio
+  video_scene: string
+  video_visual_style: string
+  video_camera_movement: string
+  video_subject_action: string
+  video_setting: string
+  video_lighting_mood: string
+  video_audio_detail: string
+  video_color_palette: string
+  video_negative_prompt: string
 }
 
 export interface SessionCreate {
@@ -115,6 +140,7 @@ export interface SessionListResponse {
 }
 
 export const DEFAULT_CONFIG: SessionConfig = {
+  session_type: 'image',
   audience: 'parents',
   campaign_goal: 'conversion',
   ad_count: 50,
@@ -129,4 +155,17 @@ export const DEFAULT_CONFIG: SessionConfig = {
   key_message: '',
   creative_brief: 'auto',
   copy_on_image: false,
+  video_count: 3,
+  video_duration: 10,
+  video_audio_mode: 'silent',
+  video_aspect_ratio: '9:16',
+  video_scene: '',
+  video_visual_style: '',
+  video_camera_movement: '',
+  video_subject_action: '',
+  video_setting: '',
+  video_lighting_mood: '',
+  video_audio_detail: '',
+  video_color_palette: '',
+  video_negative_prompt: '',
 }
