@@ -7,6 +7,21 @@
 
 ---
 
+## Frontend: Light mode — counter-invert `<video>` (Ad Library) ✅
+
+### Plain-English Summary
+- In **light mode**, the app uses `body.light-mode { filter: invert(1) hue-rotate(180deg) }`; **`img` was already counter-inverted**, but **`<video>` was not**, so Ad Library clips looked color-inverted (“blacklight”).
+- **`app/frontend/src/index.css`**: apply the same counter-filter to `body.light-mode video` as for `img`.
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 19, 2026  |  **Branch:** `video-implementation-2.0`
+- **Commit:** `fix(frontend): counter-invert video in light mode`
+
+### Files Changed
+- `app/frontend/src/index.css`
+
+---
+
 ## PB-14: Integration Test + Validation ✅
 
 ### Plain-English Summary
