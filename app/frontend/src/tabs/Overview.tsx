@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { colors, radii, font } from '../design/tokens'
 import { fetchSummary } from '../api/dashboard'
 
-export default function Overview({ sessionId }: { sessionId: string }) {
+export default function Overview({ sessionId, sessionType = 'image' }: { sessionId: string; sessionType?: string }) {
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
@@ -16,21 +16,35 @@ export default function Overview({ sessionId }: { sessionId: string }) {
   if (!data) return <p style={{ color: colors.muted }}>Loading...</p>
 
   const summary = (data.pipeline_summary || {}) as Record<string, unknown>
+  const results = (data.results_summary || {}) as Record<string, unknown>
 
-  const metrics = [
-    { label: 'Ads Generated', value: summary.total_ads_generated ?? '—',
-      tip: 'Total number of ad variants created across all cycles, including regeneration attempts.' },
-    { label: 'Published', value: summary.total_ads_published ?? '—',
-      tip: 'Ads that met the quality threshold (7.0+) and passed compliance checks.' },
-    { label: 'Publish Rate', value: summary.publish_rate ? `${((summary.publish_rate as number) * 100).toFixed(0)}%` : '—',
-      tip: 'Percentage of generated ads that scored above threshold. Higher = better brief quality and fewer wasted tokens.' },
-    { label: 'Avg Score', value: summary.avg_score ?? '—',
-      tip: 'Mean aggregate score across all 5 dimensions (Clarity, Value Prop, CTA, Brand Voice, Emotional Resonance) for published ads.' },
-    { label: 'Total Cost', value: summary.total_cost_usd ? `$${(summary.total_cost_usd as number).toFixed(2)}` : '—',
-      tip: 'Estimated API spend for generation, evaluation, and image creation. Based on token counts and per-model pricing.' },
-    { label: 'Total Tokens', value: summary.total_tokens ? (summary.total_tokens as number).toLocaleString() : '—',
-      tip: 'Sum of input + output tokens consumed across all LLM and image API calls in this session.' },
-  ]
+  const isVideo = sessionType === 'video'
+
+  const metrics = isVideo
+    ? [
+        { label: 'Videos Generated', value: results.videos_generated ?? summary.total_ads_generated ?? '—',
+          tip: 'Total number of video variants generated via Kling API.' },
+        { label: 'Selected', value: results.videos_selected ?? '—',
+          tip: 'Videos that passed attribute + coherence thresholds and were selected.' },
+        { label: 'Blocked', value: results.videos_blocked ?? '—',
+          tip: 'Videos that failed quality thresholds — session falls back to copy-only for those ads.' },
+        { label: 'Total Cost', value: results.cost_so_far ? `$${(results.cost_so_far as number).toFixed(2)}` : summary.total_cost_usd ? `$${(summary.total_cost_usd as number).toFixed(2)}` : '—',
+          tip: 'Estimated Kling API credit cost for video generation.' },
+      ]
+    : [
+        { label: 'Ads Generated', value: summary.total_ads_generated ?? '—',
+          tip: 'Total number of ad variants created across all cycles, including regeneration attempts.' },
+        { label: 'Published', value: summary.total_ads_published ?? '—',
+          tip: 'Ads that met the quality threshold (7.0+) and passed compliance checks.' },
+        { label: 'Publish Rate', value: summary.publish_rate ? `${((summary.publish_rate as number) * 100).toFixed(0)}%` : '—',
+          tip: 'Percentage of generated ads that scored above threshold. Higher = better brief quality and fewer wasted tokens.' },
+        { label: 'Avg Score', value: summary.avg_score ?? '—',
+          tip: 'Mean aggregate score across all 5 dimensions (Clarity, Value Prop, CTA, Brand Voice, Emotional Resonance) for published ads.' },
+        { label: 'Total Cost', value: summary.total_cost_usd ? `$${(summary.total_cost_usd as number).toFixed(2)}` : '—',
+          tip: 'Estimated API spend for generation, evaluation, and image creation. Based on token counts and per-model pricing.' },
+        { label: 'Total Tokens', value: summary.total_tokens ? (summary.total_tokens as number).toLocaleString() : '—',
+          tip: 'Sum of input + output tokens consumed across all LLM and image API calls in this session.' },
+      ]
 
   return (
     <div>

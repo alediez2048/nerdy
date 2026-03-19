@@ -170,9 +170,9 @@ export default function SessionDetail() {
 
         {/* Tab content */}
         <div style={s.tabContent}>
-          {activeTab === 'overview' && <Overview sessionId={sessionId!} />}
+          {activeTab === 'overview' && <Overview sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} />}
           {activeTab === 'quality' && <Quality sessionId={sessionId!} />}
-          {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} />}
+          {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} />}
           {activeTab === 'competitive' && <CompetitiveIntel />}
           {activeTab === 'costs' && <TokenEconomics sessionId={sessionId!} />}
           {activeTab === 'curated' && <CuratedSet sessionId={sessionId!} />}

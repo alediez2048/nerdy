@@ -15,9 +15,11 @@ interface Ad {
   cycle_count: number
   image_path: string | null
   image_url: string | null
+  video_url?: string | null
+  video_scores?: Record<string, number> | null
 }
 
-export default function AdLibrary({ sessionId }: { sessionId: string }) {
+export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessionId: string; sessionType?: string }) {
   const [ads, setAds] = useState<Ad[]>([])
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -63,6 +65,9 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
               next.has(uid) ? next.delete(uid) : next.add(uid)
               return next
             })
+            const isVideo = sessionType === 'video'
+            const hasVideo = isVideo && ad.video_url
+
             if (isExpanded) {
               return (
                 <div
@@ -71,14 +76,26 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
                   style={{ ...s.card, ...s.cardExpanded }}
                 >
                   <div style={s.expandedLayout}>
-                    {ad.image_url && (
+                    {hasVideo ? (
+                      <video
+                        src={`/api${ad.video_url}`}
+                        controls
+                        style={s.adVideoExpanded}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : ad.image_url ? (
                       <img
                         src={`/api${ad.image_url}`}
                         alt={`Ad ${ad.ad_id}`}
                         style={s.adImageExpanded}
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
-                    )}
+                    ) : isVideo ? (
+                      <div style={s.noVideoPlaceholder}>
+                        <span style={{ fontSize: '32px' }}>🎬</span>
+                        <span style={{ color: colors.muted, fontSize: '12px' }}>Copy only</span>
+                      </div>
+                    ) : null}
                     <div style={s.expandedDetails}>
                       <div style={s.cardHeader}>
                         <span style={s.adId}>{ad.ad_id}</span>
@@ -95,16 +112,37 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
                         {ad.copy?.description && <p style={{ margin: '4px 0' }}><strong>Description:</strong> {ad.copy.description}</p>}
                         {ad.copy?.cta_button && <p style={{ margin: '4px 0' }}><strong>CTA:</strong> {ad.copy.cta_button}</p>}
                       </div>
-                      <div style={s.scoreGrid}>
-                        {Object.entries(ad.scores).map(([dim, score]) => (
-                          <div key={dim} style={s.scoreItem}>
-                            <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace('_', ' ')}</span>
-                            <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '—'}</span>
-                          </div>
-                        ))}
-                      </div>
+                      {isVideo && ad.video_scores ? (
+                        <div style={s.scoreGrid}>
+                          {Object.entries(ad.video_scores).map(([dim, score]) => (
+                            <div key={dim} style={s.scoreItem}>
+                              <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace('_', ' ')}</span>
+                              <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(2) : '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={s.scoreGrid}>
+                          {Object.entries(ad.scores).map(([dim, score]) => (
+                            <div key={dim} style={s.scoreItem}>
+                              <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace('_', ' ')}</span>
+                              <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', padding: '0 14px' }}>
-                        <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>
+                        {!isVideo && <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>}
+                        {hasVideo && (
+                          <a
+                            href={`/api${ad.video_url}`}
+                            download
+                            onClick={(e) => e.stopPropagation()}
+                            style={s.downloadBtn}
+                          >
+                            Download MP4
+                          </a>
+                        )}
                         {ad.status === 'published' && (
                           <button
                             onClick={(e) => {
@@ -131,14 +169,28 @@ export default function AdLibrary({ sessionId }: { sessionId: string }) {
                 onClick={toggle}
                 style={s.card}
               >
-                {ad.image_url && (
+                {hasVideo ? (
+                  <video
+                    src={`/api${ad.video_url}`}
+                    muted
+                    style={s.adVideo}
+                    onMouseEnter={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
+                    onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : ad.image_url ? (
                   <img
                     src={`/api${ad.image_url}`}
                     alt={`Ad ${ad.ad_id}`}
                     style={s.adImage}
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                   />
-                )}
+                ) : isVideo ? (
+                  <div style={s.noVideoThumb}>
+                    <span style={{ fontSize: '24px' }}>🎬</span>
+                    <span style={{ color: colors.muted, fontSize: '11px' }}>Copy only</span>
+                  </div>
+                ) : null}
                 <div style={s.cardHeader}>
                   <span style={s.adId}>{ad.ad_id}</span>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -224,5 +276,31 @@ const s: Record<string, React.CSSProperties> = {
   curatedBtnDone: {
     padding: '5px 14px', borderRadius: radii.button, border: `1px solid ${colors.mint}40`,
     background: 'transparent', color: colors.mint, fontSize: '12px', cursor: 'default', fontFamily: font.family,
+  },
+  adVideo: {
+    width: '100%', aspectRatio: '9/16', objectFit: 'cover' as const, display: 'block',
+    background: '#000', cursor: 'pointer',
+  },
+  adVideoExpanded: {
+    width: '280px', minWidth: '280px', maxHeight: '500px',
+    objectFit: 'contain' as const, display: 'block',
+    background: '#000',
+    borderRight: `1px solid ${colors.muted}20`,
+  },
+  noVideoThumb: {
+    width: '100%', aspectRatio: '9/16',
+    display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
+    gap: '4px', background: `${colors.muted}10`,
+  },
+  noVideoPlaceholder: {
+    width: '280px', minWidth: '280px', minHeight: '200px',
+    display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
+    gap: '8px', background: `${colors.muted}10`,
+    borderRight: `1px solid ${colors.muted}20`,
+  },
+  downloadBtn: {
+    padding: '5px 14px', borderRadius: radii.button, border: `1px solid ${colors.cyan}40`,
+    background: 'transparent', color: colors.cyan, fontSize: '12px', cursor: 'pointer',
+    fontFamily: font.family, textDecoration: 'none',
   },
 }

@@ -27,6 +27,14 @@ CYCLE_COMPLETE = "cycle_complete"
 PIPELINE_COMPLETE = "pipeline_complete"
 PIPELINE_ERROR = "pipeline_error"
 
+# Video-specific event types (PC-03)
+VIDEO_PIPELINE_START = "video_pipeline_start"
+VIDEO_AD_START = "video_ad_start"
+VIDEO_GENERATING = "video_generating"
+VIDEO_EVALUATING = "video_evaluating"
+VIDEO_AD_COMPLETE = "video_ad_complete"
+VIDEO_PIPELINE_COMPLETE = "video_pipeline_complete"
+
 
 def _get_redis() -> redis.Redis:
     return redis.from_url(settings.REDIS_URL, decode_responses=True)
