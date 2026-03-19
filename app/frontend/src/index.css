@@ -17,8 +17,10 @@ body.light-mode {
   filter: invert(1) hue-rotate(180deg);
 }
 
-/* Counter-invert images so they display correctly in light mode */
-body.light-mode img {
+/* Counter-invert raster media so they display correctly in light mode
+   (body.light-mode inverts the whole page; img/video must undo that on pixels) */
+body.light-mode img,
+body.light-mode video {
   filter: invert(1) hue-rotate(180deg);
 }
 
