@@ -1,131 +1,269 @@
-"""Video spec extraction from expanded brief (P3-07, PRD 4.9.2).
+"""Video spec builder for Kling 2.6 (PC-01).
 
-Derives video generation specs from the same expanded brief used for
-image specs. Produces anchor + alternative variant specs.
+Converts session config (persona, key message, 8-part framework fields)
+into a VideoSpec and assembles a Kling-ready prompt string.
 """
 
 from __future__ import annotations
 
+import json
 import logging
-from dataclasses import dataclass
+import os
+import re
+from dataclasses import dataclass, field
+from typing import Any
+
+from iterate.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
-_PACING_MAP = {
-    "urgency": "fast",
-    "confidence": "medium",
-    "aspiration": "medium",
-    "empathy": "slow",
-}
-
-_MOOD_MAP = {
-    "aspiration": "uplifting and optimistic",
-    "urgency": "energetic and motivating",
-    "empathy": "warm and understanding",
-    "confidence": "assured and empowering",
-}
-
-_ALT_PACING = {"fast": "medium", "medium": "slow", "slow": "medium"}
+BRAND_SAFETY_NEGATIVE = "blur, distort, low quality, brand logos, trademarks, competitor names"
 
 
 @dataclass
 class VideoSpec:
-    """Specification for UGC video generation."""
+    """Structured video specification for Kling 2.6 generation."""
 
-    hook_action: str
-    scene_description: str
-    pacing: str  # fast | medium | slow
-    mood: str
-    subject_demographic: str
-    text_overlay_content: str
-    audio_mode: str  # silent | music | voiceover
-    duration: int = 6
-    aspect_ratio: str = "9:16"
+    scene: str
+    visual_style: str
+    camera_movement: str
+    subject_action: str
+    setting: str
+    lighting_mood: str
+    audio_mode: str
+    audio_detail: str
+    color_palette: str
+    negative_prompt: str
+    duration: int
+    aspect_ratio: str
+    text_overlay_sequence: list[str] = field(default_factory=list)
+    persona: str = "auto"
+    campaign_goal: str = "conversion"
 
 
-def extract_video_spec(expanded_brief: dict) -> VideoSpec:
-    """Derive video spec from expanded brief.
+_PERSONA_VIDEO_DIRECTION: dict[str, str] = {
+    "athlete_recruit": (
+        "Fast-paced, competitive energy. Campus or athletic field setting. "
+        "Handheld camera, dynamic tracking. Student in athletic context — "
+        "showing ambition, SAT prep alongside sports. Energetic, motivating mood."
+    ),
+    "suburban_optimizer": (
+        "Calm, organized progression. Clean home study space. Steady camera, "
+        "slow dolly-in. Parent and student reviewing results side by side. "
+        "Before/after score progression. Professional, optimistic tone."
+    ),
+    "immigrant_navigator": (
+        "Warm family scenes, step-by-step progression. Welcoming home or "
+        "library setting. Medium shot, reassuring. Multicultural family "
+        "navigating the process together. Supportive, guiding mood."
+    ),
+    "cultural_investor": (
+        "Technology-focused, data overlays. Modern study setup, clean lines. "
+        "Dolly-in camera. Student consolidating multiple resources into one "
+        "platform. Efficient, sophisticated tone."
+    ),
+    "system_optimizer": (
+        "Data dashboard aesthetic, minimal motion. Fast cuts between metrics. "
+        "Static or slow-motion camera. Score charts, clean typography. "
+        "McKinsey one-pager feel. Precise, analytical mood."
+    ),
+    "neurodivergent_advocate": (
+        "Warm, inclusive 1:1 tutoring. Comfortable home or quiet space. "
+        "Slow-motion or steady camera. Patient tutor and engaged student. "
+        "Calm lighting, adaptive environment. Understanding, supportive mood."
+    ),
+    "burned_returner": (
+        "Transformation story with contrast. Before: frustration, low scores. "
+        "After: confidence, improvement. Tracking shot following journey. "
+        "Fresh start energy, new beginning aesthetic."
+    ),
+}
 
-    Grounded in brief facts — no hallucinated claims.
 
-    Args:
-        expanded_brief: The expanded brief dict.
+def _has_explicit_fields(config: dict[str, Any]) -> bool:
+    """True if the user provided at least scene + subject_action."""
+    return bool(config.get("video_scene", "").strip()) and bool(
+        config.get("video_subject_action", "").strip()
+    )
 
-    Returns:
-        VideoSpec with all fields populated.
+
+def _call_gemini_for_video_spec(prompt: str) -> dict[str, Any]:
+    """Call Gemini Flash to auto-derive video spec fields."""
+    from google import genai
+    from google.genai import types
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not set in environment")
+
+    def _do_call() -> dict[str, Any]:
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.4,
+                max_output_tokens=1024,
+            ),
+        )
+        text = response.text or ""
+        stripped = text.strip()
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped)
+        if match:
+            stripped = match.group(1).strip()
+        return json.loads(stripped)
+
+    return retry_with_backoff(_do_call)
+
+
+def _auto_derive_spec(
+    brief: dict[str, Any],
+    config: dict[str, Any],
+) -> dict[str, str]:
+    """Use Gemini Flash to generate the 8-part framework from persona + brief."""
+    persona = config.get("persona", "auto")
+    audience = config.get("audience", "parents")
+    campaign_goal = config.get("campaign_goal", "conversion")
+    key_message = config.get("key_message", "") or brief.get("key_message", "")
+
+    persona_hint = _PERSONA_VIDEO_DIRECTION.get(persona, "")
+    if not persona_hint:
+        persona_hint = (
+            "General education ad. Student studying or family discussing test prep. "
+            "Warm, encouraging, professional. UGC realistic style."
+        )
+
+    prompt = f"""Generate a video specification for a Varsity Tutors SAT test prep ad.
+
+Audience: {audience}
+Campaign goal: {campaign_goal}
+Key message: {key_message}
+Product: {brief.get('product', 'SAT Tutoring')}
+Persona direction: {persona_hint}
+
+Output ONLY valid JSON with these exact keys:
+{{
+  "scene": "<one-sentence summary of the scene>",
+  "visual_style": "<e.g. UGC realistic, cinematic, phone-captured>",
+  "camera_movement": "<e.g. handheld, dolly-in, tracking, static, slow-motion>",
+  "subject_action": "<who is in the scene and what they are doing>",
+  "setting": "<location, time of day, environment>",
+  "lighting_mood": "<lighting style and emotional tone>",
+  "audio_detail": "<ambient sounds or silence>",
+  "color_palette": "<colors, brand colors if applicable>"
+}}"""
+
+    try:
+        return _call_gemini_for_video_spec(prompt)
+    except Exception as e:
+        logger.warning("Auto-derive video spec failed: %s — using persona defaults", e)
+        return {
+            "scene": f"Student preparing for SAT exam with Varsity Tutors — {key_message}",
+            "visual_style": "UGC realistic, shot on phone",
+            "camera_movement": "handheld",
+            "subject_action": f"Student studying, showing progress — {key_message}",
+            "setting": "Bright home study area, afternoon sunlight",
+            "lighting_mood": "Natural, warm, encouraging",
+            "audio_detail": "",
+            "color_palette": "#17e2ea, #0a2240",
+        }
+
+
+def build_video_spec(
+    expanded_brief: dict[str, Any],
+    session_config: dict[str, Any],
+    ad_copy: dict[str, Any],
+) -> VideoSpec:
+    """Build a VideoSpec from session config + brief + ad copy.
+
+    If user provided explicit 8-part fields, use them directly.
+    If fields are empty, auto-derive from persona + brief via Gemini Flash.
     """
-    audience = expanded_brief.get("audience", "parents")
-    product = expanded_brief.get("product", "tutoring")
-    key_benefit = expanded_brief.get("key_benefit", "personalized learning")
-    hook_text = expanded_brief.get("hook_text", "")
-    emotional_angles = expanded_brief.get("emotional_angles", ["aspiration"])
-    primary_emotion = emotional_angles[0] if emotional_angles else "aspiration"
-
-    pacing = _PACING_MAP.get(primary_emotion, "medium")
-    mood = _MOOD_MAP.get(primary_emotion, "uplifting and optimistic")
-
-    # Scene grounded in product and audience
-    if audience == "students":
-        scene = f"Student confidently preparing for exams with {product}, showing progress"
+    if _has_explicit_fields(session_config):
+        derived = {}
+        scene = session_config.get("video_scene", "").strip()
+        visual_style = session_config.get("video_visual_style", "").strip() or "UGC realistic"
+        camera_movement = session_config.get("video_camera_movement", "").strip() or "handheld"
+        subject_action = session_config.get("video_subject_action", "").strip()
+        setting = session_config.get("video_setting", "").strip() or "Bright study environment"
+        lighting_mood = session_config.get("video_lighting_mood", "").strip() or "Natural, warm"
+        audio_detail = session_config.get("video_audio_detail", "").strip()
+        color_palette = session_config.get("video_color_palette", "").strip() or "#17e2ea, #0a2240"
     else:
-        scene = f"Parent and student reviewing {product} results together, celebrating improvement"
+        derived = _auto_derive_spec(expanded_brief, session_config)
+        scene = derived.get("scene", "Student studying for SAT")
+        visual_style = derived.get("visual_style", "UGC realistic")
+        camera_movement = derived.get("camera_movement", "handheld")
+        subject_action = derived.get("subject_action", "Student at desk")
+        setting = derived.get("setting", "Home study area")
+        lighting_mood = derived.get("lighting_mood", "Natural, warm")
+        audio_detail = derived.get("audio_detail", "")
+        color_palette = derived.get("color_palette", "#17e2ea, #0a2240")
 
-    subject_demo = "high school student" if audience == "students" else "parent and teen"
+    user_negative = session_config.get("video_negative_prompt", "").strip()
+    negative_prompt = user_negative if user_negative else BRAND_SAFETY_NEGATIVE
+
+    text_overlay = [
+        ad_copy.get("primary_text", ""),
+        ad_copy.get("headline", ""),
+        ad_copy.get("cta_button", ""),
+    ]
 
     return VideoSpec(
-        hook_action=hook_text or f"Discover how {product} transforms results",
-        scene_description=scene,
-        pacing=pacing,
-        mood=mood,
-        subject_demographic=subject_demo,
-        text_overlay_content=key_benefit,
-        audio_mode="music",
-        duration=6,
-        aspect_ratio="9:16",
+        scene=scene,
+        visual_style=visual_style,
+        camera_movement=camera_movement,
+        subject_action=subject_action,
+        setting=setting,
+        lighting_mood=lighting_mood,
+        audio_mode=session_config.get("video_audio_mode", "silent"),
+        audio_detail=audio_detail,
+        color_palette=color_palette,
+        negative_prompt=negative_prompt,
+        duration=session_config.get("video_duration", 10),
+        aspect_ratio=session_config.get("video_aspect_ratio", "9:16"),
+        text_overlay_sequence=text_overlay,
+        persona=session_config.get("persona", "auto"),
+        campaign_goal=session_config.get("campaign_goal", "conversion"),
     )
 
 
-def generate_variant_specs(video_spec: VideoSpec) -> tuple[VideoSpec, VideoSpec]:
-    """Generate anchor + alternative variant specs.
+def build_kling_prompt(spec: VideoSpec) -> str:
+    """Assemble VideoSpec into a Kling-ready prompt string (100–150 words).
 
-    Anchor: direct interpretation of the brief.
-    Alternative: different scene/pacing while preserving message.
-
-    Args:
-        video_spec: The base video spec.
-
-    Returns:
-        Tuple of (anchor_spec, alternative_spec).
+    Structure: subject/action first, then scene context, style, camera,
+    setting, lighting, audio cues, color palette, brand instructions.
+    The negative_prompt field is NOT included — it goes as a separate API param.
     """
-    anchor = VideoSpec(
-        hook_action=video_spec.hook_action,
-        scene_description=video_spec.scene_description,
-        pacing=video_spec.pacing,
-        mood=video_spec.mood,
-        subject_demographic=video_spec.subject_demographic,
-        text_overlay_content=video_spec.text_overlay_content,
-        audio_mode=video_spec.audio_mode,
-        duration=video_spec.duration,
-        aspect_ratio=video_spec.aspect_ratio,
+    parts = []
+
+    if spec.subject_action:
+        parts.append(spec.subject_action.rstrip(".") + ".")
+
+    if spec.scene and spec.scene != spec.subject_action:
+        parts.append(f"Scene: {spec.scene.rstrip('.')}.")
+
+    if spec.visual_style:
+        parts.append(f"Visual style: {spec.visual_style.rstrip('.')}.")
+
+    if spec.camera_movement:
+        parts.append(f"Camera: {spec.camera_movement.rstrip('.')}.")
+
+    if spec.setting:
+        parts.append(f"Setting: {spec.setting.rstrip('.')}.")
+
+    if spec.lighting_mood:
+        parts.append(f"Lighting and mood: {spec.lighting_mood.rstrip('.')}.")
+
+    if spec.audio_mode == "with_audio" and spec.audio_detail:
+        parts.append(f"Audio: {spec.audio_detail.rstrip('.')}.")
+
+    if spec.color_palette:
+        parts.append(f"Color palette: {spec.color_palette.rstrip('.')}.")
+
+    parts.append(
+        "Characters wear unbranded, generic clothing. "
+        "No visible logos, text, or watermarks in the scene."
     )
 
-    alt_pacing = _ALT_PACING.get(video_spec.pacing, "medium")
-    alt_scene = video_spec.scene_description.replace(
-        "preparing for exams", "studying at home"
-    ).replace(
-        "reviewing", "discussing"
-    )
-
-    alternative = VideoSpec(
-        hook_action=video_spec.hook_action,
-        scene_description=alt_scene,
-        pacing=alt_pacing,
-        mood=video_spec.mood,
-        subject_demographic=video_spec.subject_demographic,
-        text_overlay_content=video_spec.text_overlay_content,
-        audio_mode=video_spec.audio_mode,
-        duration=video_spec.duration,
-        aspect_ratio=video_spec.aspect_ratio,
-    )
-
-    return anchor, alternative
+    return " ".join(parts)

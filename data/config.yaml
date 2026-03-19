@@ -34,3 +34,8 @@ global_seed: "nerdy-p0-default"
 # API
 api_delay_seconds: 1.5  # Between calls to respect rate limits
 retry_max_attempts: 3
+
+# Kling 2.6 (PC-01)
+kling_rpm: 10
+kling_mode: "standard"  # "standard" (~30s) or "professional" (~60s)
+video_budget_per_session: 10.00  # dollars
