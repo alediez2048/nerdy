@@ -77,22 +77,6 @@ export default function SessionList() {
   }
 
   const hasMore = offset + PAGE_SIZE < total
-  const runningCount = sessions.filter((session) => session.status === 'running').length
-  const completedCount = sessions.filter((session) => session.status === 'completed').length
-  const totalSessionCost = sessions.reduce((sum, session) => {
-    const results = session.results_summary
-    const completedCost = typeof results?.cost_so_far === 'number' ? results.cost_so_far : 0
-    const liveCost = typeof session.progress_summary?.cost_so_far === 'number'
-      ? session.progress_summary.cost_so_far
-      : 0
-    return sum + Math.max(completedCost, liveCost)
-  }, 0)
-  const stats = [
-    { label: 'Loaded Sessions', value: sessions.length, tone: colors.white },
-    { label: 'Running Now', value: runningCount, tone: colors.cyan },
-    { label: 'Completed', value: completedCount, tone: colors.mint },
-    { label: 'Total Session Cost', value: `$${totalSessionCost.toFixed(2)}`, tone: colors.yellow },
-  ]
 
   return (
     <div style={s.pageBg}>
@@ -114,14 +98,6 @@ export default function SessionList() {
             </div>
           </div>
 
-          <div style={s.summaryGrid}>
-            {stats.map((stat) => (
-              <div key={stat.label} style={s.summaryCard}>
-                <div style={{ ...s.summaryValue, color: stat.tone }}>{stat.value}</div>
-                <div style={s.summaryLabel}>{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Filters */}
@@ -231,28 +207,6 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: '14px',
     cursor: 'pointer',
     fontFamily: font.family,
-  },
-  summaryGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-    gap: '12px',
-    marginBottom: 0,
-  },
-  summaryCard: {
-    background: colors.surface,
-    borderRadius: radii.card,
-    padding: '18px 16px',
-    border: `1px solid ${colors.muted}18`,
-  },
-  summaryValue: {
-    fontSize: '26px',
-    fontWeight: 700,
-    lineHeight: 1.1,
-  },
-  summaryLabel: {
-    fontSize: '12px',
-    color: colors.muted,
-    marginTop: '8px',
   },
   grid: {
     display: 'grid',

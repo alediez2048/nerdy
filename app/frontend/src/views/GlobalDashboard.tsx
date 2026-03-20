@@ -784,17 +784,21 @@ function CompetitiveIntelTab({ data }: { data: Record<string, unknown> }) {
     return <p style={{ color: colors.muted }}>No competitive data available</p>
   }
 
-  const hookTypes = (ci.hook_type_counts || ci.hook_types || {}) as Record<string, number>
-  const ctaStyles = (ci.cta_style_counts || ci.cta_styles || {}) as Record<string, number>
-  const angles = (ci.emotional_angle_counts || ci.emotional_angles || {}) as Record<string, number>
-  const competitors = (ci.competitors || []) as Record<string, unknown>[]
-  const gaps = (ci.gap_analysis || ci.gaps || []) as string[]
+  // Backend returns hook_distribution (dict of hook→pct), strategy_radar, gap_analysis, temporal_trends
+  const hookDist = (ci.hook_distribution || ci.hook_type_counts || ci.hook_types || {}) as Record<string, number>
+  const strategyRadar = (ci.strategy_radar || {}) as Record<string, Record<string, number>>
+  const gapAnalysis = (ci.gap_analysis || ci.gaps || []) as Array<Record<string, unknown> | string>
+  const trends = (ci.temporal_trends || []) as Array<Record<string, unknown>>
+
+  // Build competitor list from strategy_radar keys
+  const competitors = Object.entries(strategyRadar).map(([name, hooks]) => ({
+    name,
+    pattern_count: Object.values(hooks).reduce((sum, v) => sum + v, 0),
+  }))
 
   return (
     <div>
-      <FrequencyBars title="Hook Types" data={hookTypes} barColor={colors.cyan} />
-      <FrequencyBars title="CTA Styles" data={ctaStyles} barColor={colors.mint} />
-      <FrequencyBars title="Emotional Angles" data={angles} barColor={colors.lightPurple} />
+      <FrequencyBars title="Hook Distribution" data={hookDist} barColor={colors.cyan} />
 
       {competitors.length > 0 && (
         <div style={s.section}>
@@ -809,8 +813,8 @@ function CompetitiveIntelTab({ data }: { data: Record<string, unknown> }) {
             <tbody>
               {competitors.map((c, i) => (
                 <tr key={i}>
-                  <td style={s.td}>{String(c.name || c.competitor || '-')}</td>
-                  <td style={s.td}>{String(c.pattern_count || c.patterns || '-')}</td>
+                  <td style={s.td}>{c.name}</td>
+                  <td style={s.td}>{c.pattern_count}</td>
                 </tr>
               ))}
             </tbody>
@@ -818,14 +822,40 @@ function CompetitiveIntelTab({ data }: { data: Record<string, unknown> }) {
         </div>
       )}
 
-      {gaps.length > 0 && (
+      {gapAnalysis.length > 0 && (
         <div style={s.section}>
           <h3 style={s.heading}>Gap Analysis</h3>
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            {gaps.map((g, i) => (
-              <li key={i} style={{ color: colors.white, fontSize: '13px', marginBottom: '6px', fontFamily: font.family }}>{g}</li>
+            {gapAnalysis.map((g, i) => (
+              <li key={i} style={{ color: colors.white, fontSize: '13px', marginBottom: '6px', fontFamily: font.family }}>
+                {typeof g === 'string' ? g : `${g.hook_type || ''} — ${g.opportunity || ''}`}
+              </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {trends.length > 0 && (
+        <div style={s.section}>
+          <h3 style={s.heading}>Temporal Trends</h3>
+          <table style={s.table}>
+            <thead>
+              <tr>
+                <th style={s.th}>Hook Type</th>
+                <th style={s.th}>Direction</th>
+                <th style={s.th}>Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trends.map((t, i) => (
+                <tr key={i}>
+                  <td style={s.td}>{String(t.hook_type || '-')}</td>
+                  <td style={s.td}>{String(t.direction || '-')}</td>
+                  <td style={s.td}>{typeof t.change_pct === 'number' ? `${t.change_pct.toFixed(1)}%` : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
