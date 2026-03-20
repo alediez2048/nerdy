@@ -128,15 +128,12 @@ def _build_pipeline_summary(events: list[dict]) -> dict:
     avg_score = round(sum(pub_scores) / len(pub_scores), 1) if pub_scores else 0.0
     publish_rate = round(published / max(generated, 1), 3)
 
-    # Estimate USD cost using cost_reporter if available
+    # Estimate USD cost using cost_reporter (handles text, image, and video pricing)
     total_cost_usd = 0.0
     try:
-        from evaluate.cost_reporter import MODEL_COST_RATES
+        from evaluate.cost_reporter import compute_event_cost
         for e in events:
-            model = e.get("model_used", "unknown")
-            tokens = e.get("tokens_consumed", 0)
-            rate = MODEL_COST_RATES.get(model, 0.01 / 1000)
-            total_cost_usd += rate * tokens
+            total_cost_usd += compute_event_cost(e)
         total_cost_usd = round(total_cost_usd, 4)
     except ImportError:
         pass

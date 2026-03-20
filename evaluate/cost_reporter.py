@@ -22,6 +22,20 @@ MODEL_COST_RATES: dict[str, float] = {
     "gemini-2.0-flash-preview-image-generation": 0.13,  # ~$0.13 per image call
     "gemini-3.1-flash-image": 0.035,           # ~$0.035 per image call
     "veo-3.1-fast": 0.90,                      # ~$0.90 per 6-sec video
+    # Video provider aliases (actual model_used values from video clients)
+    "veo": 0.90,                               # Google Veo
+    "fal": 0.50,                               # Fal.ai
+    "fal-ai/veo3": 0.90,                       # Fal.ai Veo3
+    "fal-ai/kling-video/v2.1/standard": 0.50,  # Fal.ai Kling
+    "kling": 0.50,                             # Kling 2.6
+    "kling-2.6": 0.50,                         # Kling 2.6 alternate
+}
+
+# Event types that use per-call pricing (not per-token)
+PER_CALL_EVENT_TYPES = {
+    "ImageGenerated", "ImageRegenerated", "AspectRatioGenerated",
+    "VideoGenerated", "VideoEvaluated", "VideoSelected",
+    "VideoCoherenceChecked",
 }
 
 # Map event types to creative format
@@ -56,8 +70,32 @@ _TASK_MAP: dict[str, str] = {
     "VideoEvaluated": "evaluation",
 }
 
-# Image/video event types use per-call pricing instead of per-token
-_PER_CALL_EVENTS = {"ImageGenerated", "ImageRegenerated", "AspectRatioGenerated", "VideoGenerated"}
+# Legacy alias (use PER_CALL_EVENT_TYPES above instead)
+_PER_CALL_EVENTS = PER_CALL_EVENT_TYPES
+
+
+def compute_event_cost(event: dict) -> float:
+    """Compute the USD cost of a single ledger event.
+
+    Uses per-call pricing for image/video events, per-token for text.
+    Falls back to credits from outputs if tokens_consumed is 0.
+    """
+    event_type = event.get("event_type", "")
+    model = event.get("model_used", "unknown")
+    tokens = event.get("tokens_consumed", 0)
+    rate = MODEL_COST_RATES.get(model, 0.01 / 1000)
+
+    if event_type in PER_CALL_EVENT_TYPES:
+        # Per-call pricing for image/video
+        # Check for credits in outputs (video events store credits there)
+        outputs = event.get("outputs", {})
+        credits = outputs.get("credits", 0) or outputs.get("credits_consumed", 0)
+        if credits and credits > 0:
+            return credits * 0.001  # credits to USD
+        return rate  # one API call at the model's per-call rate
+    else:
+        # Per-token pricing for text events
+        return rate * tokens
 
 
 @dataclass

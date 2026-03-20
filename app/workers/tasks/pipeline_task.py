@@ -556,16 +556,11 @@ def run_pipeline_session(self, session_id: str) -> dict:
                 "cost_so_far": result.get("cost_so_far", 0.0),
             }
 
-        # Calculate real cost from ledger token data
+        # Calculate real cost from ledger (handles text, image, and video pricing)
         try:
             from iterate.ledger import read_events
-            from evaluate.cost_reporter import MODEL_COST_RATES
-            real_cost = 0.0
-            for evt in read_events(ledger_path):
-                model = evt.get("model_used", "unknown")
-                tokens = evt.get("tokens_consumed", 0)
-                rate = MODEL_COST_RATES.get(model, 0.01 / 1000)
-                real_cost += rate * tokens
+            from evaluate.cost_reporter import compute_event_cost
+            real_cost = sum(compute_event_cost(evt) for evt in read_events(ledger_path))
             summary["cost_so_far"] = round(real_cost, 4)
         except Exception:
             pass  # Keep the estimate if ledger read fails

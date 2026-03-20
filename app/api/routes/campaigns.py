@@ -41,15 +41,14 @@ def _get_user_campaign(db: Session, campaign_id: str, user_id: str) -> CampaignM
 
 
 def _total_ledger_cost() -> float:
-    """Calculate total cost from ALL ledgers (global + session) using real token data.
+    """Calculate total cost from ALL ledgers (global + session).
 
-    Session ledgers often have tokens_consumed=0 (not captured from API),
-    so we merge with the global ledger which has real token counts from
-    earlier pipeline runs.
+    Uses compute_event_cost() which handles per-call pricing for
+    image/video events and per-token pricing for text events.
     """
     try:
         from output.export_dashboard import merge_ledger_events
-        from evaluate.cost_reporter import MODEL_COST_RATES
+        from evaluate.cost_reporter import compute_event_cost
 
         global_ledger = Path("data/ledger.jsonl")
         ledger_paths: list[str] = []
@@ -62,12 +61,7 @@ def _total_ledger_cost() -> float:
             return 0.0
 
         events = merge_ledger_events(ledger_paths)
-        cost = 0.0
-        for evt in events:
-            model = evt.get("model_used", "unknown")
-            tokens = evt.get("tokens_consumed", 0)
-            rate = MODEL_COST_RATES.get(model, 0.01 / 1000)
-            cost += rate * tokens
+        cost = sum(compute_event_cost(evt) for evt in events)
         return round(cost, 2)
     except Exception:
         return 0.0
