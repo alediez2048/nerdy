@@ -100,9 +100,10 @@ class SessionCreate(BaseModel):
 
 
 class SessionUpdate(BaseModel):
-    """Request body for PATCH /sessions/{id}."""
+    """Request body for PATCH /sessions/{id} (PC-12: supports campaign_id)."""
 
-    name: str = Field(min_length=1, max_length=256)
+    name: str | None = Field(default=None, min_length=1, max_length=256)
+    campaign_id: str | None = Field(default=None)
 
 
 class ProgressSummary(BaseModel):

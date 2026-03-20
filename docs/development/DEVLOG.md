@@ -7,6 +7,135 @@
 
 ---
 
+## PC-12: Campaign Archiving + Management (Capstone) ✅
+
+### Plain-English Summary
+- Campaign duplication: users can clone campaigns with same config but no sessions — creates new campaign with "(copy)" suffix
+- Session reassignment: users can move existing sessions into campaigns or remove them — `PATCH /sessions/{id}` now accepts `campaign_id`
+- Archive confirmation: archive action shows confirmation dialog — "Archive [Campaign]? Sessions will not be deleted."
+- Archived campaign styling: archived campaigns show dimmed/grayed-out appearance in list, archived banner on detail page
+- Move to campaign UI: SessionDetail has "Move to Campaign" button (hidden for running sessions) — modal shows list of active campaigns
+- Empty state improvements: CampaignList and CampaignDetail empty states now guide users with helpful hints and CTAs
+- Running session protection: cannot reassign running sessions (prevents confusion in progress tracking)
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** 9 new tests added (5 for duplication, 4 for session reassignment), all passing
+
+### Files Changed
+- `app/api/routes/campaigns.py` — Added `POST /campaigns/{id}/duplicate` endpoint
+- `app/api/routes/sessions.py` — Extended `PATCH /sessions/{id}` to accept optional `campaign_id`, added running session validation
+- `app/api/schemas/session.py` — Extended `SessionUpdate` to include optional `campaign_id` field
+- `app/frontend/src/api/campaigns.ts` — Added `duplicateCampaign()` function
+- `app/frontend/src/api/sessions.ts` — Added `updateSession()` function (supports name and campaign_id)
+- `app/frontend/src/views/CampaignDetail.tsx` — Added archive confirmation modal, duplicate button, archived banner, improved empty state
+- `app/frontend/src/views/CampaignList.tsx` — Improved empty state messaging
+- `app/frontend/src/components/CampaignCard.tsx` — Added dimmed styling for archived campaigns
+- `app/frontend/src/views/SessionDetail.tsx` — Added "Move to Campaign" button and modal with campaign selection
+- `tests/test_app/test_campaigns.py` — Added 5 tests for campaign duplication
+- `tests/test_app/test_sessions.py` — Added 4 tests for session reassignment
+
+### Key Achievements
+- Campaign duplication fully functional — creates new campaign with same config, no sessions copied
+- Session reassignment works with validation — prevents reassigning running sessions, validates campaign ownership
+- Archive confirmation prevents accidental archiving — clear UX flow with confirmation dialog
+- Archived campaigns visually distinct — dimmed cards in list, banner on detail page
+- Move-to-campaign UI provides clear campaign selection — modal shows all active campaigns with session counts
+- Empty states guide users toward next actions — helpful hints and CTAs
+
+### Learnings
+- Duplication strategy: copy config but not sessions — sessions contain execution state, cloning them is complex
+- Running session protection: block reassignment during execution — prevents confusion in progress tracking and ledger paths
+- Archive confirmation: only show for archiving, not unarchiving — unarchive is safe and reversible
+- Campaign selection UI: show session counts in modal — helps users understand campaign context
+- Empty string handling: treat empty string as null for campaign_id removal — consistent with API expectations
+- Modal patterns: overlay with click-outside-to-close, stop propagation on modal content — standard UX pattern
+
+---
+
+## PC-11: Campaign Roll-up Stats ✅
+
+### Plain-English Summary
+- Campaign statistics now computed and displayed — aggregate metrics rolled up from all sessions within a campaign
+- Backend stats computation: helper function aggregates total sessions, ads generated/published, weighted average quality score, total cost, session status breakdown, and session type breakdown (image/video)
+- API updates: `GET /campaigns/{id}` includes full `CampaignStats`, `GET /campaigns` includes lightweight summary stats (`total_ads_published`, `avg_quality_score`)
+- CampaignCard enhancement: shows summary stats (ads published, avg score) below badges when available
+- CampaignDetail stats panel: full stats display above session list with metrics grid, status breakdown, and type breakdown
+- Stats computed on-demand from session `results_summary` JSON — no materialized views, handles missing fields gracefully
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** 5 new tests added (zero sessions, multi-session aggregation, weighted average, missing fields, type breakdown), all passing
+
+### Files Changed
+- `app/api/schemas/campaign.py` — Added `CampaignStats` schema, extended `CampaignSummary` and `CampaignDetail` with stats fields
+- `app/api/routes/campaigns.py` — Added `_compute_campaign_stats()` helper, integrated stats into all campaign endpoints
+- `app/frontend/src/types/campaign.ts` — Added `CampaignStats` interface, extended `CampaignSummary` and `CampaignDetail` types
+- `app/frontend/src/components/CampaignCard.tsx` — Added summary stats display (ads published, avg score)
+- `app/frontend/src/views/CampaignDetail.tsx` — Added full stats panel with metrics grid and breakdowns
+- `tests/test_app/test_campaigns.py` — Added 5 new tests for stats computation
+
+### Key Achievements
+- Stats computation correctly aggregates from multiple sessions
+- Weighted average quality score computed by ads_published count
+- Handles missing `results_summary` fields gracefully (defaults to 0)
+- Zero-session campaigns return all-zero stats (no errors)
+- Session type breakdown (image/video) included
+- Frontend displays stats consistently with existing design tokens
+
+### Learnings
+- Weighted average calculation: `(score1 * count1 + score2 * count2) / (count1 + count2)` for accurate aggregation
+- Field name variations: handle both `ads_generated` and `total_ads_generated`, `cost_so_far` and `total_cost_usd`
+- Stats computed on-demand (single query per campaign) — efficient for campaigns with many sessions
+- Frontend stats display: summary stats on cards (lightweight), full stats panel on detail page
+- Test database session: use `_TestSessionLocal()` in tests instead of `get_db()` to avoid connection issues
+
+---
+
+## PC-10: Navigation Update — Home → Campaigns + Breadcrumbs ✅
+
+### Plain-English Summary
+- Root route (`/`) now redirects to `/campaigns` instead of `/sessions` — campaigns are the primary entry point
+- Persistent navigation bar (NavBar) replaces floating logo and theme toggle — fixed top bar with logo, nav links (Campaigns, All Sessions, Dashboard), and theme toggle
+- Reusable Breadcrumbs component created — displays hierarchical navigation path (e.g., "Campaigns / Campaign Name / Session Name")
+- Campaign-aware breadcrumbs in SessionDetail — if session belongs to a campaign, breadcrumb shows "Campaigns / [Campaign] / [Session]" instead of "Sessions / [Session]"
+- All views updated to use Breadcrumbs component — CampaignDetail, SessionDetail, NewSessionForm, NewCampaignForm, SessionList
+- Padding adjustments — all views adjusted for fixed NavBar (64px height + 32px top padding = 96px total)
+- Active link indicators in NavBar — current route highlighted with cyan color and bold font
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** Frontend components created/modified, routes updated, TypeScript types extended
+
+### Files Changed
+- `app/frontend/src/components/NavBar.tsx` — Created persistent navigation bar component
+- `app/frontend/src/components/Breadcrumbs.tsx` — Created reusable breadcrumb component
+- `app/frontend/src/App.tsx` — Updated root redirect to `/campaigns`, replaced floating components with NavBar
+- `app/frontend/src/views/SessionDetail.tsx` — Added campaign-aware breadcrumbs, removed unused `navigate` import
+- `app/frontend/src/views/CampaignDetail.tsx` — Replaced inline breadcrumb with Breadcrumbs component
+- `app/frontend/src/views/NewSessionForm.tsx` — Added breadcrumbs, removed unused `campaignLoading` state
+- `app/frontend/src/views/NewCampaignForm.tsx` — Added breadcrumbs, removed back link (replaced by breadcrumbs)
+- `app/frontend/src/views/SessionList.tsx` — Replaced inline breadcrumb with Breadcrumbs component
+- `app/frontend/src/views/CampaignList.tsx` — Adjusted padding for NavBar
+- `app/frontend/src/types/session.ts` — Added `campaign_id` and `campaign_name` to `SessionDetail` interface
+
+### Key Achievements
+- Navigation hierarchy now reflects campaigns as primary organizing concept
+- Persistent NavBar provides consistent navigation across all pages
+- Breadcrumbs provide clear wayfinding, especially for deep navigation (campaign → session)
+- Campaign-aware breadcrumbs in SessionDetail automatically detect campaign context
+- All views consistently use Breadcrumbs component (no inline breadcrumb code)
+- Design consistent with existing tokens (colors, fonts, spacing)
+
+### Learnings
+- NavBar fixed positioning requires padding adjustments on all views (96px top padding)
+- Breadcrumbs component uses `useNavigate` internally, so parent components don't need to pass navigation handlers
+- Campaign context detection in SessionDetail: fetch campaign name separately if `session.campaign_id` exists
+- Active link detection: `/campaigns` uses `startsWith` to match all campaign routes, other routes use exact match or `startsWith` for sub-routes
+- TypeScript type extension: `SessionDetail` interface needed `campaign_id` and `campaign_name` fields for breadcrumb logic
+
+---
+
 ## PC-09: Pre-fill Session Form from Campaign Defaults ✅
 
 ### Plain-English Summary

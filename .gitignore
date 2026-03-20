@@ -37,3 +37,22 @@ htmlcov/
 
 # Ruff
 .ruff_cache/
+
+# Node / Frontend
+node_modules/
+.vite/
+app/frontend/node_modules/
+app/frontend/.vite/
+app/frontend/public/
+
+# Test artifacts
+MagicMock/
+
+# Session data (runtime)
+data/sessions/
+data/ledger.jsonl.bak
+
+# Output artifacts (runtime)
+output/images/
+output/sessions/
+output/videos/

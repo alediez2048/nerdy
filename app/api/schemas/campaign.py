@@ -41,6 +41,18 @@ class CampaignUpdate(BaseModel):
         return v
 
 
+class CampaignStats(BaseModel):
+    """Aggregate statistics for a campaign (PC-11)."""
+
+    total_sessions: int = 0
+    sessions_by_status: dict[str, int] = {}
+    total_ads_generated: int = 0
+    total_ads_published: int = 0
+    avg_quality_score: float = 0.0
+    total_cost: float = 0.0
+    session_types: dict[str, int] = {}
+
+
 class CampaignSummary(BaseModel):
     """Summary schema for campaign list items."""
 
@@ -53,6 +65,9 @@ class CampaignSummary(BaseModel):
     status: str
     created_at: datetime
     session_count: int
+    # PC-11: Lightweight summary stats
+    total_ads_published: int = 0
+    avg_quality_score: float = 0.0
 
 
 class CampaignDetail(BaseModel):
@@ -69,6 +84,8 @@ class CampaignDetail(BaseModel):
     created_at: datetime
     updated_at: datetime | None
     session_count: int
+    # PC-11: Full stats
+    stats: CampaignStats
 
 
 class CampaignListResponse(BaseModel):

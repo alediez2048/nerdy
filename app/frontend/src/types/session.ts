@@ -139,6 +139,8 @@ export interface SessionDetail {
   created_at: string
   updated_at: string | null
   completed_at: string | null
+  campaign_id?: string | null
+  campaign_name?: string | null
 }
 
 export interface SessionListResponse {

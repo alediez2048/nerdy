@@ -8,7 +8,8 @@ import type {
 } from '../types/campaign'
 import type { SessionListResponse } from '../types/session'
 
-const BASE = '/api/campaigns'
+const API_ORIGIN = import.meta.env.DEV ? 'http://localhost:8000' : ''
+const BASE = `${API_ORIGIN}/api/campaigns`
 
 function getHeaders(): HeadersInit {
   const headers: HeadersInit = { 'Content-Type': 'application/json' }
@@ -94,4 +95,15 @@ export async function getCampaignSessions(
   const url = query.toString() ? `${BASE}/${campaignId}/sessions?${query}` : `${BASE}/${campaignId}/sessions`
   const resp = await fetch(url, { headers: getHeaders() })
   return handleResponse<SessionListResponse>(resp)
+}
+
+// PC-12: Campaign duplication
+export async function duplicateCampaign(
+  campaignId: string,
+): Promise<CampaignDetail> {
+  const resp = await fetch(`${BASE}/${campaignId}/duplicate`, {
+    method: 'POST',
+    headers: getHeaders(),
+  })
+  return handleResponse<CampaignDetail>(resp)
 }

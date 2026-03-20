@@ -265,18 +265,70 @@ def update_session(
     body: SessionUpdate,
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[dict, Depends(get_current_user)],
-) -> SessionModel:
-    """Update editable session metadata such as display name."""
+) -> dict:
+    """Update editable session metadata: name and/or campaign_id (PC-12)."""
     init_db()
     row = _get_user_session(db, session_id, user["user_id"])
-    normalized_name = body.name.strip()
-    if not normalized_name:
-        raise HTTPException(status_code=400, detail="Session name cannot be empty")
 
-    row.name = normalized_name
+    # PC-12: Cannot reassign running sessions
+    if body.campaign_id is not None and row.status == "running":
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot reassign running session. Wait for it to complete or cancel it first."
+        )
+
+    # Update name if provided
+    if body.name is not None:
+        normalized_name = body.name.strip()
+        if not normalized_name:
+            raise HTTPException(status_code=400, detail="Session name cannot be empty")
+        row.name = normalized_name
+
+    # PC-12: Update campaign_id if provided
+    if body.campaign_id is not None:
+        if body.campaign_id and body.campaign_id.strip():
+            # Validate campaign exists and belongs to user
+            campaign = db.query(CampaignModel).filter(
+                CampaignModel.campaign_id == body.campaign_id,
+                CampaignModel.user_id == user["user_id"],
+            ).first()
+            if not campaign:
+                raise HTTPException(status_code=404, detail="Campaign not found")
+            row.campaign_id = body.campaign_id
+        else:
+            # Set to None to remove from campaign (empty string or None)
+            row.campaign_id = None
+
     db.commit()
     db.refresh(row)
-    return row
+
+    # Get campaign name if linked
+    campaign_name = None
+    if row.campaign_id:
+        campaign = db.query(CampaignModel).filter(
+            CampaignModel.campaign_id == row.campaign_id
+        ).first()
+        if campaign:
+            campaign_name = campaign.name
+
+    # Build response dict with campaign_name
+    return {
+        "id": row.id,
+        "session_id": row.session_id,
+        "name": row.name,
+        "user_id": row.user_id,
+        "config": row.config or {},
+        "status": row.status,
+        "campaign_id": row.campaign_id,
+        "campaign_name": campaign_name,
+        "celery_task_id": row.celery_task_id,
+        "results_summary": row.results_summary,
+        "ledger_path": row.ledger_path,
+        "output_path": row.output_path,
+        "created_at": row.created_at,
+        "updated_at": row.updated_at,
+        "completed_at": row.completed_at,
+    }
 
 
 @router.delete("/{session_id}", status_code=204)

@@ -80,13 +80,6 @@ export default function CampaignList() {
         <div style={s.header}>
           <div style={s.headerTop}>
             <div>
-              <div style={s.breadcrumb}>
-                <span onClick={() => navigate('/dashboard')} style={s.breadcrumbLink}>
-                  Dashboard
-                </span>
-                <span style={{ color: colors.muted }}> / </span>
-                <span style={{ color: colors.white }}>Campaigns</span>
-              </div>
               <h1 style={s.title}>Campaigns</h1>
               <p style={s.description}>
                 Organize your sessions into campaigns. Each campaign can have default settings that
@@ -158,7 +151,11 @@ export default function CampaignList() {
           <div style={s.emptyState}>
             <p style={s.emptyTitle}>No campaigns yet</p>
             <p style={s.emptySubtitle}>
-              Create your first campaign to organize your sessions.
+              Create your first campaign to organize your ad sessions.
+              <br />
+              <span style={{ fontSize: '13px', color: colors.muted }}>
+                Campaigns help you group related sessions and set default settings that pre-fill when creating new sessions.
+              </span>
             </p>
             <button onClick={() => navigate('/campaigns/new')} style={s.newBtn}>
               + Create Campaign
@@ -207,7 +204,7 @@ const s: Record<string, React.CSSProperties> = {
   container: {
     maxWidth: '1100px',
     margin: '0 auto',
-    padding: '84px 20px 32px',
+    padding: '96px 20px 32px', // Adjusted for NavBar (64px + 32px top padding)
   },
   header: {
     marginBottom: '24px',
@@ -219,17 +216,6 @@ const s: Record<string, React.CSSProperties> = {
     gap: '16px',
     flexWrap: 'wrap',
     marginBottom: '24px',
-  },
-  breadcrumb: {
-    marginBottom: '8px',
-    fontSize: '13px',
-    display: 'flex',
-    gap: '4px',
-    alignItems: 'center',
-  },
-  breadcrumbLink: {
-    color: colors.cyan,
-    cursor: 'pointer',
   },
   title: {
     fontSize: '28px',

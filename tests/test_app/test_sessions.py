@@ -629,3 +629,118 @@ def test_get_session_detail_includes_campaign_name(alice):
     data = resp.json()
     assert data["campaign_id"] == campaign_id
     assert data["campaign_name"] == "My Campaign"
+
+
+# PC-12: Session reassignment tests
+def test_assign_session_to_campaign_updates_fk(alice):
+    """Assign session to campaign updates campaign_id FK."""
+    from unittest.mock import MagicMock, patch
+
+    # Create session without campaign
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        resp = alice.post("/sessions", json={"config": VALID_CONFIG["config"]})
+        session_id = resp.json()["session_id"]
+
+    # Verify no campaign
+    resp = alice.get(f"/sessions/{session_id}")
+    assert resp.json()["campaign_id"] is None
+
+    # Create campaign
+    campaign_resp = alice.post("/api/campaigns", json={"name": "Target Campaign"})
+    campaign_id = campaign_resp.json()["campaign_id"]
+
+    # Assign session to campaign
+    resp = alice.patch(f"/sessions/{session_id}", json={"campaign_id": campaign_id})
+    assert resp.status_code == 200
+    assert resp.json()["campaign_id"] == campaign_id
+
+    # Verify persisted
+    resp = alice.get(f"/sessions/{session_id}")
+    assert resp.json()["campaign_id"] == campaign_id
+
+
+def test_assign_session_to_invalid_campaign_returns_404(alice):
+    """Assign session to non-existent campaign returns 404."""
+    from unittest.mock import MagicMock, patch
+
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        resp = alice.post("/sessions", json={"config": VALID_CONFIG["config"]})
+        session_id = resp.json()["session_id"]
+
+    resp = alice.patch(f"/sessions/{session_id}", json={"campaign_id": "camp_nonexistent"})
+    assert resp.status_code == 404
+
+
+def test_remove_session_from_campaign_sets_campaign_id_null(alice):
+    """Remove session from campaign by setting campaign_id to null."""
+    from unittest.mock import MagicMock, patch
+
+    # Create campaign and session
+    campaign_resp = alice.post("/api/campaigns", json={"name": "Source Campaign"})
+    campaign_id = campaign_resp.json()["campaign_id"]
+
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        resp = alice.post("/sessions", json={
+            "config": VALID_CONFIG["config"],
+            "campaign_id": campaign_id,
+        })
+        session_id = resp.json()["session_id"]
+
+    # Verify in campaign
+    resp = alice.get(f"/sessions/{session_id}")
+    assert resp.json()["campaign_id"] == campaign_id
+
+    # Remove from campaign (send empty string or null string)
+    resp = alice.patch(f"/sessions/{session_id}", json={"campaign_id": ""})
+    assert resp.status_code == 200
+    assert resp.json()["campaign_id"] is None
+
+    # Verify persisted
+    resp = alice.get(f"/sessions/{session_id}")
+    assert resp.json()["campaign_id"] is None
+
+
+def test_cannot_reassign_running_session(alice):
+    """Cannot reassign session that is currently running."""
+    from unittest.mock import MagicMock, patch
+    from app.models.session import Session as SessionModel
+
+    # Create campaign
+    campaign_resp = alice.post("/api/campaigns", json={"name": "Target Campaign"})
+    campaign_id = campaign_resp.json()["campaign_id"]
+
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        resp = alice.post("/sessions", json={"config": VALID_CONFIG["config"]})
+        session_id = resp.json()["session_id"]
+
+    # Manually set session to running using test DB
+    db = _TestSessionLocal()
+    session = db.query(SessionModel).filter(SessionModel.session_id == session_id).first()
+    session.status = "running"
+    db.commit()
+    db.close()
+
+    # Try to reassign
+    resp = alice.patch(f"/sessions/{session_id}", json={"campaign_id": campaign_id})
+    assert resp.status_code == 400
+    assert "running" in resp.json()["detail"].lower()

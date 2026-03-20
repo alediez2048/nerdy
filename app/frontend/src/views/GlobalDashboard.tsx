@@ -124,9 +124,7 @@ export default function GlobalDashboard() {
         <div style={s.header}>
           <div style={s.headerTopRow}>
             <div>
-              <button onClick={() => navigate('/dashboard')} style={s.breadcrumbBtn}>Dashboard</button>
-              <span style={{ color: colors.muted }}> / </span>
-              <button onClick={() => navigate('/sessions')} style={s.breadcrumbCurrentBtn}>Sessions</button>
+              <h1 style={s.dashboardTitle}>Dashboard</h1>
             </div>
             <div style={s.timeframeGroup}>
               {TIMEFRAMES.map((option) => (
@@ -201,7 +199,7 @@ function PipelineSummaryTab({ data }: { data: Record<string, unknown> }) {
     { label: 'Total Tokens', value: (ps.total_tokens ?? 0).toLocaleString(), color: colors.white,
       tip: 'Sum of input + output tokens consumed across all LLM calls (generation, evaluation, regeneration) and image API calls.' },
     { label: 'Total Cost', value: `$${(ps.total_cost_usd ?? 0).toFixed(2)}`, color: colors.yellow,
-      tip: 'Estimated API spend based on token counts and per-model pricing (Flash for drafts, Pro for improvable-range ads).' },
+      tip: 'Estimated spend across app sessions, based on the session summaries stored for each pipeline run.' },
     { label: 'Ads Discarded', value: ps.total_ads_discarded ?? 0, color: colors.red,
       tip: 'Ads that failed to meet the quality threshold after all regeneration cycles, or were rejected by compliance filters.' },
   ]
@@ -881,22 +879,11 @@ const s: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
     marginBottom: '4px',
   },
-  breadcrumbBtn: {
-    color: colors.cyan,
-    fontSize: '13px',
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    padding: 0,
-    fontFamily: font.family,
-  },
-  breadcrumbCurrentBtn: {
+  dashboardTitle: {
+    fontSize: '28px',
+    fontWeight: 700,
     color: colors.white,
-    fontSize: '13px',
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    padding: 0,
+    margin: 0,
     fontFamily: font.family,
   },
   title: {

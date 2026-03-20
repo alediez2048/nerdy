@@ -101,11 +101,6 @@ export default function SessionList() {
         <div style={s.header}>
           <div style={s.headerTop}>
             <div>
-              <div style={s.breadcrumb}>
-                <span onClick={() => navigate('/dashboard')} style={s.breadcrumbLink}>Dashboard</span>
-                <span style={{ color: colors.muted }}> / </span>
-                <span style={{ color: colors.white }}>Sessions</span>
-              </div>
               <h1 style={s.title}>Sessions</h1>
               <p style={s.description}>
                 Every session is a pipeline run. Use this view to scan recent work, spot runs that need attention,
@@ -192,18 +187,10 @@ const s: Record<string, React.CSSProperties> = {
   container: {
     maxWidth: '1100px',
     margin: '0 auto',
-    padding: '84px 20px 32px',
+    padding: '96px 20px 32px', // Adjusted for NavBar (64px + 32px top padding)
   },
   header: {
     marginBottom: '24px',
-  },
-  breadcrumb: {
-    marginBottom: '8px',
-    fontSize: '13px',
-  },
-  breadcrumbLink: {
-    color: colors.cyan,
-    cursor: 'pointer',
   },
   headerTop: {
     display: 'flex',

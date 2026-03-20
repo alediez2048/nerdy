@@ -181,6 +181,7 @@ def get_global_dashboard(timeframe: str = "all") -> dict[str, Any]:
         merged_events = merge_ledger_events(ledger_paths, session_labels=session_labels)
         filtered_events = filter_events_by_timeframe(merged_events, timeframe)
         data = build_dashboard_data_from_events(filtered_events, "merged")
+        data.setdefault("pipeline_summary", {})
         data["timeframe"] = timeframe
         return data
     except Exception as e:

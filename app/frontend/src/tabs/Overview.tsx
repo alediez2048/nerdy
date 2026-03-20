@@ -28,7 +28,7 @@ export default function Overview({ sessionId, sessionType = 'image' }: { session
           tip: 'Videos that passed attribute + coherence thresholds and were selected.' },
         { label: 'Blocked', value: results.videos_blocked ?? '—',
           tip: 'Videos that failed quality thresholds — session falls back to copy-only for those ads.' },
-        { label: 'Total Cost', value: results.cost_so_far ? `$${(results.cost_so_far as number).toFixed(2)}` : summary.total_cost_usd ? `$${(summary.total_cost_usd as number).toFixed(2)}` : '—',
+        { label: 'Total Cost', value: summary.total_cost_usd ? `$${(summary.total_cost_usd as number).toFixed(2)}` : results.cost_so_far ? `$${(results.cost_so_far as number).toFixed(2)}` : '—',
           tip: 'Estimated Kling API credit cost for video generation.' },
       ]
     : [

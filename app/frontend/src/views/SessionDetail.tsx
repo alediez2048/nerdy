@@ -1,11 +1,14 @@
 // PA-09: Session detail — 7-tab dashboard
+// PC-12: Move to campaign functionality
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { colors, font, radii } from '../design/tokens'
-import { getSession, updateSessionName } from '../api/sessions'
+import { getSession, updateSessionName, updateSession } from '../api/sessions'
+import { getCampaign, listCampaigns } from '../api/campaigns'
 import { StatusBadge } from '../components/Badge'
 import ShareButton from '../components/ShareButton'
 import type { SessionDetail as SessionDetailType } from '../types/session'
+import type { CampaignSummary } from '../types/campaign'
 
 import Overview from '../tabs/Overview'
 import Quality from '../tabs/Quality'
@@ -29,7 +32,6 @@ type TabKey = typeof TABS[number]['key']
 
 export default function SessionDetail() {
   const { sessionId } = useParams<{ sessionId: string }>()
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [session, setSession] = useState<SessionDetailType | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -37,13 +39,27 @@ export default function SessionDetail() {
   const [draftName, setDraftName] = useState('')
   const [isSavingName, setIsSavingName] = useState(false)
   const [renameError, setRenameError] = useState<string | null>(null)
+  const [campaignName, setCampaignName] = useState<string | null>(null)
+  // PC-12: Move to campaign
+  const [showMoveModal, setShowMoveModal] = useState(false)
+  const [availableCampaigns, setAvailableCampaigns] = useState<CampaignSummary[]>([])
+  const [isMoving, setIsMoving] = useState(false)
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false)
 
   const activeTab = (searchParams.get('tab') as TabKey) || 'overview'
 
   useEffect(() => {
     if (!sessionId) return
     getSession(sessionId)
-      .then(setSession)
+      .then((s) => {
+        setSession(s)
+        // Fetch campaign name if session belongs to a campaign
+        if (s.campaign_id) {
+          getCampaign(s.campaign_id)
+            .then((c) => setCampaignName(c.name))
+            .catch(() => {}) // Ignore campaign fetch errors
+        }
+      })
       .catch((e) => setError(e.message))
   }, [sessionId])
 
@@ -52,6 +68,37 @@ export default function SessionDetail() {
       setDraftName(session.name || session.session_id)
     }
   }, [session])
+
+  // PC-12: Load campaigns when move modal opens
+  useEffect(() => {
+    if (showMoveModal) {
+      setIsLoadingCampaigns(true)
+      listCampaigns({ status: 'active' })
+        .then((res) => setAvailableCampaigns(res.campaigns))
+        .catch(() => {})
+        .finally(() => setIsLoadingCampaigns(false))
+    }
+  }, [showMoveModal])
+
+  const handleMoveToCampaign = async (targetCampaignId: string | null) => {
+    if (!sessionId) return
+    try {
+      setIsMoving(true)
+      const updated = await updateSession(sessionId, { campaign_id: targetCampaignId })
+      setSession(updated)
+      if (updated.campaign_id) {
+        const campaign = await getCampaign(updated.campaign_id)
+        setCampaignName(campaign.name)
+      } else {
+        setCampaignName(null)
+      }
+      setShowMoveModal(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to move session')
+    } finally {
+      setIsMoving(false)
+    }
+  }
 
   if (error) {
     return (
@@ -102,13 +149,6 @@ export default function SessionDetail() {
   return (
     <div style={s.pageBg}>
       <div style={s.pageInner}>
-        {/* Breadcrumb */}
-        <div style={s.breadcrumb}>
-          <span onClick={() => navigate('/sessions')} style={s.breadcrumbLink}>Sessions</span>
-          <span style={{ color: colors.muted }}> / </span>
-          <span style={{ color: colors.white }}>{session.name || session.session_id}</span>
-        </div>
-
         {/* Session header */}
         <div style={s.header}>
           <div style={{ flex: 1 }}>
@@ -151,9 +191,86 @@ export default function SessionDetail() {
             </div>
           </div>
           <div style={s.headerActions}>
+            {/* PC-12: Move to campaign button */}
+            {session.status !== 'running' && (
+              <button
+                onClick={() => setShowMoveModal(true)}
+                style={s.moveBtn}
+                title="Move to Campaign"
+              >
+                {session.campaign_id ? 'Change Campaign' : 'Move to Campaign'}
+              </button>
+            )}
             <ShareButton sessionId={sessionId!} />
           </div>
         </div>
+
+        {/* PC-12: Move to campaign modal */}
+        {showMoveModal && (
+          <div style={s.modalOverlay} onClick={() => setShowMoveModal(false)}>
+            <div style={s.modal} onClick={(e) => e.stopPropagation()}>
+              <h3 style={s.modalTitle}>Move Session to Campaign</h3>
+              {isLoadingCampaigns ? (
+                <p style={s.modalText}>Loading campaigns...</p>
+              ) : availableCampaigns.length === 0 ? (
+                <div style={s.modalText}>
+                  <p>No campaigns available. Create one first.</p>
+                  <button
+                    onClick={() => {
+                      setShowMoveModal(false)
+                      window.location.href = '/campaigns/new'
+                    }}
+                    style={s.modalCreateBtn}
+                  >
+                    + Create Campaign
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={s.campaignList}>
+                    <button
+                      onClick={() => handleMoveToCampaign(null)}
+                      disabled={isMoving}
+                      style={{
+                        ...s.campaignOption,
+                        ...(session.campaign_id === null ? s.campaignOptionActive : {}),
+                      }}
+                    >
+                      <span style={s.campaignOptionName}>Remove from Campaign</span>
+                    </button>
+                    {availableCampaigns.map((camp) => (
+                      <button
+                        key={camp.campaign_id}
+                        onClick={() => handleMoveToCampaign(camp.campaign_id)}
+                        disabled={isMoving}
+                        style={{
+                          ...s.campaignOption,
+                          ...(session.campaign_id === camp.campaign_id ? s.campaignOptionActive : {}),
+                        }}
+                      >
+                        <span style={s.campaignOptionName}>{camp.name}</span>
+                        {camp.session_count > 0 && (
+                          <span style={s.campaignOptionCount}>
+                            {camp.session_count} {camp.session_count === 1 ? 'session' : 'sessions'}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={s.modalActions}>
+                    <button
+                      onClick={() => setShowMoveModal(false)}
+                      style={s.modalCancelBtn}
+                      disabled={isMoving}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tab navigation */}
         <div style={s.tabBar}>
@@ -193,10 +310,8 @@ const s: Record<string, React.CSSProperties> = {
   pageInner: {
     maxWidth: '1000px',
     margin: '0 auto',
-    padding: '84px 20px 32px',
+    padding: '96px 20px 32px', // Adjusted for NavBar (64px + 32px top padding)
   },
-  breadcrumb: { marginBottom: '16px', fontSize: '13px' },
-  breadcrumbLink: { color: colors.cyan, cursor: 'pointer' },
   header: {
     marginBottom: '24px',
     display: 'flex',
@@ -297,4 +412,112 @@ const s: Record<string, React.CSSProperties> = {
     fontFamily: font.family, whiteSpace: 'nowrap',
   },
   tabContent: { minHeight: '300px' },
+  // PC-12: Move to campaign
+  moveBtn: {
+    padding: '8px 16px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.muted}40`,
+    background: 'transparent',
+    color: colors.muted,
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 600,
+    fontFamily: font.family,
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.7)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2000,
+  },
+  modal: {
+    background: colors.surface,
+    borderRadius: radii.card,
+    padding: '24px',
+    maxWidth: '500px',
+    width: '90%',
+    maxHeight: '80vh',
+    overflowY: 'auto',
+    border: `1px solid ${colors.muted}30`,
+  },
+  modalTitle: {
+    fontSize: '18px',
+    fontWeight: 600,
+    color: colors.white,
+    margin: '0 0 16px',
+  },
+  modalText: {
+    fontSize: '14px',
+    color: colors.muted,
+    lineHeight: 1.6,
+    margin: '0 0 20px',
+  },
+  campaignList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    marginBottom: '20px',
+    maxHeight: '300px',
+    overflowY: 'auto',
+  },
+  campaignOption: {
+    padding: '12px 16px',
+    borderRadius: radii.input,
+    border: `1px solid ${colors.muted}30`,
+    background: 'transparent',
+    color: colors.white,
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontFamily: font.family,
+    textAlign: 'left',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    transition: 'all 0.2s',
+  },
+  campaignOptionActive: {
+    borderColor: colors.cyan,
+    background: `${colors.cyan}14`,
+  },
+  campaignOptionName: {
+    fontWeight: 600,
+  },
+  campaignOptionCount: {
+    fontSize: '12px',
+    color: colors.muted,
+  },
+  modalActions: {
+    display: 'flex',
+    gap: '12px',
+    justifyContent: 'flex-end',
+  },
+  modalCancelBtn: {
+    padding: '10px 20px',
+    borderRadius: radii.button,
+    border: `1px solid ${colors.muted}40`,
+    background: 'transparent',
+    color: colors.muted,
+    fontWeight: 600,
+    fontSize: '14px',
+    cursor: 'pointer',
+    fontFamily: font.family,
+  },
+  modalCreateBtn: {
+    padding: '10px 20px',
+    borderRadius: radii.button,
+    border: 'none',
+    background: `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
+    color: colors.ink,
+    fontWeight: 700,
+    fontSize: '14px',
+    cursor: 'pointer',
+    fontFamily: font.family,
+    marginTop: '12px',
+  },
 }

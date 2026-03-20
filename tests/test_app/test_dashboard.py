@@ -14,6 +14,7 @@ from app.models.base import Base
 import app.models.user  # noqa: F401
 import app.models.session  # noqa: F401
 import app.models.curation  # noqa: F401
+import app.models.campaign  # noqa: F401
 from app.models.session import Session as SessionModel
 
 
@@ -163,3 +164,31 @@ def test_spc_returns_health(client):
 def test_competitive_summary(client):
     resp = client.get("/competitive/summary")
     assert resp.status_code == 200
+
+
+def test_global_dashboard_cost_uses_session_rollup(client):
+    """Global dashboard summary cost reflects app session summaries."""
+    _seed_session("sess_one")
+    _seed_session("sess_two")
+
+    db = _TestSession()
+    rows = db.query(SessionModel).order_by(SessionModel.session_id).all()
+    rows[0].results_summary = {"cost_so_far": 7.2}
+    rows[1].results_summary = {"cost_so_far": 10.0}
+    db.commit()
+    db.close()
+
+    with (
+        patch("app.api.routes.dashboard.SessionLocal", _TestSession),
+        patch("app.api.routes.dashboard.Path.exists", return_value=True),
+        patch("output.export_dashboard.merge_ledger_events", return_value=[]),
+        patch("output.export_dashboard.filter_events_by_timeframe", side_effect=lambda events, timeframe: events),
+        patch(
+            "output.export_dashboard.build_dashboard_data_from_events",
+            return_value={"pipeline_summary": {"total_cost_usd": 86.85}},
+        ),
+    ):
+        resp = client.get("/dashboard/global?timeframe=all")
+
+    assert resp.status_code == 200
+    assert resp.json()["pipeline_summary"]["total_cost_usd"] == 17.2

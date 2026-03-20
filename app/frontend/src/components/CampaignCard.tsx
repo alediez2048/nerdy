@@ -37,12 +37,23 @@ export default function CampaignCard({
     }
   }
 
+  // PC-12: Dimmed styling for archived campaigns
+  const cardStyle = campaign.status === 'archived'
+    ? { ...s.card, ...s.cardArchived }
+    : s.card
+
   return (
     <div
       onClick={() => navigate(`/campaigns/${campaign.campaign_id}`)}
-      style={s.card}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = `${colors.cyan}40`)}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'transparent')}
+      style={cardStyle}
+      onMouseEnter={(e) => {
+        if (campaign.status !== 'archived') {
+          e.currentTarget.style.borderColor = `${colors.cyan}40`
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'transparent'
+      }}
     >
       <div style={s.header}>
         <div style={s.headerMain}>
@@ -82,6 +93,24 @@ export default function CampaignCard({
           color={colors.muted}
         />
       </div>
+
+      {/* PC-11: Summary stats */}
+      {(campaign.total_ads_published !== undefined || campaign.avg_quality_score !== undefined) && (
+        <div style={s.stats}>
+          {campaign.total_ads_published !== undefined && campaign.total_ads_published > 0 && (
+            <span style={s.statItem}>
+              <span style={s.statValue}>{campaign.total_ads_published}</span>
+              <span style={s.statLabel}>ads published</span>
+            </span>
+          )}
+          {campaign.avg_quality_score !== undefined && campaign.avg_quality_score > 0 && (
+            <span style={s.statItem}>
+              <span style={s.statValue}>{campaign.avg_quality_score.toFixed(1)}</span>
+              <span style={s.statLabel}>avg score</span>
+            </span>
+          )}
+        </div>
+      )}
 
       <div style={s.actions}>
         <button
@@ -182,5 +211,34 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: '13px',
     fontWeight: 600,
     fontFamily: font.family,
+  },
+  stats: {
+    display: 'flex',
+    gap: '16px',
+    marginTop: '8px',
+    marginBottom: '8px',
+    paddingTop: '12px',
+    borderTop: `1px solid ${colors.muted}20`,
+  },
+  statItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  statValue: {
+    fontSize: '16px',
+    fontWeight: 600,
+    color: colors.white,
+  },
+  statLabel: {
+    fontSize: '11px',
+    color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  // PC-12: Archived card styling
+  cardArchived: {
+    opacity: 0.6,
+    filter: 'grayscale(0.3)',
   },
 }

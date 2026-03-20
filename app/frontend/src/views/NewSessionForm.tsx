@@ -31,12 +31,10 @@ export default function NewSessionForm() {
   const [recentSessions, setRecentSessions] = useState<SessionSummary[]>([])
   const [showClone, setShowClone] = useState(false)
   const [campaignName, setCampaignName] = useState<string | null>(null)
-  const [campaignLoading, setCampaignLoading] = useState(false)
 
   // Load campaign defaults if campaignId is present
   useEffect(() => {
     if (!campaignId) return
-    setCampaignLoading(true)
     getCampaign(campaignId)
       .then((campaign) => {
         setCampaignName(campaign.name)
@@ -56,9 +54,6 @@ export default function NewSessionForm() {
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Failed to load campaign defaults')
-      })
-      .finally(() => {
-        setCampaignLoading(false)
       })
   }, [campaignId])
 
@@ -597,6 +592,7 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: '100vh',
     background: colors.ink,
     display: 'flex',
+    paddingTop: '96px', // Adjusted for NavBar (64px + 32px top padding)
     justifyContent: 'center',
     padding: '40px 20px',
     fontFamily: font.family,

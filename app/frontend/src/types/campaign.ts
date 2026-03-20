@@ -1,4 +1,4 @@
-// Ad-Ops-Autopilot — Campaign types (matches backend schemas from PC-04)
+// Ad-Ops-Autopilot — Campaign types (matches backend schemas from PC-04, PC-11)
 
 export interface CampaignCreate {
   name: string
@@ -14,6 +14,17 @@ export interface CampaignUpdate {
   status?: 'active' | 'archived'
 }
 
+// PC-11: Campaign stats
+export interface CampaignStats {
+  total_sessions: number
+  sessions_by_status: Record<string, number>
+  total_ads_generated: number
+  total_ads_published: number
+  avg_quality_score: number
+  total_cost: number
+  session_types: Record<string, number>
+}
+
 export interface CampaignSummary {
   id: number
   campaign_id: string
@@ -24,6 +35,9 @@ export interface CampaignSummary {
   status: string
   created_at: string
   session_count: number
+  // PC-11: Lightweight summary stats
+  total_ads_published?: number
+  avg_quality_score?: number
 }
 
 export interface CampaignDetail {
@@ -38,6 +52,8 @@ export interface CampaignDetail {
   created_at: string
   updated_at: string | null
   session_count: number
+  // PC-11: Full stats
+  stats: CampaignStats
 }
 
 export interface CampaignListResponse {

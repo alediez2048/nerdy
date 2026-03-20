@@ -65,13 +65,6 @@ export default function NewCampaignForm() {
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.header}>
-          <button
-            type="button"
-            onClick={() => navigate('/campaigns')}
-            style={s.backLink}
-          >
-            ← Back to Campaigns
-          </button>
           <h1 style={s.title}>New Campaign</h1>
           <p style={s.subtitle}>
             Create a campaign to organize your sessions. Set default settings that will pre-fill when creating sessions within this campaign.
@@ -247,7 +240,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: colors.ink,
     display: 'flex',
     justifyContent: 'center',
-    padding: '40px 20px',
+    padding: '96px 20px 40px', // Adjusted for NavBar (64px + 32px top padding)
     fontFamily: font.family,
   },
   card: {

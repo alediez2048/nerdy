@@ -76,6 +76,19 @@ export async function updateSessionName(
   return handleResponse<SessionDetail>(resp)
 }
 
+// PC-12: Update session (supports name and/or campaign_id)
+export async function updateSession(
+  sessionId: string,
+  data: { name?: string; campaign_id?: string | null },
+): Promise<SessionDetail> {
+  const resp = await fetch(`${BASE}/${sessionId}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  })
+  return handleResponse<SessionDetail>(resp)
+}
+
 export async function deleteSession(sessionId: string): Promise<void> {
   const resp = await fetch(`${BASE}/${sessionId}`, {
     method: 'DELETE',

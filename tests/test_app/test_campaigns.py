@@ -400,3 +400,368 @@ def test_get_campaign_sessions_endpoint(alice):
     data = resp.json()
     assert data["total"] == 1
     assert data["sessions"][0]["campaign_id"] == campaign_id2
+
+
+# PC-11: Campaign stats tests
+def test_campaign_stats_with_zero_sessions_returns_all_zeros(alice):
+    """Campaign with no sessions returns all-zero stats."""
+    resp = alice.post("/api/campaigns", json={"name": "Empty Campaign"})
+    campaign_id = resp.json()["campaign_id"]
+
+    resp = alice.get(f"/api/campaigns/{campaign_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "stats" in data
+    stats = data["stats"]
+    assert stats["total_sessions"] == 0
+    assert stats["sessions_by_status"] == {}
+    assert stats["total_ads_generated"] == 0
+    assert stats["total_ads_published"] == 0
+    assert stats["avg_quality_score"] == 0.0
+    assert stats["total_cost"] == 0.0
+    assert stats["session_types"] == {}
+
+
+def test_campaign_stats_aggregates_from_multiple_sessions(alice):
+    """Campaign stats correctly aggregate metrics from multiple sessions."""
+    from unittest.mock import MagicMock, patch
+    from app.models.session import Session as SessionModel
+
+    # Create campaign
+    resp = alice.post("/api/campaigns", json={"name": "Stats Test Campaign"})
+    campaign_id = resp.json()["campaign_id"]
+
+    # Create sessions with results_summary
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        # Create 3 sessions
+        for i in range(3):
+            alice.post("/sessions", json={
+                "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50, "session_type": "image"},
+                "campaign_id": campaign_id,
+            })
+
+    # Manually update sessions with results_summary using test DB
+    db = _TestSessionLocal()
+    sessions = db.query(SessionModel).filter(SessionModel.campaign_id == campaign_id).all()
+    
+    # Session 1: completed with results
+    sessions[0].status = "completed"
+    sessions[0].results_summary = {
+        "ads_generated": 50,
+        "ads_published": 40,
+        "avg_score": 7.5,
+        "cost_so_far": 10.0,
+    }
+    
+    # Session 2: completed with results
+    sessions[1].status = "completed"
+    sessions[1].results_summary = {
+        "ads_generated": 50,
+        "ads_published": 35,
+        "avg_score": 8.0,
+        "cost_so_far": 10.5,
+    }
+    
+    # Session 3: pending (no results)
+    sessions[2].status = "pending"
+    sessions[2].results_summary = None
+    
+    db.commit()
+    db.close()
+
+    # Get campaign stats
+    resp = alice.get(f"/api/campaigns/{campaign_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    stats = data["stats"]
+    
+    assert stats["total_sessions"] == 3
+    assert stats["sessions_by_status"]["completed"] == 2
+    assert stats["sessions_by_status"]["pending"] == 1
+    assert stats["total_ads_generated"] == 100  # 50 + 50
+    assert stats["total_ads_published"] == 75  # 40 + 35
+    assert stats["total_cost"] == 20.5  # 10.0 + 10.5
+    assert stats["session_types"]["image"] == 3
+
+
+def test_campaign_stats_weighted_average_quality_score(alice):
+    """Campaign stats compute weighted average quality score by ads_published."""
+    from unittest.mock import MagicMock, patch
+    from app.models.session import Session as SessionModel
+
+    resp = alice.post("/api/campaigns", json={"name": "Weighted Avg Test"})
+    campaign_id = resp.json()["campaign_id"]
+
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+            "campaign_id": campaign_id,
+        })
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+            "campaign_id": campaign_id,
+        })
+
+    db = _TestSessionLocal()
+    sessions = db.query(SessionModel).filter(SessionModel.campaign_id == campaign_id).all()
+    
+    # Session 1: 40 ads published, avg 7.5
+    sessions[0].status = "completed"
+    sessions[0].results_summary = {
+        "ads_generated": 50,
+        "ads_published": 40,
+        "avg_score": 7.5,
+        "cost_so_far": 10.0,
+    }
+    
+    # Session 2: 60 ads published, avg 8.0
+    sessions[1].status = "completed"
+    sessions[1].results_summary = {
+        "ads_generated": 50,
+        "ads_published": 60,
+        "avg_score": 8.0,
+        "cost_so_far": 12.0,
+    }
+    
+    db.commit()
+    db.close()
+
+    # Weighted avg = (7.5 * 40 + 8.0 * 60) / (40 + 60) = (300 + 480) / 100 = 7.8
+    resp = alice.get(f"/api/campaigns/{campaign_id}")
+    stats = resp.json()["stats"]
+    assert stats["avg_quality_score"] == 7.8
+
+
+def test_campaign_stats_handles_missing_results_summary_fields(alice):
+    """Campaign stats handle missing fields in results_summary gracefully."""
+    from unittest.mock import MagicMock, patch
+    from app.models.session import Session as SessionModel
+
+    resp = alice.post("/api/campaigns", json={"name": "Missing Fields Test"})
+    campaign_id = resp.json()["campaign_id"]
+
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+            "campaign_id": campaign_id,
+        })
+
+    db = _TestSessionLocal()
+    session = db.query(SessionModel).filter(SessionModel.campaign_id == campaign_id).first()
+    session.status = "completed"
+    session.results_summary = {
+        "ads_published": 30,
+        # Missing ads_generated, avg_score, cost_so_far
+    }
+    db.commit()
+    db.close()
+
+    resp = alice.get(f"/api/campaigns/{campaign_id}")
+    stats = resp.json()["stats"]
+    assert stats["total_ads_generated"] == 0  # Missing field defaults to 0
+    assert stats["total_ads_published"] == 30
+    assert stats["avg_quality_score"] == 0.0  # No score available
+    assert stats["total_cost"] == 0.0  # Missing field defaults to 0
+
+
+def test_campaign_stats_includes_session_type_breakdown(alice):
+    """Campaign stats include breakdown by session type (image/video)."""
+    from unittest.mock import MagicMock, patch
+    from app.models.session import Session as SessionModel
+
+    resp = alice.post("/api/campaigns", json={"name": "Type Breakdown Test"})
+    campaign_id = resp.json()["campaign_id"]
+
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        # Create 2 image sessions
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50, "session_type": "image"},
+            "campaign_id": campaign_id,
+        })
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50, "session_type": "image"},
+            "campaign_id": campaign_id,
+        })
+        # Create 1 video session
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 30, "session_type": "video"},
+            "campaign_id": campaign_id,
+        })
+
+    db = _TestSessionLocal()
+    sessions = db.query(SessionModel).filter(SessionModel.campaign_id == campaign_id).all()
+    for s in sessions:
+        s.status = "completed"
+    db.commit()
+    db.close()
+
+    resp = alice.get(f"/api/campaigns/{campaign_id}")
+    stats = resp.json()["stats"]
+    assert stats["session_types"]["image"] == 2
+    assert stats["session_types"]["video"] == 1
+
+
+def test_campaign_list_includes_summary_stats(alice):
+    """Campaign list endpoint includes lightweight summary stats."""
+    from unittest.mock import MagicMock, patch
+    from app.models.session import Session as SessionModel
+
+    resp = alice.post("/api/campaigns", json={"name": "Summary Stats Campaign"})
+    campaign_id = resp.json()["campaign_id"]
+
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+            "campaign_id": campaign_id,
+        })
+
+    db = _TestSessionLocal()
+    session = db.query(SessionModel).filter(SessionModel.campaign_id == campaign_id).first()
+    session.status = "completed"
+    session.results_summary = {
+        "ads_generated": 50,
+        "ads_published": 42,
+        "avg_score": 7.8,
+        "cost_so_far": 10.5,
+    }
+    db.commit()
+    db.close()
+
+    resp = alice.get("/api/campaigns")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["campaigns"]) == 1
+    campaign = data["campaigns"][0]
+    # Summary stats should be present (lightweight version)
+    assert "total_ads_published" in campaign or "stats" in campaign
+
+
+# PC-12: Campaign management tests
+def test_duplicate_campaign_creates_new_campaign_with_same_config(alice):
+    """Duplicate campaign creates new campaign with same config but no sessions."""
+    # Create original campaign
+    resp = alice.post("/api/campaigns", json={
+        "name": "Original Campaign",
+        "description": "Test description",
+        "audience": "parents",
+        "campaign_goal": "conversion",
+        "default_config": {"ad_count": 50, "persona": "suburban_optimizer"},
+    })
+    original_id = resp.json()["campaign_id"]
+
+    # Duplicate it
+    resp = alice.post(f"/api/campaigns/{original_id}/duplicate")
+    assert resp.status_code == 201
+    data = resp.json()
+    duplicate_id = data["campaign_id"]
+    assert duplicate_id != original_id
+    assert data["name"] == "Original Campaign (copy)"
+    assert data["description"] == "Test description"
+    assert data["audience"] == "parents"
+    assert data["campaign_goal"] == "conversion"
+    assert data["default_config"] == {"ad_count": 50, "persona": "suburban_optimizer"}
+    assert data["session_count"] == 0  # No sessions copied
+
+
+def test_duplicate_campaign_has_no_sessions(alice):
+    """Duplicated campaign starts with zero sessions."""
+    from unittest.mock import MagicMock, patch
+
+    # Create campaign with sessions
+    resp = alice.post("/api/campaigns", json={"name": "Campaign With Sessions"})
+    campaign_id = resp.json()["campaign_id"]
+
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+            "campaign_id": campaign_id,
+        })
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+            "campaign_id": campaign_id,
+        })
+
+    # Verify original has sessions
+    resp = alice.get(f"/api/campaigns/{campaign_id}")
+    assert resp.json()["session_count"] == 2
+
+    # Duplicate
+    resp = alice.post(f"/api/campaigns/{campaign_id}/duplicate")
+    duplicate_id = resp.json()["campaign_id"]
+
+    # Verify duplicate has no sessions
+    resp = alice.get(f"/api/campaigns/{duplicate_id}")
+    assert resp.json()["session_count"] == 0
+
+
+def test_duplicate_campaign_name_has_copy_suffix(alice):
+    """Duplicate campaign name gets "(copy)" suffix."""
+    resp = alice.post("/api/campaigns", json={"name": "My Campaign"})
+    campaign_id = resp.json()["campaign_id"]
+
+    resp = alice.post(f"/api/campaigns/{campaign_id}/duplicate")
+    assert resp.json()["name"] == "My Campaign (copy)"
+
+    # Duplicate again
+    duplicate_id = resp.json()["campaign_id"]
+    resp = alice.post(f"/api/campaigns/{duplicate_id}/duplicate")
+    assert resp.json()["name"] == "My Campaign (copy) (copy)"
+
+
+def test_duplicate_nonexistent_campaign_returns_404(alice):
+    """Duplicate non-existent campaign returns 404."""
+    resp = alice.post("/api/campaigns/camp_nonexistent/duplicate")
+    assert resp.status_code == 404
+
+
+def test_duplicate_other_users_campaign_returns_404():
+    """User cannot duplicate another user's campaign."""
+
+    # Alice creates campaign
+    client_a, patches_a = _build_app_with_user("alice")
+    resp = client_a.post("/api/campaigns", json={"name": "Alice Campaign"})
+    campaign_id = resp.json()["campaign_id"]
+    client_a.close()
+    for p in patches_a:
+        p.stop()
+    from app.api.main import app
+    app.dependency_overrides.clear()
+
+    # Bob tries to duplicate it
+    client_b, patches_b = _build_app_with_user("bob")
+    resp = client_b.post(f"/api/campaigns/{campaign_id}/duplicate")
+    assert resp.status_code == 404
+    client_b.close()
+    for p in patches_b:
+        p.stop()
+    app.dependency_overrides.clear()
