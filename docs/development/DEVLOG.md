@@ -7,6 +7,40 @@
 
 ---
 
+## PC-04: Campaign Model + Migration + CRUD API ✅
+
+### Plain-English Summary
+- Created Campaign entity — organizational container for grouping related sessions
+- Campaign model: `campaign_id`, `name`, `user_id`, `description`, `audience`, `campaign_goal`, `default_config`, `status` (active/archived)
+- Full CRUD API: POST/GET/PATCH/DELETE with per-user isolation, pagination, status filtering
+- Soft delete: DELETE sets status to `archived` (no data loss)
+- Session count placeholder: returns 0 until PC-05 adds `campaign_id` FK to Session
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** 13 campaign API tests passing (create, list, get, update, delete, isolation, pagination, status filter)
+
+### Files Changed
+- `app/models/campaign.py` — Campaign SQLAlchemy model (relationship commented until PC-05)
+- `app/api/schemas/campaign.py` — CampaignCreate, CampaignUpdate, CampaignSummary, CampaignDetail, CampaignListResponse
+- `app/api/routes/campaigns.py` — Campaign CRUD endpoints with per-user isolation
+- `app/db.py` — Import campaign model for auto-create
+- `app/api/main.py` — Mount campaign router at `/api/campaigns`
+- `tests/test_app/test_campaigns.py` — 13 comprehensive tests
+
+### Key Achievements
+- Campaign CRUD fully functional with per-user isolation
+- Pagination and status filtering work correctly
+- Soft delete preserves data (archived campaigns remain queryable)
+- All 13 tests pass, lint clean
+
+### Learnings
+- SQLAlchemy relationships require FK to exist — commented out relationship until PC-05 adds `campaign_id` to Session
+- Test isolation: when testing user A vs user B, manually create/close clients instead of using fixtures to avoid dependency override conflicts
+- Session count query deferred to PC-05 when FK exists
+
+---
+
 ## PC-03: App Integration + Video Assembly ✅
 
 ### Plain-English Summary

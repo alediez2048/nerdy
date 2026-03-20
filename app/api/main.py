@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import auth, curation, dashboard, progress, sessions, share
+from app.api.routes import auth, campaigns, curation, dashboard, progress, sessions, share
 from app.db import init_db
 
 
@@ -34,6 +34,7 @@ def health() -> dict[str, str]:
 
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(campaigns.router, prefix="/api/campaigns", tags=["campaigns"])
 app.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
 app.include_router(progress.router, prefix="/sessions", tags=["progress"])
 app.include_router(dashboard.router, prefix="/sessions", tags=["dashboard"])
