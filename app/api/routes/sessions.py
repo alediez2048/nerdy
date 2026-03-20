@@ -17,6 +17,7 @@ from app.api.schemas.session import (
     SessionUpdate,
 )
 from app.db import get_db, init_db
+from app.models.campaign import Campaign as CampaignModel
 from app.models.session import Session as SessionModel
 from app.workers.progress import get_progress_summary
 from app.workers.tasks.pipeline_task import run_pipeline_session
@@ -97,10 +98,22 @@ def create_session(
     config_dict = body.config.model_dump(mode="json")
     name = body.name or _auto_name(config_dict)
 
+    # Validate campaign_id if provided
+    campaign_id = None
+    if body.campaign_id:
+        campaign = db.query(CampaignModel).filter(
+            CampaignModel.campaign_id == body.campaign_id,
+            CampaignModel.user_id == user["user_id"],
+        ).first()
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        campaign_id = body.campaign_id
+
     session_row = SessionModel(
         session_id=sid,
         name=name,
         user_id=user["user_id"],
+        campaign_id=campaign_id,
         config=config_dict,
         status="pending",
         ledger_path=f"data/sessions/{sid}/ledger.jsonl",
@@ -115,7 +128,33 @@ def create_session(
     db.commit()
     db.refresh(session_row)
 
-    return session_row
+    # Get campaign name if linked
+    campaign_name = None
+    if session_row.campaign_id:
+        campaign = db.query(CampaignModel).filter(
+            CampaignModel.campaign_id == session_row.campaign_id
+        ).first()
+        if campaign:
+            campaign_name = campaign.name
+
+    # Build response dict with campaign_name
+    return {
+        "id": session_row.id,
+        "session_id": session_row.session_id,
+        "name": session_row.name,
+        "user_id": session_row.user_id,
+        "config": session_row.config or {},
+        "status": session_row.status,
+        "campaign_id": session_row.campaign_id,
+        "campaign_name": campaign_name,
+        "celery_task_id": session_row.celery_task_id,
+        "results_summary": session_row.results_summary,
+        "ledger_path": session_row.ledger_path,
+        "output_path": session_row.output_path,
+        "created_at": session_row.created_at,
+        "updated_at": session_row.updated_at,
+        "completed_at": session_row.completed_at,
+    }
 
 
 @router.get("", response_model=SessionListResponse)
@@ -125,6 +164,7 @@ def list_sessions(
     session_type: str | None = Query(default=None),
     audience: str | None = Query(default=None),
     campaign_goal: str | None = Query(default=None),
+    campaign_id: str | None = Query(default=None),
     status: str | None = Query(default=None),
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
@@ -140,6 +180,8 @@ def list_sessions(
         query = query.filter(SessionModel.config["audience"].as_string() == audience)
     if campaign_goal:
         query = query.filter(SessionModel.config["campaign_goal"].as_string() == campaign_goal)
+    if campaign_id:
+        query = query.filter(SessionModel.campaign_id == campaign_id)
     if status:
         query = query.filter(SessionModel.status == status)
 
@@ -168,6 +210,7 @@ def list_sessions(
                 status=row.status,
                 config=row.config or {},
                 created_at=row.created_at,
+                campaign_id=row.campaign_id,
                 progress_summary=progress_summary,
                 results_summary=row.results_summary,
                 ad_preview=_get_session_ad_preview(row),
@@ -182,10 +225,38 @@ def get_session(
     session_id: str,
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[dict, Depends(get_current_user)],
-) -> SessionModel:
+) -> dict:
     """Get session detail. Per-user isolation enforced."""
     init_db()
-    return _get_user_session(db, session_id, user["user_id"])
+    row = _get_user_session(db, session_id, user["user_id"])
+
+    # Get campaign name if linked
+    campaign_name = None
+    if row.campaign_id:
+        campaign = db.query(CampaignModel).filter(
+            CampaignModel.campaign_id == row.campaign_id
+        ).first()
+        if campaign:
+            campaign_name = campaign.name
+
+    # Build response dict with campaign_name
+    return {
+        "id": row.id,
+        "session_id": row.session_id,
+        "name": row.name,
+        "user_id": row.user_id,
+        "config": row.config or {},
+        "status": row.status,
+        "campaign_id": row.campaign_id,
+        "campaign_name": campaign_name,
+        "celery_task_id": row.celery_task_id,
+        "results_summary": row.results_summary,
+        "ledger_path": row.ledger_path,
+        "output_path": row.output_path,
+        "created_at": row.created_at,
+        "updated_at": row.updated_at,
+        "completed_at": row.completed_at,
+    }
 
 
 @router.patch("/{session_id}", response_model=SessionDetail)

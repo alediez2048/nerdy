@@ -13,10 +13,11 @@ from app.api.schemas.campaign import (
     CampaignSummary,
     CampaignUpdate,
 )
+from app.api.schemas.session import ProgressSummary, SessionListResponse, SessionSummary
 from app.db import get_db, init_db
 from app.models.campaign import Campaign as CampaignModel
-# SessionModel import not needed until PC-05 adds campaign_id FK
-# from app.models.session import Session as SessionModel
+from app.models.session import Session as SessionModel
+from app.workers.progress import get_progress_summary
 
 router = APIRouter()
 
@@ -61,8 +62,8 @@ def create_campaign(
     db.commit()
     db.refresh(campaign_row)
 
-    # Count sessions (will be 0 for new campaign; PC-05 adds campaign_id FK to Session)
-    session_count = 0  # TODO: Query sessions once PC-05 adds campaign_id FK
+    # Count sessions
+    session_count = db.query(SessionModel).filter(SessionModel.campaign_id == cid).count()
 
     return CampaignDetail(
         id=campaign_row.id,
@@ -99,10 +100,10 @@ def list_campaigns(
     total = query.count()
     rows = query.order_by(CampaignModel.created_at.desc()).offset(offset).limit(limit).all()
 
-    # Build summaries with session counts (PC-05 adds campaign_id FK to Session)
+    # Build summaries with session counts
     summaries = []
     for row in rows:
-        session_count = 0  # TODO: Query sessions once PC-05 adds campaign_id FK
+        session_count = db.query(SessionModel).filter(SessionModel.campaign_id == row.campaign_id).count()
         summaries.append(
             CampaignSummary(
                 id=row.id,
@@ -129,8 +130,8 @@ def get_campaign(
     """Get campaign detail by campaign_id."""
     row = _get_user_campaign(db, campaign_id, user["user_id"])
 
-    # Count sessions (PC-05 adds campaign_id FK to Session)
-    session_count = 0  # TODO: Query sessions once PC-05 adds campaign_id FK
+    # Count sessions
+    session_count = db.query(SessionModel).filter(SessionModel.campaign_id == campaign_id).count()
 
     return CampaignDetail(
         id=row.id,
@@ -167,8 +168,8 @@ def update_campaign(
     db.commit()
     db.refresh(row)
 
-    # Count sessions (PC-05 adds campaign_id FK to Session)
-    session_count = 0  # TODO: Query sessions once PC-05 adds campaign_id FK
+    # Count sessions
+    session_count = db.query(SessionModel).filter(SessionModel.campaign_id == campaign_id).count()
 
     return CampaignDetail(
         id=row.id,
@@ -198,8 +199,8 @@ def delete_campaign(
     db.commit()
     db.refresh(row)
 
-    # Count sessions (PC-05 adds campaign_id FK to Session)
-    session_count = 0  # TODO: Query sessions once PC-05 adds campaign_id FK
+    # Count sessions
+    session_count = db.query(SessionModel).filter(SessionModel.campaign_id == campaign_id).count()
 
     return CampaignDetail(
         id=row.id,
@@ -214,3 +215,60 @@ def delete_campaign(
         updated_at=row.updated_at,
         session_count=session_count,
     )
+
+
+@router.get("/{campaign_id}/sessions", response_model=SessionListResponse)
+def get_campaign_sessions(
+    campaign_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_current_user)],
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+) -> SessionListResponse:
+    """Get sessions for a specific campaign."""
+    # Verify campaign exists and belongs to user
+    _get_user_campaign(db, campaign_id, user["user_id"])
+
+    # Query sessions for this campaign
+    query = db.query(SessionModel).filter(
+        SessionModel.campaign_id == campaign_id,
+        SessionModel.user_id == user["user_id"],
+    )
+
+    total = query.count()
+    rows = query.order_by(SessionModel.created_at.desc()).offset(offset).limit(limit).all()
+
+    sessions: list[SessionSummary] = []
+    for row in rows:
+        progress_summary = None
+        if row.status == "running":
+            summary = get_progress_summary(row.session_id)
+            if summary:
+                progress_summary = ProgressSummary(
+                    current_cycle=summary.get("cycle", 0),
+                    ads_generated=summary.get("ads_generated", 0),
+                    ads_evaluated=summary.get("ads_evaluated", 0),
+                    ads_published=summary.get("ads_published", 0),
+                    current_score_avg=summary.get("current_score_avg", 0.0),
+                    cost_so_far=summary.get("cost_so_far", 0.0),
+                )
+
+        # Import here to avoid circular import
+        from app.api.routes.sessions import _get_session_ad_preview
+
+        sessions.append(
+            SessionSummary(
+                id=row.id,
+                session_id=row.session_id,
+                name=row.name,
+                status=row.status,
+                config=row.config or {},
+                created_at=row.created_at,
+                campaign_id=row.campaign_id,
+                progress_summary=progress_summary,
+                results_summary=row.results_summary,
+                ad_preview=_get_session_ad_preview(row),
+            )
+        )
+
+    return SessionListResponse(sessions=sessions, total=total, offset=offset, limit=limit)

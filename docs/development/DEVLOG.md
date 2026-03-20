@@ -7,6 +7,43 @@
 
 ---
 
+## PC-05: Session campaign_id FK + API Filter ✅
+
+### Plain-English Summary
+- Added `campaign_id` foreign key to Session model — sessions can now belong to campaigns
+- Session API accepts optional `campaign_id` on create, validates campaign exists and belongs to user
+- Session list API filters by `campaign_id` query parameter
+- Session detail includes `campaign_name` when linked to a campaign
+- New endpoint: `GET /campaigns/{id}/sessions` returns paginated sessions for a campaign
+- Campaign API now uses real session counts (replaced placeholder 0s)
+- Backward compatible: existing sessions with no campaign continue to work (campaign_id is nullable)
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** 7 new tests passing (45 total in sessions + campaigns test suites)
+
+### Files Changed
+- `app/models/session.py` — Added nullable `campaign_id` FK + relationship to Campaign
+- `app/models/campaign.py` — Uncommented `sessions` relationship (now that FK exists)
+- `app/api/schemas/session.py` — Added `campaign_id` to SessionCreate, SessionSummary, SessionDetail; added `campaign_name` to SessionDetail
+- `app/api/routes/sessions.py` — Campaign validation on create, `campaign_id` filter in list, `campaign_name` in detail
+- `app/api/routes/campaigns.py` — Real session_count queries, new `GET /campaigns/{id}/sessions` endpoint
+- `tests/test_app/test_sessions.py` — 6 new campaign-linkage tests
+- `tests/test_app/test_campaigns.py` — 1 new campaign sessions endpoint test
+
+### Key Achievements
+- Sessions can be linked to campaigns on creation
+- Campaign sessions endpoint functional
+- All existing tests still pass (backward compatible)
+- Campaign API shows real session counts
+
+### Learnings
+- FastAPI route ordering matters — `/{campaign_id}/sessions` must come after `/{campaign_id}` or it matches as `campaign_id="sessions"`
+- SessionModel.from_attributes doesn't include joined fields like `campaign_name` — need to build dict manually
+- Test isolation: when testing cross-user scenarios, manually create/close clients instead of using fixtures to avoid dependency override conflicts
+
+---
+
 ## PC-04: Campaign Model + Migration + CRUD API ✅
 
 ### Plain-English Summary

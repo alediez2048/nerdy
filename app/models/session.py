@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, JSON, String, func
+from sqlalchemy import DateTime, ForeignKey, JSON, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -18,6 +18,9 @@ class Session(Base):
     name: Mapped[str | None] = mapped_column(String(256), nullable=True)
     # String user_id for dev (mock auth). PA-03 adds FK to users.id.
     user_id: Mapped[str] = mapped_column(String(256), index=True)
+    campaign_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("campaigns.campaign_id"), nullable=True, index=True
+    )
     config: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(String(32), default="pending")
     celery_task_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -30,5 +33,6 @@ class Session(Base):
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    # Relationships (activated when FK is added in PA-03)
+    # Relationships
     curated_sets = relationship("CuratedSet", back_populates="session")
+    campaign = relationship("Campaign", back_populates="sessions")

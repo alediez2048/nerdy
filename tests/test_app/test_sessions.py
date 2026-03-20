@@ -14,6 +14,7 @@ from app.models.base import Base
 import app.models.user  # noqa: F401
 import app.models.session  # noqa: F401
 import app.models.curation  # noqa: F401
+import app.models.campaign  # noqa: F401
 
 
 @asynccontextmanager
@@ -40,11 +41,13 @@ def _override_get_db():
 
 @pytest.fixture(autouse=True)
 def _clean_rows():
-    """Delete all session rows between tests."""
+    """Delete all session and campaign rows between tests."""
     yield
     from app.models.session import Session as SessionModel
+    from app.models.campaign import Campaign as CampaignModel
     db = _TestSessionLocal()
     db.query(SessionModel).delete()
+    db.query(CampaignModel).delete()
     db.commit()
     db.close()
 
@@ -70,12 +73,14 @@ def _build_app_with_user(user_id: str):
     p1 = patch("app.api.main.lifespan", _noop_lifespan)
     p2 = patch("app.api.routes.sessions.run_pipeline_session", mock_task)
     p3 = patch("app.api.routes.sessions.init_db")
+    p4 = patch("app.api.routes.campaigns.init_db")
     p1.start()
     p2.start()
     p3.start()
+    p4.start()
 
     client = TestClient(app)
-    return client, [p1, p2, p3]
+    return client, [p1, p2, p3, p4]
 
 
 @pytest.fixture()
@@ -507,3 +512,120 @@ def test_video_session_with_advanced_fields(alice):
     cfg = resp.json()["config"]
     assert cfg["video_scene"] == "Parent and student celebrating"
     assert cfg["video_camera_movement"] == "handheld"
+
+
+# --- PC-05: Campaign linkage ---
+
+
+def test_create_session_with_campaign_id(alice):
+    """Create session with campaign_id links session to campaign."""
+    # Create a campaign first
+    campaign_resp = alice.post("/api/campaigns", json={"name": "Test Campaign"})
+    campaign_id = campaign_resp.json()["campaign_id"]
+
+    # Create session with campaign_id
+    resp = alice.post("/sessions", json={
+        "config": VALID_CONFIG["config"],
+        "campaign_id": campaign_id,
+    })
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["campaign_id"] == campaign_id
+    assert data.get("campaign_name") == "Test Campaign"
+
+
+def test_create_session_without_campaign_id(alice):
+    """Create session without campaign_id — backward compatible (campaign_id is null)."""
+    resp = _create(alice)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data.get("campaign_id") is None
+    assert data.get("campaign_name") is None
+
+
+def test_create_session_with_invalid_campaign_id(alice):
+    """Create session with non-existent campaign_id returns 404."""
+    resp = alice.post("/sessions", json={
+        "config": VALID_CONFIG["config"],
+        "campaign_id": "camp_nonexistent",
+    })
+    assert resp.status_code == 404
+    assert "Campaign not found" in resp.json()["detail"]
+
+
+def test_create_session_with_another_users_campaign_id():
+    """Create session with another user's campaign_id returns 404."""
+    # Alice creates a campaign
+    client_a, patches_a = _build_app_with_user("alice")
+    campaign_resp = client_a.post("/api/campaigns", json={"name": "Alice's Campaign"})
+    campaign_id = campaign_resp.json()["campaign_id"]
+    client_a.close()
+    for p in patches_a:
+        p.stop()
+    from app.api.main import app
+    app.dependency_overrides.clear()
+
+    # Bob tries to create session with Alice's campaign
+    client_b, patches_b = _build_app_with_user("bob")
+    resp = client_b.post("/sessions", json={
+        "config": VALID_CONFIG["config"],
+        "campaign_id": campaign_id,
+    })
+    assert resp.status_code == 404
+    assert "Campaign not found" in resp.json()["detail"]
+    client_b.close()
+    for p in patches_b:
+        p.stop()
+    app.dependency_overrides.clear()
+
+
+def test_list_sessions_filter_by_campaign_id(alice):
+    """List sessions can filter by campaign_id."""
+    # Create campaign
+    campaign_resp = alice.post("/api/campaigns", json={"name": "Campaign A"})
+    campaign_id = campaign_resp.json()["campaign_id"]
+
+    # Create 2 sessions with campaign, 1 without
+    alice.post("/sessions", json={
+        "config": VALID_CONFIG["config"],
+        "campaign_id": campaign_id,
+    })
+    alice.post("/sessions", json={
+        "config": VALID_CONFIG["config"],
+        "campaign_id": campaign_id,
+    })
+    alice.post("/sessions", json={"config": VALID_CONFIG["config"]})
+
+    # Filter by campaign_id
+    resp = alice.get(f"/sessions?campaign_id={campaign_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 2
+    assert all(s["campaign_id"] == campaign_id for s in data["sessions"])
+
+    # No filter returns all
+    resp = alice.get("/sessions")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 3
+
+
+def test_get_session_detail_includes_campaign_name(alice):
+    """Get session detail includes campaign_name when linked to campaign."""
+    # Create campaign
+    campaign_resp = alice.post("/api/campaigns", json={"name": "My Campaign"})
+    campaign_id = campaign_resp.json()["campaign_id"]
+
+    # Create session with campaign
+    create_resp = alice.post("/sessions", json={
+        "config": VALID_CONFIG["config"],
+        "campaign_id": campaign_id,
+    })
+    session_id = create_resp.json()["session_id"]
+
+    # Get session detail
+    resp = alice.get(f"/sessions/{session_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["campaign_id"] == campaign_id
+    assert data["campaign_name"] == "My Campaign"

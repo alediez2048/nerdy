@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import DateTime, JSON, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
@@ -27,5 +27,4 @@ class Campaign(Base):
         DateTime(timezone=True), onupdate=func.now(), nullable=True
     )
 
-    # Relationship will be added in PC-05 when Session gets campaign_id FK
-    # sessions = relationship("Session", back_populates="campaign")
+    sessions = relationship("Session", back_populates="campaign")

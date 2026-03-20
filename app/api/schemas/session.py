@@ -96,6 +96,7 @@ class SessionCreate(BaseModel):
 
     name: str | None = None
     config: SessionConfig
+    campaign_id: str | None = None
 
 
 class SessionUpdate(BaseModel):
@@ -139,6 +140,7 @@ class SessionSummary(BaseModel):
     status: str
     config: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
+    campaign_id: str | None = None
     progress_summary: ProgressSummary | None = None
     results_summary: dict[str, Any] | None = None
     ad_preview: SessionAdPreview | None = None
@@ -155,6 +157,8 @@ class SessionDetail(BaseModel):
     user_id: str
     config: dict[str, Any]
     status: str
+    campaign_id: str | None = None
+    campaign_name: str | None = None
     celery_task_id: str | None = None
     results_summary: dict[str, Any] | None = None
     ledger_path: str | None = None

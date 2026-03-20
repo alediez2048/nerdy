@@ -3,7 +3,7 @@
 
 import tempfile
 from contextlib import asynccontextmanager
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -41,14 +41,17 @@ def _override_get_db():
 
 @pytest.fixture(autouse=True)
 def _clean_rows():
-    """Delete all campaign rows before and after each test."""
+    """Delete all campaign and session rows before and after each test."""
     from app.models.campaign import Campaign as CampaignModel
+    from app.models.session import Session as SessionModel
     db = _TestSessionLocal()
+    db.query(SessionModel).delete()
     db.query(CampaignModel).delete()
     db.commit()
     db.close()
     yield
     db = _TestSessionLocal()
+    db.query(SessionModel).delete()
     db.query(CampaignModel).delete()
     db.commit()
     db.close()
@@ -67,13 +70,22 @@ def _build_app_with_user(user_id: str):
     app.dependency_overrides[get_db] = _override_get_db
     app.dependency_overrides[get_current_user] = override_user
 
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
     p1 = patch("app.api.main.lifespan", _noop_lifespan)
     p2 = patch("app.api.routes.campaigns.init_db")
+    p3 = patch("app.api.routes.sessions.run_pipeline_session", mock_task)
+    p4 = patch("app.api.routes.sessions.init_db")
     p1.start()
     p2.start()
+    p3.start()
+    p4.start()
 
     client = TestClient(app)
-    return client, [p1, p2]
+    return client, [p1, p2, p3, p4]
 
 
 @pytest.fixture()
@@ -339,3 +351,52 @@ def test_campaign_isolation_user_a_cannot_see_user_b_campaigns():
     for p in patches_a:
         p.stop()
     app.dependency_overrides.clear()
+
+
+def test_get_campaign_sessions_endpoint(alice):
+    """GET /campaigns/{id}/sessions returns only that campaign's sessions."""
+    # Create campaign
+    campaign_resp = alice.post("/api/campaigns", json={"name": "Campaign A"})
+    campaign_id = campaign_resp.json()["campaign_id"]
+
+    # Create another campaign
+    campaign_resp2 = alice.post("/api/campaigns", json={"name": "Campaign B"})
+    campaign_id2 = campaign_resp2.json()["campaign_id"]
+
+    # Create sessions: 2 in Campaign A, 1 in Campaign B, 1 with no campaign
+    from unittest.mock import MagicMock, patch
+    mock_task = MagicMock()
+    mock_result = MagicMock()
+    mock_result.id = "celery-task-123"
+    mock_task.delay.return_value = mock_result
+
+    with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+            "campaign_id": campaign_id,
+        })
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+            "campaign_id": campaign_id,
+        })
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+            "campaign_id": campaign_id2,
+        })
+        alice.post("/sessions", json={
+            "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
+        })
+
+    # Get Campaign A's sessions
+    resp = alice.get(f"/api/campaigns/{campaign_id}/sessions")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 2
+    assert all(s["campaign_id"] == campaign_id for s in data["sessions"])
+
+    # Get Campaign B's sessions
+    resp = alice.get(f"/api/campaigns/{campaign_id2}/sessions")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["sessions"][0]["campaign_id"] == campaign_id2
