@@ -229,29 +229,12 @@ Output ONLY valid JSON (no markdown, no code fences):
 Note: plus_two_description and specific_gap can be derived from contrastive if needed. Rationale = current_assessment."""
 
 
-def _call_gemini(prompt: str, ad_id: str) -> dict[str, Any]:
-    """Call Gemini API for evaluation. Uses retry_with_backoff."""
-    from google import genai
-    from google.genai import types
-
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
-
-    def _do_call() -> dict[str, Any]:
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.4,
-                max_output_tokens=2048,
-            ),
-        )
-        text = response.text or ""
-        return _parse_evaluation_response(text, ad_id)
-
-    return retry_with_backoff(_do_call)
+def _call_gemini(prompt: str, ad_id: str) -> tuple[dict[str, Any], int]:
+    """Call Gemini API for evaluation. Returns (parsed_result, total_tokens)."""
+    from generate.gemini_client import call_gemini
+    resp = call_gemini(prompt, temperature=0.4, max_output_tokens=2048)
+    parsed = _parse_evaluation_response(resp.text, ad_id)
+    return parsed, resp.total_tokens
 
 
 def _parse_evaluation_response(text: str, ad_id: str) -> dict[str, Any]:
@@ -516,7 +499,7 @@ def evaluate_ad(
 
     ad_id = ad_text.get("ad_id", "unknown")
     prompt = _build_evaluation_prompt(ad_text, campaign_goal, audience)
-    raw = _call_gemini(prompt, ad_id)
+    raw, tokens_used = _call_gemini(prompt, ad_id)
 
     scores = raw["scores"]
     # PB-06: Apply Nerdy-specific adjustments (penalties + bonuses)
@@ -537,10 +520,10 @@ def evaluate_ad(
     if confidence_flags:
         flags.extend([f"low_confidence:{d}" for d in confidence_flags])
 
-    tokens_estimate = (len(prompt) + 500) // 4
+    tokens_actual = tokens_used or (len(prompt) + 500) // 4
     metadata = {
         "model_used": "gemini-2.0-flash",
-        "tokens_consumed": tokens_estimate,
+        "tokens_consumed": tokens_actual,
         "prompt_version": EVALUATOR_PROMPT_VERSION,
     }
 

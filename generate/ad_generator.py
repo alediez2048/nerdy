@@ -349,25 +349,11 @@ def _parse_generation_response(
     )
 
 
-def _call_gemini(prompt: str) -> str:
-    """Call Gemini Flash for ad generation."""
-    from google import genai
-    from google.genai import types
-
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
-
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.7,
-            max_output_tokens=1024,
-        ),
-    )
-    return response.text or ""
+def _call_gemini(prompt: str) -> tuple[str, int]:
+    """Call Gemini Flash for ad generation. Returns (text, total_tokens)."""
+    from generate.gemini_client import call_gemini
+    resp = call_gemini(prompt, temperature=0.7, max_output_tokens=1024)
+    return resp.text, resp.total_tokens
 
 
 def _load_config() -> dict[str, Any]:
@@ -430,11 +416,11 @@ def generate_ad(
     atoms = _select_structural_atoms(campaign_goal, audience, ad_seed=actual_seed)
     prompt = _build_generation_prompt(expanded_brief, atoms, creative_brief=creative_brief)
 
-    def _do_call() -> str:
+    def _do_call() -> tuple[str, int]:
         return _call_gemini(prompt)
 
-    response = retry_with_backoff(_do_call)
-    tokens_estimate = (len(prompt) + len(response)) // 4
+    response, tokens_used = retry_with_backoff(_do_call)
+    tokens_estimate = tokens_used or (len(prompt) + len(response)) // 4
     metadata = {
         "model_used": "gemini-2.0-flash",
         "tokens_consumed": tokens_estimate,

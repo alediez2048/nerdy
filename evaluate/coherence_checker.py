@@ -36,42 +36,27 @@ class CoherenceResult:
     variant_type: str
     dimension_scores: dict[str, float]
     coherence_avg: float
+    tokens_consumed: int = 0
 
 
-def _call_coherence_eval(image_path: str, prompt: str) -> dict[str, float]:
-    """Call Gemini Flash multimodal for coherence evaluation."""
-    from google import genai
+def _call_coherence_eval(image_path: str, prompt: str) -> tuple[dict[str, float], int]:
+    """Call Gemini Flash multimodal for coherence evaluation. Returns (result, tokens)."""
     from google.genai import types
+    from generate.gemini_client import call_gemini_multimodal
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
+    with open(image_path, "rb") as f:
+        image_data = f.read()
 
-    def _do_call() -> dict[str, float]:
-        client = genai.Client(api_key=api_key)
-
-        with open(image_path, "rb") as f:
-            image_data = f.read()
-
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[
-                types.Part.from_bytes(data=image_data, mime_type="image/png"),
-                prompt,
-            ],
-            config=types.GenerateContentConfig(
-                temperature=0.1,
-                max_output_tokens=512,
-            ),
-        )
-        text = response.text or ""
-        stripped = text.strip()
-        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped)
-        if match:
-            stripped = match.group(1).strip()
-        return json.loads(stripped)
-
-    return retry_with_backoff(_do_call)
+    resp = call_gemini_multimodal(
+        [types.Part.from_bytes(data=image_data, mime_type="image/png"), prompt],
+        temperature=0.1,
+        max_output_tokens=512,
+    )
+    text = resp.text.strip()
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+    if match:
+        text = match.group(1).strip()
+    return json.loads(text), resp.total_tokens
 
 
 def check_coherence(
@@ -112,8 +97,9 @@ Score each coherence dimension from 1 (completely mismatched) to 10 (perfectly a
 Output ONLY valid JSON:
 {{"message_alignment": <1-10>, "audience_match": <1-10>, "emotional_consistency": <1-10>, "visual_narrative": <1-10>}}"""
 
+    tokens = 0
     try:
-        raw = _call_coherence_eval(image_path, prompt)
+        raw, tokens = _call_coherence_eval(image_path, prompt)
     except Exception as e:
         logger.warning(
             "Coherence eval failed for %s/%s: %s, defaulting to mid-range",
@@ -135,6 +121,7 @@ Output ONLY valid JSON:
         variant_type=variant_type,
         dimension_scores=dimension_scores,
         coherence_avg=coherence_avg,
+        tokens_consumed=tokens,
     )
 
 

@@ -137,13 +137,14 @@ def process_batch(
             result.generated += 1
 
             # Log AdGenerated to session ledger (copy data for dashboard)
+            ad_tokens = (ad.generation_metadata or {}).get("tokens_consumed", 0)
             log_event(ledger_path, {
                 "event_type": "AdGenerated",
                 "ad_id": ad.ad_id,
                 "brief_id": brief_id,
                 "cycle_number": 0,
                 "action": "generation",
-                "tokens_consumed": 0,
+                "tokens_consumed": ad_tokens,
                 "model_used": "gemini-2.0-flash",
                 "seed": str(brief_seed),
                 "inputs": {"brief_id": brief_id},
@@ -336,14 +337,15 @@ def _generate_and_select_image(
                 composite_score=comp,
             ))
 
-            # Log variant evaluation
+            # Log variant evaluation (real tokens from attribute + coherence evals)
+            eval_tokens = getattr(attr_result, "tokens_consumed", 0) + getattr(coherence, "tokens_consumed", 0)
             log_event(ledger_path, {
                 "event_type": "ImageEvaluated",
                 "ad_id": ad.ad_id,
                 "brief_id": brief.get("brief_id", "unknown"),
                 "cycle_number": 0,
                 "action": f"image_eval_{variant.variant_type}",
-                "tokens_consumed": 500,
+                "tokens_consumed": eval_tokens,
                 "model_used": "gemini-2.0-flash",
                 "seed": str(variant.seed),
                 "inputs": {"variant_type": variant.variant_type},

@@ -314,25 +314,11 @@ def _parse_expansion_response(response: str, original_brief: dict[str, Any]) -> 
     )
 
 
-def _call_gemini(prompt: str) -> str:
-    """Call Gemini Flash for brief expansion."""
-    from google import genai
-    from google.genai import types
-
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
-
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.3,
-            max_output_tokens=2048,
-        ),
-    )
-    return response.text or ""
+def _call_gemini(prompt: str) -> tuple[str, int]:
+    """Call Gemini Flash for brief expansion. Returns (text, total_tokens)."""
+    from generate.gemini_client import call_gemini
+    resp = call_gemini(prompt, temperature=0.3, max_output_tokens=2048)
+    return resp.text, resp.total_tokens
 
 
 def _load_config() -> dict[str, Any]:
@@ -409,10 +395,10 @@ def expand_brief(
         messaging=messaging,
     )
 
-    def _do_call() -> str:
+    def _do_call() -> tuple[str, int]:
         return _call_gemini(prompt)
 
-    response = retry_with_backoff(_do_call)
+    response, tokens_used = retry_with_backoff(_do_call)
     result = _parse_expansion_response(response, brief)
 
     # Set PB-04 fields
@@ -427,7 +413,7 @@ def expand_brief(
     brief_id = brief.get("brief_id", "brief_unknown")
     global_seed = load_global_seed()
     seed = get_ad_seed(global_seed, brief_id, 0)
-    tokens_estimate = (len(prompt) + len(response)) // 4
+    tokens_actual = tokens_used or (len(prompt) + len(response)) // 4
 
     log_event(
         led_path,
@@ -437,7 +423,7 @@ def expand_brief(
             "brief_id": brief_id,
             "cycle_number": 0,
             "action": "brief-expansion",
-            "tokens_consumed": tokens_estimate,
+            "tokens_consumed": tokens_actual,
             "model_used": "gemini-2.0-flash",
             "seed": str(seed),
             "inputs": {"brief": brief, "persona": resolved_persona},

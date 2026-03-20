@@ -38,43 +38,27 @@ class ImageAttributeResult:
     attributes: dict[str, bool]
     attribute_pass_pct: float
     meets_threshold: bool
+    tokens_consumed: int = 0
 
 
-def _call_multimodal_eval(image_path: str, prompt: str) -> dict[str, bool]:
-    """Call Gemini Flash multimodal for image attribute evaluation."""
-    from google import genai
+def _call_multimodal_eval(image_path: str, prompt: str) -> tuple[dict[str, bool], int]:
+    """Call Gemini Flash multimodal for image attribute evaluation. Returns (result, tokens)."""
     from google.genai import types
+    from generate.gemini_client import call_gemini_multimodal
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
+    with open(image_path, "rb") as f:
+        image_data = f.read()
 
-    def _do_call() -> dict[str, bool]:
-        client = genai.Client(api_key=api_key)
-
-        # Read image file
-        with open(image_path, "rb") as f:
-            image_data = f.read()
-
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[
-                types.Part.from_bytes(data=image_data, mime_type="image/png"),
-                prompt,
-            ],
-            config=types.GenerateContentConfig(
-                temperature=0.1,
-                max_output_tokens=512,
-            ),
-        )
-        text = response.text or ""
-        stripped = text.strip()
-        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped)
-        if match:
-            stripped = match.group(1).strip()
-        return json.loads(stripped)
-
-    return retry_with_backoff(_do_call)
+    resp = call_gemini_multimodal(
+        [types.Part.from_bytes(data=image_data, mime_type="image/png"), prompt],
+        temperature=0.1,
+        max_output_tokens=512,
+    )
+    text = resp.text.strip()
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+    if match:
+        text = match.group(1).strip()
+    return json.loads(text), resp.total_tokens
 
 
 def evaluate_image_attributes(
@@ -108,8 +92,9 @@ For each attribute, answer true (passes) or false (fails):
 Output ONLY valid JSON:
 {{"age_appropriate": true/false, "lighting": true/false, "diversity": true/false, "brand_consistent": true/false, "no_artifacts": true/false}}"""
 
+    tokens = 0
     try:
-        raw = _call_multimodal_eval(image_path, prompt)
+        raw, tokens = _call_multimodal_eval(image_path, prompt)
     except Exception as e:
         logger.warning("Image attribute eval failed for %s/%s: %s, defaulting to all-pass", ad_id, variant_type, e)
         raw = {a: True for a in VISUAL_ATTRIBUTES}
@@ -129,4 +114,5 @@ Output ONLY valid JSON:
         attributes=attributes,
         attribute_pass_pct=round(pass_pct, 2),
         meets_threshold=pass_pct >= _PASS_THRESHOLD,
+        tokens_consumed=tokens,
     )
