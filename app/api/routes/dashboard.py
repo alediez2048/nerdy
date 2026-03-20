@@ -182,6 +182,18 @@ def get_global_dashboard(timeframe: str = "all") -> dict[str, Any]:
         filtered_events = filter_events_by_timeframe(merged_events, timeframe)
         data = build_dashboard_data_from_events(filtered_events, "merged")
         data.setdefault("pipeline_summary", {})
+
+        # Apply historical baseline for global cost (individual sessions
+        # compute their own cost from ledger data only)
+        try:
+            from evaluate.cost_reporter import HISTORICAL_SPEND_USD
+            computed = data["pipeline_summary"].get("total_cost_usd", 0)
+            data["pipeline_summary"]["total_cost_usd"] = round(
+                max(HISTORICAL_SPEND_USD, computed), 2
+            )
+        except ImportError:
+            pass
+
         data["timeframe"] = timeframe
         return data
     except Exception as e:
