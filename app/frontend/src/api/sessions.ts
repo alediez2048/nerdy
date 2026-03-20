@@ -26,7 +26,7 @@ async function handleResponse<T>(resp: Response): Promise<T> {
 }
 
 export async function createSession(
-  data: SessionCreate,
+  data: SessionCreate & { campaign_id?: string },
 ): Promise<SessionDetail> {
   const resp = await fetch(BASE, {
     method: 'POST',

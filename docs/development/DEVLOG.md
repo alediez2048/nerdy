@@ -7,6 +7,40 @@
 
 ---
 
+## PC-09: Pre-fill Session Form from Campaign Defaults ✅
+
+### Plain-English Summary
+- Session creation form now pre-fills from campaign defaults when accessed via `/campaigns/{id}/sessions/new`
+- Campaign context detection: form checks for `campaignId` route parameter
+- Default merging: campaign's `default_config` JSON merged into form initial state, with top-level `audience` and `campaign_goal` taking precedence
+- Campaign context banner: shows "Creating session for [Campaign Name]" with link back to campaign
+- Session linking: `campaign_id` automatically included in POST body when creating from campaign context
+- Navigation: after creation, redirects to campaign detail page (not session list) when created from campaign
+- Backward compatible: standalone session creation at `/sessions/new` unchanged (no campaign pre-fill)
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** Frontend component modified, API client updated, no backend changes
+
+### Files Changed
+- `app/frontend/src/views/NewSessionForm.tsx` — Added campaign context detection, default pre-fill, context banner, campaign-aware navigation
+- `app/frontend/src/api/sessions.ts` — Updated `createSession()` to accept optional `campaign_id` parameter
+
+### Key Achievements
+- Campaign pre-fill fully functional
+- All defaults are overridable (user can change any pre-filled value)
+- Campaign context banner provides clear visual feedback
+- Navigation flow: campaign → new session → campaign (seamless workflow)
+- Error handling: if campaign fetch fails, user can still create standalone session
+
+### Learnings
+- Route params via `useParams` work seamlessly for optional campaign context
+- Default merging strategy: top-level campaign fields (audience, goal) override `default_config` for those specific fields, then `default_config` fills remaining fields
+- Campaign context banner uses subtle styling (info bar) to not be intrusive
+- Post-creation navigation depends on context: campaign context → campaign detail, standalone → session detail
+
+---
+
 ## PC-08: CampaignDetail View + Session List ✅
 
 ### Plain-English Summary

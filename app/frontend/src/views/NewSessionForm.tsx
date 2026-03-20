@@ -1,8 +1,10 @@
 // PA-05 + PC-00: Brief configuration form with progressive disclosure + video track
+// PC-09: Campaign pre-fill support
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { colors, radii, font } from '../design/tokens'
 import { createSession, listSessions } from '../api/sessions'
+import { getCampaign } from '../api/campaigns'
 import type {
   SessionConfig,
   SessionType,
@@ -20,6 +22,7 @@ import { DEFAULT_CONFIG, PERSONA_LABELS, PERSONA_KEY_MESSAGES, CREATIVE_BRIEF_OP
 
 export default function NewSessionForm() {
   const navigate = useNavigate()
+  const { campaignId } = useParams<{ campaignId?: string }>()
   const [config, setConfig] = useState<SessionConfig>({ ...DEFAULT_CONFIG })
   const [name, setName] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -27,6 +30,37 @@ export default function NewSessionForm() {
   const [error, setError] = useState<string | null>(null)
   const [recentSessions, setRecentSessions] = useState<SessionSummary[]>([])
   const [showClone, setShowClone] = useState(false)
+  const [campaignName, setCampaignName] = useState<string | null>(null)
+  const [campaignLoading, setCampaignLoading] = useState(false)
+
+  // Load campaign defaults if campaignId is present
+  useEffect(() => {
+    if (!campaignId) return
+    setCampaignLoading(true)
+    getCampaign(campaignId)
+      .then((campaign) => {
+        setCampaignName(campaign.name)
+        const defaults = campaign.default_config || {}
+        
+        // Merge campaign defaults into form config
+        setConfig((prev) => ({
+          ...prev,
+          // Override with campaign top-level fields if present
+          audience: (campaign.audience as Audience) || prev.audience,
+          campaign_goal: (campaign.campaign_goal as CampaignGoal) || prev.campaign_goal,
+          // Merge default_config fields
+          ...defaults,
+          // Ensure required fields are set
+          persona: (defaults.persona as Persona) || (campaign.audience ? prev.persona : prev.persona),
+        }))
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load campaign defaults')
+      })
+      .finally(() => {
+        setCampaignLoading(false)
+      })
+  }, [campaignId])
 
   useEffect(() => {
     listSessions({ limit: 10 })
@@ -83,8 +117,14 @@ export default function NewSessionForm() {
       const result = await createSession({
         name: name || undefined,
         config,
+        campaign_id: campaignId,
       })
-      navigate(`/sessions/${result.session_id}`)
+      // Navigate to campaign detail if created from campaign, otherwise to session detail
+      if (campaignId) {
+        navigate(`/campaigns/${campaignId}`)
+      } else {
+        navigate(`/sessions/${result.session_id}`)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create session')
     } finally {
@@ -99,6 +139,21 @@ export default function NewSessionForm() {
       <div style={s.card}>
         <h1 style={s.title}>New Session</h1>
         <p style={s.subtitle}>Configure a pipeline run for Varsity Tutors ad generation</p>
+
+        {campaignId && campaignName && (
+          <div style={s.campaignBanner}>
+            <span style={s.campaignBannerText}>
+              Creating session for <strong>{campaignName}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => navigate(`/campaigns/${campaignId}`)}
+              style={s.campaignBannerLink}
+            >
+              ← Back to Campaign
+            </button>
+          </div>
+        )}
 
         {recentSessions.length > 0 && (
           <div style={s.cloneSection}>
@@ -566,6 +621,33 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.muted,
     margin: '0 0 24px',
     fontSize: '14px',
+  },
+  campaignBanner: {
+    background: `${colors.cyan}15`,
+    border: `1px solid ${colors.cyan}40`,
+    borderRadius: radii.input,
+    padding: '12px 16px',
+    marginBottom: '24px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
+  },
+  campaignBannerText: {
+    color: colors.cyan,
+    fontSize: '14px',
+    fontFamily: font.family,
+  },
+  campaignBannerLink: {
+    background: 'transparent',
+    border: `1px solid ${colors.cyan}40`,
+    borderRadius: radii.button,
+    color: colors.cyan,
+    cursor: 'pointer',
+    fontSize: '12px',
+    padding: '6px 12px',
+    fontFamily: font.family,
   },
   field: { marginBottom: '20px' },
   label: {
