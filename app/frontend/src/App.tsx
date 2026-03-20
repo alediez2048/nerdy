@@ -7,6 +7,7 @@ import SessionDetail from './views/SessionDetail'
 import WatchLive from './views/WatchLive'
 import SharedSession from './views/SharedSession'
 import GlobalDashboard from './views/GlobalDashboard'
+import CampaignList from './views/CampaignList'
 
 function ThemeToggle() {
   const [light, setLight] = useState(() => localStorage.getItem('theme') === 'light')
@@ -79,6 +80,7 @@ export default function App() {
         <Route path="/sessions/:sessionId/live" element={<WatchLive />} />
         <Route path="/shared/:token" element={<SharedSession />} />
         <Route path="/dashboard" element={<GlobalDashboard />} />
+        <Route path="/campaigns" element={<CampaignList />} />
       </Routes>
     </BrowserRouter>
   )

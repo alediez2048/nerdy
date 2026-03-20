@@ -7,6 +7,41 @@
 
 ---
 
+## PC-06: CampaignList + CampaignCard Frontend Views ✅
+
+### Plain-English Summary
+- Created CampaignList page at `/campaigns` — grid view of all user campaigns with summary stats
+- CampaignCard component displays campaign name, description, badges (audience, goal, session count), status, and archive action
+- Status filter: All / Active / Archived with pagination
+- Polling every 30s for live updates
+- Empty state with CTA to create first campaign
+- Design consistent with SessionList (same tokens, card patterns, hover effects)
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** Frontend components created, route registered, no backend changes
+
+### Files Changed
+- `app/frontend/src/types/campaign.ts` — Campaign TypeScript interfaces (Create, Update, Summary, Detail, ListResponse)
+- `app/frontend/src/api/campaigns.ts` — Campaign API client (list, get, create, update, delete)
+- `app/frontend/src/components/CampaignCard.tsx` — Campaign card component with archive action
+- `app/frontend/src/views/CampaignList.tsx` — Campaign list page with filters, pagination, polling
+- `app/frontend/src/App.tsx` — Added `/campaigns` route
+
+### Key Achievements
+- Campaign list page fully functional
+- Status filtering works (all/active/archived)
+- Pagination with "Load More" button
+- Archive action updates list automatically
+- Design matches SessionList patterns
+
+### Learnings
+- Reused SessionList patterns for consistency (same styling, polling, pagination approach)
+- Campaign cards simpler than session cards (no preview images/videos, no progress metrics)
+- Archive action refetches list to update counts and filter state
+
+---
+
 ## PC-05: Session campaign_id FK + API Filter ✅
 
 ### Plain-English Summary
