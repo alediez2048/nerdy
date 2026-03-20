@@ -9,6 +9,7 @@ import SharedSession from './views/SharedSession'
 import GlobalDashboard from './views/GlobalDashboard'
 import CampaignList from './views/CampaignList'
 import NewCampaignForm from './views/NewCampaignForm'
+import CampaignDetail from './views/CampaignDetail'
 
 function ThemeToggle() {
   const [light, setLight] = useState(() => localStorage.getItem('theme') === 'light')
@@ -83,6 +84,8 @@ export default function App() {
         <Route path="/dashboard" element={<GlobalDashboard />} />
         <Route path="/campaigns" element={<CampaignList />} />
         <Route path="/campaigns/new" element={<NewCampaignForm />} />
+        <Route path="/campaigns/:campaignId" element={<CampaignDetail />} />
+        <Route path="/campaigns/:campaignId/sessions/new" element={<NewSessionForm />} />
       </Routes>
     </BrowserRouter>
   )

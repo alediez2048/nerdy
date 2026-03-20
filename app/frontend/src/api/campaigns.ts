@@ -6,6 +6,7 @@ import type {
   CampaignListResponse,
   CampaignUpdate,
 } from '../types/campaign'
+import type { SessionListResponse } from '../types/session'
 
 const BASE = '/api/campaigns'
 
@@ -77,4 +78,20 @@ export async function deleteCampaign(campaignId: string): Promise<CampaignDetail
     headers: getHeaders(),
   })
   return handleResponse<CampaignDetail>(resp)
+}
+
+export async function getCampaignSessions(
+  campaignId: string,
+  params?: {
+    offset?: number
+    limit?: number
+  },
+): Promise<SessionListResponse> {
+  const query = new URLSearchParams()
+  if (params?.offset !== undefined) query.set('offset', String(params.offset))
+  if (params?.limit !== undefined) query.set('limit', String(params.limit))
+
+  const url = query.toString() ? `${BASE}/${campaignId}/sessions?${query}` : `${BASE}/${campaignId}/sessions`
+  const resp = await fetch(url, { headers: getHeaders() })
+  return handleResponse<SessionListResponse>(resp)
 }

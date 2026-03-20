@@ -7,6 +7,44 @@
 
 ---
 
+## PC-08: CampaignDetail View + Session List ✅
+
+### Plain-English Summary
+- Created campaign detail page at `/campaigns/:campaignId` — central hub for managing a campaign and its sessions
+- Campaign header with inline editable name (same pattern as SessionDetail), description, status badge, audience/goal badges, session count
+- Action bar: "New Session" button (navigates to campaign-scoped session creation), Archive/Unarchive toggle
+- Session list using existing SessionCard components in responsive grid layout
+- Pagination with "Load More" button
+- Polling every 30s for running session updates
+- Empty state with CTA to create first session
+- Breadcrumbs navigation back to campaign list
+- Design consistent with SessionDetail (same styling, inline editing pattern)
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** Frontend component created, routes registered, no backend changes
+
+### Files Changed
+- `app/frontend/src/views/CampaignDetail.tsx` — Campaign detail page component
+- `app/frontend/src/api/campaigns.ts` — Added `getCampaignSessions()` function
+- `app/frontend/src/App.tsx` — Added `/campaigns/:campaignId` and `/campaigns/:campaignId/sessions/new` routes
+
+### Key Achievements
+- Campaign detail page fully functional
+- Inline name editing works (Enter to save, Escape to cancel)
+- Archive/unarchive toggle functional
+- Session list reuses SessionCard for consistency
+- Polling for running sessions
+- Empty state handling
+
+### Learnings
+- Reused SessionDetail inline editing pattern for campaign name (Enter/Escape handling)
+- SessionCard component works seamlessly in campaign context (no modifications needed)
+- Campaign sessions endpoint returns SessionListResponse — reused existing type
+- Route ordering matters: `/campaigns/new` must come before `/campaigns/:campaignId` to avoid conflicts
+
+---
+
 ## PC-07: NewCampaignForm Frontend ✅
 
 ### Plain-English Summary
