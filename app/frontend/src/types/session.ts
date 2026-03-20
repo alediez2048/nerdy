@@ -7,6 +7,13 @@ export type DimensionWeights = 'awareness_profile' | 'conversion_profile' | 'equ
 export type ModelTier = 'standard' | 'premium'
 export type AspectRatio = '1:1' | '4:5' | '9:16'
 export type VideoAspectRatio = '9:16' | '16:9' | '1:1'
+export type VideoProvider = 'fal' | 'veo' | 'kling'
+
+export const VIDEO_PROVIDER_LABELS: Record<VideoProvider, string> = {
+  fal: 'Fal.ai (recommended)',
+  veo: 'Google Veo 3.1',
+  kling: 'Kling AI',
+}
 export type Persona = 'auto' | 'athlete_recruit' | 'suburban_optimizer' | 'immigrant_navigator' | 'cultural_investor' | 'system_optimizer' | 'neurodivergent_advocate' | 'burned_returner'
 
 export const PERSONA_LABELS: Record<Persona, string> = {
@@ -65,6 +72,7 @@ export interface SessionConfig {
   key_message: string
   creative_brief: string
   copy_on_image: boolean
+  video_provider: VideoProvider
   video_count: number
   video_duration: number
   video_audio_mode: string
@@ -97,6 +105,7 @@ export interface ProgressSummary {
 export interface SessionAdPreview {
   ad_id: string
   image_url: string | null
+  video_url?: string | null
   primary_text: string
   headline: string
   cta_button: string | null
@@ -155,8 +164,9 @@ export const DEFAULT_CONFIG: SessionConfig = {
   key_message: '',
   creative_brief: 'auto',
   copy_on_image: false,
+  video_provider: 'fal',
   video_count: 3,
-  video_duration: 10,
+  video_duration: 8,
   video_audio_mode: 'silent',
   video_aspect_ratio: '9:16',
   video_scene: '',

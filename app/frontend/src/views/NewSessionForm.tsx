@@ -12,10 +12,11 @@ import type {
   ModelTier,
   AspectRatio,
   VideoAspectRatio,
+  VideoProvider,
   Persona,
   SessionSummary,
 } from '../types/session'
-import { DEFAULT_CONFIG, PERSONA_LABELS, PERSONA_KEY_MESSAGES, CREATIVE_BRIEF_OPTIONS, CAMERA_MOVEMENT_OPTIONS } from '../types/session'
+import { DEFAULT_CONFIG, PERSONA_LABELS, PERSONA_KEY_MESSAGES, CREATIVE_BRIEF_OPTIONS, CAMERA_MOVEMENT_OPTIONS, VIDEO_PROVIDER_LABELS } from '../types/session'
 
 export default function NewSessionForm() {
   const navigate = useNavigate()
@@ -56,8 +57,9 @@ export default function NewSessionForm() {
       key_message: (c.key_message as string) || '',
       creative_brief: (c.creative_brief as string) || 'auto',
       copy_on_image: c.copy_on_image === true,
+      video_provider: (c.video_provider as VideoProvider) || 'fal',
       video_count: (c.video_count as number) || 3,
-      video_duration: (c.video_duration as number) || 10,
+      video_duration: (c.video_duration as number) || 8,
       video_audio_mode: (c.video_audio_mode as string) || 'silent',
       video_aspect_ratio: (c.video_aspect_ratio as VideoAspectRatio) || '9:16',
       video_scene: (c.video_scene as string) || '',
@@ -348,6 +350,22 @@ export default function NewSessionForm() {
           {config.session_type === 'video' && (
             <>
               <div style={s.field}>
+                <label style={s.label}>Video Provider</label>
+                <div style={s.toggleGroup}>
+                  {(['fal', 'veo', 'kling'] as VideoProvider[]).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => update('video_provider', p)}
+                      style={config.video_provider === p ? s.toggleActiveVideo : s.toggle}
+                    >
+                      {VIDEO_PROVIDER_LABELS[p]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={s.field}>
                 <label style={s.label}>
                   Video Count <span style={s.required}>*</span>
                 </label>
@@ -365,7 +383,7 @@ export default function NewSessionForm() {
               <div style={s.field}>
                 <label style={s.label}>Duration</label>
                 <div style={s.toggleGroup}>
-                  {[5, 10].map((d) => (
+                  {[8].map((d) => (
                     <button key={d} type="button"
                       onClick={() => update('video_duration', d)}
                       style={config.video_duration === d ? s.toggleActiveVideo : s.toggle}>

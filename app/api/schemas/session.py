@@ -44,6 +44,12 @@ class Persona(str, Enum):
     burned_returner = "burned_returner"
 
 
+class VideoProvider(str, Enum):
+    fal = "fal"
+    veo = "veo"
+    kling = "kling"
+
+
 class SessionType(str, Enum):
     image = "image"
     video = "video"
@@ -69,8 +75,9 @@ class SessionConfig(BaseModel):
     creative_brief: str = "auto"
     copy_on_image: bool = False
     # PC-00: Video session fields (ignored when session_type=image)
+    video_provider: VideoProvider = VideoProvider.fal
     video_count: int = Field(default=3, ge=1, le=20)
-    video_duration: int = Field(default=10, ge=5, le=10)
+    video_duration: int = Field(default=8, ge=5, le=10)
     video_audio_mode: str = "silent"
     video_aspect_ratio: str = "9:16"
     video_scene: str = ""
@@ -113,6 +120,7 @@ class SessionAdPreview(BaseModel):
 
     ad_id: str = ""
     image_url: str | None = None
+    video_url: str | None = None
     primary_text: str = ""
     headline: str = ""
     cta_button: str | None = None

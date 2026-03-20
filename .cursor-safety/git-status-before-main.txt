@@ -1,0 +1,72 @@
+On branch develop
+Your branch is up to date with 'origin/develop'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	modified:   .claude/settings.local.json
+	modified:   docs/development/tickets/P1-17-primer.md
+	modified:   docs/development/tickets/P2-01-primer.md
+	modified:   docs/reference/prd.md
+	modified:   tests/test_data/test_brand_knowledge.py
+	modified:   tests/test_evaluation/test_inversion.py
+	modified:   tests/test_pipeline/test_compliance.py
+
+Unmerged paths:
+  (use "git restore --staged <file>..." to unstage)
+  (use "git add/rm <file>..." as appropriate to mark resolution)
+	deleted by us:   app/api/routes/curation.py
+	deleted by us:   app/api/routes/dashboard.py
+	deleted by us:   app/api/routes/sessions.py
+	deleted by us:   app/api/schemas/session.py
+	deleted by us:   app/frontend/src/App.tsx
+	deleted by us:   app/frontend/src/api/dashboard.ts
+	deleted by us:   app/frontend/src/api/sessions.ts
+	deleted by us:   app/frontend/src/components/SessionCard.tsx
+	deleted by us:   app/frontend/src/components/SessionFilters.tsx
+	deleted by us:   app/frontend/src/types/session.ts
+	deleted by us:   app/frontend/src/views/GlobalDashboard.tsx
+	deleted by us:   app/frontend/src/views/SessionDetail.tsx
+	deleted by us:   app/frontend/src/views/SessionList.tsx
+	deleted by us:   data/simulated_performance.py
+	deleted by us:   evaluate/accuracy_report.py
+	deleted by us:   evaluate/performance_correlation.py
+	deleted by us:   evaluate/weight_recalibrator.py
+	both modified:   iterate/ledger.py
+	both modified:   output/export_dashboard.py
+	deleted by us:   output/performance_dashboard.py
+	deleted by us:   tests/test_app/test_curation.py
+	deleted by us:   tests/test_app/test_progress.py
+	deleted by us:   tests/test_app/test_sessions.py
+	deleted by us:   tests/test_evaluation/test_accuracy_report.py
+	both modified:   tests/test_evaluation/test_golden_set.py
+	deleted by us:   tests/test_evaluation/test_performance_correlation.py
+	deleted by us:   tests/test_evaluation/test_weight_recalibrator.py
+	deleted by us:   tests/test_pipeline/test_simulated_performance.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.cursor-safety/
+	MagicMock/
+	app/frontend/.vite/
+	app/frontend/node_modules/
+	app/frontend/public/
+	data/ledger.jsonl.bak
+	data/sessions/
+	docs/development/tickets/P0-00-phase-plan.md
+	docs/development/tickets/P1-00-phase-plan.md
+	docs/development/tickets/P2-00-phase-plan.md
+	docs/development/tickets/P3-00-phase-plan.md
+	docs/development/tickets/P4-00-phase-plan.md
+	docs/development/tickets/P5-00-phase-plan.md
+	docs/development/tickets/PA-00-phase-plan.md
+	docs/development/tickets/PC-00-primer.md
+	docs/development/tickets/PC-01-primer.md
+	docs/development/tickets/PC-01-update-primer.md
+	docs/development/tickets/PC-02-primer.md
+	docs/development/tickets/PC-03-primer.md
+	docs/development/tickets/PC-03-update-primer.md
+	docs/development/tickets/PF-00-phase-plan.md
+	docs/reference/nerdydeepresearch.md
+	docs/tickets/
+	output/images/
+

@@ -1,7 +1,10 @@
 # Ad-Ops-Autopilot — Pipeline Celery task (PA-04, PC-03)
 # Routes to image or video pipeline based on session_type.
+import json
 import logging
 import math
+import time
+from pathlib import Path
 
 from sqlalchemy.orm import Session as DBSession
 
@@ -23,6 +26,27 @@ from app.workers.progress import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _debug_log(hypothesis_id: str, location: str, message: str, data: dict) -> None:
+    # region agent log
+    try:
+        debug_path = Path("/app/.cursor/debug-c163a9.log")
+        debug_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "sessionId": "c163a9",
+            "runId": "pre-fix",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+        }
+        with debug_path.open("a") as f:
+            f.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+    # endregion
 
 
 def _run_image_pipeline(
@@ -175,10 +199,8 @@ def _run_video_pipeline(
     ledger_path: str,
     db: DBSession,
 ) -> dict:
-    """Run the video ad generation pipeline (PC-03)."""
-    import os
-
-    from generate_video.kling_client import KlingClient
+    """Run the video ad generation pipeline (PC-03 + Fal.ai migration)."""
+    from generate_video.factory import build_video_client
     from generate_video.orchestrator import (
         generate_video_variants,
         select_best_video,
@@ -191,6 +213,9 @@ def _run_video_pipeline(
         compute_composite_score,
         evaluate_video_attributes,
     )
+    from generate.ad_generator import generate_ad
+    from generate.brief_expansion import expand_brief
+    from generate.seeds import get_ad_seed
     from iterate.ledger import log_event
     from iterate.pipeline_runner import PipelineConfig, generate_briefs
 
@@ -201,8 +226,36 @@ def _run_video_pipeline(
     audience_raw = config.get("audience")
     campaign_goal_raw = config.get("campaign_goal")
 
-    kling_api_key = os.environ.get("KLING_API_KEY", "")
-    client = KlingClient(api_key=kling_api_key)
+    # region agent log
+    _debug_log(
+        "H1",
+        "app/workers/tasks/pipeline_task.py:_run_video_pipeline:start",
+        "video pipeline start",
+        {
+            "session_id": session_id,
+            "video_count": video_count,
+            "persona": persona_raw,
+            "audience": audience_raw,
+            "campaign_goal": campaign_goal_raw,
+            "ledger_path": ledger_path,
+        },
+    )
+    # endregion
+
+    video_provider = config.get("video_provider")
+    client = build_video_client(provider=video_provider)
+    # region agent log
+    _debug_log(
+        "H7",
+        "app/workers/tasks/pipeline_task.py:_run_video_pipeline:client",
+        "video client built",
+        {
+            "session_id": session_id,
+            "resolved_provider": getattr(client, "model_used", "unknown"),
+            "requested_provider": video_provider,
+        },
+    )
+    # endregion
 
     output_dir = f"output/videos/session_{session_id}"
 
@@ -241,7 +294,25 @@ def _run_video_pipeline(
     cost_so_far = 0.0
 
     for i, brief in enumerate(briefs):
-        ad_id = f"ad_brief_{brief.get('brief_id', str(i + 1).zfill(3))}_c0"
+        brief_id = brief.get("brief_id", str(i + 1).zfill(3))
+        seed = get_ad_seed(f"session_{session_id}", brief_id, 0)
+        ad_id = f"ad_{brief_id}_c0_{seed}"
+
+        # region agent log
+        _debug_log(
+            "H2",
+            "app/workers/tasks/pipeline_task.py:_run_video_pipeline:brief",
+            "video brief before spec build",
+            {
+                "session_id": session_id,
+                "ad_id": ad_id,
+                "brief_id": brief.get("brief_id"),
+                "brief_keys": sorted(list(brief.keys())),
+                "has_copy": bool(brief.get("copy")),
+                "copy_keys": sorted(list((brief.get("copy") or {}).keys())),
+            },
+        )
+        # endregion
 
         if should_skip_video_ad(ad_id, ledger_path):
             logger.info("Skipping already-processed video ad %s", ad_id)
@@ -258,10 +329,21 @@ def _run_video_pipeline(
         })
 
         try:
+            expanded = expand_brief(brief, persona=persona)
+            ad = generate_ad(
+                expanded,
+                seed=seed,
+                cycle_number=0,
+                ledger_path=ledger_path,
+                creative_brief=config.get("creative_brief", "auto"),
+            )
+            ad_id = ad.ad_id
+            ad_copy = ad.to_evaluator_input()
+
             spec = build_video_spec(
                 expanded_brief=brief,
                 session_config=config,
-                ad_copy=brief.get("copy", {}),
+                ad_copy=ad_copy,
             )
 
             publish_progress(session_id, {
@@ -273,16 +355,13 @@ def _run_video_pipeline(
                 "cost_so_far": cost_so_far,
             })
 
-            from generate.seeds import get_ad_seed
-            seed = get_ad_seed(f"session_{session_id}", ad_id, 0)
-
             variants = generate_video_variants(
                 spec=spec,
                 ad_id=ad_id,
                 seed=seed,
                 output_dir=output_dir,
                 ledger_path=ledger_path,
-                kling_client=client,
+                veo_client=client,
             )
             videos_generated += len(variants)
 
@@ -299,13 +378,21 @@ def _run_video_pipeline(
             coherence_results = {}
             for v in variants:
                 ev = evaluate_video_attributes(
-                    v.video_path, v.ad_id, ledger_path
+                    v.video_path,
+                    {
+                        "duration": v.duration,
+                        "audio_mode": v.audio_mode,
+                        "aspect_ratio": v.aspect_ratio,
+                        "prompt_used": v.prompt_used,
+                    },
+                    v.ad_id,
+                    v.variant_type,
                 )
                 co = check_video_coherence(
+                    ad_copy,
                     v.video_path,
-                    brief.get("copy", {}).get("primary_text", ""),
                     v.ad_id,
-                    ledger_path,
+                    v.variant_type,
                 )
                 eval_results[v.variant_type] = ev
                 coherence_results[v.variant_type] = co
@@ -322,9 +409,9 @@ def _run_video_pipeline(
                     "outputs": {
                         "variant_type": v.variant_type,
                         "attributes": ev.attributes,
-                        "attribute_pass_pct": ev.pass_percentage,
-                        "coherence_scores": co.scores,
-                        "coherence_avg": co.average,
+                        "attribute_pass_pct": ev.attribute_pass_pct,
+                        "coherence_scores": co.dimensions,
+                        "coherence_avg": co.avg_score,
                     },
                 })
 
@@ -347,13 +434,18 @@ def _run_video_pipeline(
                         "winner_video_path": winner.video_path,
                         "winner_variant": winner.variant_type,
                         "composite_score": composite,
-                        "attribute_pass_pct": ev.pass_percentage,
-                        "coherence_avg": co.average,
+                        "attribute_pass_pct": ev.attribute_pass_pct,
+                        "coherence_avg": co.avg_score,
                     },
                 })
                 videos_selected += 1
                 cost_so_far += winner.credits_consumed * 0.001
             else:
+                block_reason = (
+                    "no_variants_generated"
+                    if not variants
+                    else "no_winner_from_evaluation"
+                )
                 log_event(ledger_path, {
                     "event_type": "VideoBlocked",
                     "ad_id": ad_id,
@@ -361,14 +453,27 @@ def _run_video_pipeline(
                     "cycle_number": 0,
                     "action": "video_blocked",
                     "tokens_consumed": 0,
-                    "model_used": "kling-v2.6-pro",
+                    "model_used": getattr(client, "model_used", "unknown"),
                     "seed": "0",
-                    "outputs": {"reason": "all_variants_failed_thresholds"},
+                    "outputs": {"reason": block_reason},
                 })
                 videos_blocked += 1
 
         except Exception as e:
             logger.error("Video pipeline error for ad %s: %s", ad_id, e)
+            # region agent log
+            _debug_log(
+                "H3",
+                "app/workers/tasks/pipeline_task.py:_run_video_pipeline:ad-except",
+                "video ad exception",
+                {
+                    "session_id": session_id,
+                    "ad_id": ad_id,
+                    "error_type": type(e).__name__,
+                    "error": str(e),
+                },
+            )
+            # endregion
             videos_blocked += 1
 
         publish_progress(session_id, {
@@ -418,6 +523,20 @@ def run_pipeline_session(self, session_id: str) -> dict:
         ledger_path = session_row.ledger_path or "data/ledger.jsonl"
         session_type = config.get("session_type", "image")
 
+        # region agent log
+        _debug_log(
+            "H5",
+            "app/workers/tasks/pipeline_task.py:run_pipeline_session:dispatch",
+            "pipeline dispatch",
+            {
+                "session_id": session_id,
+                "session_type": session_type,
+                "status_before": session_row.status,
+                "ledger_path": ledger_path,
+            },
+        )
+        # endregion
+
         if session_type == "video":
             result = _run_video_pipeline(session_id, config, ledger_path, db)
             summary = {
@@ -449,6 +568,18 @@ def run_pipeline_session(self, session_id: str) -> dict:
 
     except Exception as e:
         logger.error("Pipeline failed for session %s: %s", session_id, e)
+        # region agent log
+        _debug_log(
+            "H3",
+            "app/workers/tasks/pipeline_task.py:run_pipeline_session:except",
+            "top-level pipeline exception",
+            {
+                "session_id": session_id,
+                "error_type": type(e).__name__,
+                "error": str(e),
+            },
+        )
+        # endregion
         publish_progress(session_id, {
             "type": PIPELINE_ERROR,
             "cycle": 0,

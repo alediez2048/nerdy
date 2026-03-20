@@ -33,6 +33,8 @@ export default function SessionCard({
   const audience = (config.audience as string) || ''
   const goal = (config.campaign_goal as string) || ''
   const adCount = (config.ad_count as number) || 0
+  const isVideoSession = config.session_type === 'video'
+  const previewVideoUrl = preview?.video_url
 
   return (
     <div
@@ -70,7 +72,22 @@ export default function SessionCard({
       {preview ? (
         <div style={s.previewPanel}>
           <div style={s.metricIntro}>First ad preview</div>
-          {preview.image_url ? (
+          {isVideoSession && previewVideoUrl ? (
+            <video
+              src={`/api${previewVideoUrl}`}
+              muted
+              playsInline
+              preload="metadata"
+              style={s.previewVideo}
+              onMouseEnter={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
+              onMouseLeave={(e) => {
+                const v = e.target as HTMLVideoElement
+                v.pause()
+                v.currentTime = 0
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : preview.image_url ? (
             <img
               src={`/api${preview.image_url}`}
               alt={preview.headline || preview.ad_id}
@@ -78,7 +95,9 @@ export default function SessionCard({
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
             />
           ) : (
-            <div style={s.previewPlaceholder}>No image available yet</div>
+            <div style={s.previewPlaceholder}>
+              {isVideoSession ? 'No video preview yet' : 'No image available yet'}
+            </div>
           )}
           <div style={s.previewCopy}>
             <div style={s.previewHeadline}>
@@ -239,6 +258,14 @@ const s: Record<string, React.CSSProperties> = {
     objectFit: 'contain',
     borderRadius: radii.input,
     background: `${colors.surface}80`,
+  },
+  previewVideo: {
+    width: '100%',
+    maxHeight: '180px',
+    objectFit: 'contain',
+    borderRadius: radii.input,
+    background: `${colors.surface}80`,
+    display: 'block',
   },
   previewPlaceholder: {
     minHeight: '120px',

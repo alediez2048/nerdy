@@ -19,6 +19,12 @@ interface Ad {
   video_scores?: Record<string, number> | null
 }
 
+function logVideoRenderDebug(adId: string, src: string, el: HTMLVideoElement) {
+  // region agent log
+  fetch('http://127.0.0.1:7469/ingest/08f59445-601e-4fe3-9043-420e593807a7',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c163a9'},body:JSON.stringify({sessionId:'c163a9',runId:'pre-fix',hypothesisId:'H11',location:'app/frontend/src/tabs/AdLibrary.tsx:logVideoRenderDebug',message:'video element render characteristics',data:{adId,src,filter:window.getComputedStyle(el).filter,mixBlendMode:window.getComputedStyle(el).mixBlendMode,opacity:window.getComputedStyle(el).opacity,backgroundColor:window.getComputedStyle(el).backgroundColor,videoWidth:el.videoWidth,videoHeight:el.videoHeight},timestamp:Date.now()})}).catch(()=>{});
+  // endregion
+}
+
 export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessionId: string; sessionType?: string }) {
   const [ads, setAds] = useState<Ad[]>([])
   const [filter, setFilter] = useState('')
@@ -81,6 +87,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
                         src={`/api${ad.video_url}`}
                         controls
                         style={s.adVideoExpanded}
+                        onLoadedData={(e) => logVideoRenderDebug(ad.ad_id, `/api${ad.video_url}`, e.currentTarget)}
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : ad.image_url ? (
@@ -174,6 +181,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
                     src={`/api${ad.video_url}`}
                     muted
                     style={s.adVideo}
+                    onLoadedData={(e) => logVideoRenderDebug(ad.ad_id, `/api${ad.video_url}`, e.currentTarget)}
                     onMouseEnter={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
                     onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0 }}
                     onClick={(e) => e.stopPropagation()}

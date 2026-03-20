@@ -299,6 +299,192 @@ class TestCeleryTaskRouting:
             mock_image.assert_called_once()
 
 
+class TestVideoPipelineCopyGeneration:
+    @patch("app.workers.tasks.pipeline_task.publish_progress")
+    @patch("generate_video.orchestrator.select_best_video")
+    @patch("generate_video.orchestrator.generate_video_variants")
+    @patch("generate_video.orchestrator.should_skip_video_ad")
+    @patch("generate_video.factory.build_video_client")
+    @patch("generate_video.video_spec.build_video_spec")
+    @patch("generate.ad_generator.generate_ad")
+    @patch("generate.brief_expansion.expand_brief")
+    @patch("iterate.pipeline_runner.generate_briefs")
+    def test_video_pipeline_generates_copy_before_spec(
+        self,
+        mock_generate_briefs: MagicMock,
+        mock_expand_brief: MagicMock,
+        mock_generate_ad: MagicMock,
+        mock_build_video_spec: MagicMock,
+        mock_build_client: MagicMock,
+        mock_should_skip: MagicMock,
+        mock_generate_video_variants: MagicMock,
+        mock_select_best_video: MagicMock,
+        mock_publish_progress: MagicMock,
+    ) -> None:
+        mock_generate_briefs.return_value = [{
+            "brief_id": "brief_001",
+            "audience": "parents",
+            "campaign_goal": "conversion",
+            "key_message": "Help your child raise their SAT score",
+            "platform": "facebook",
+            "product": "SAT tutoring",
+        }]
+        mock_expand_brief.return_value = MagicMock()
+        fake_ad = MagicMock()
+        fake_ad.ad_id = "ad_brief_001_c0_1234"
+        fake_ad.primary_text = "Primary copy"
+        fake_ad.to_evaluator_input.return_value = {
+            "ad_id": fake_ad.ad_id,
+            "primary_text": "Primary copy",
+            "headline": "Headline copy",
+            "description": "Description copy",
+            "cta_button": "Learn More",
+        }
+        mock_generate_ad.return_value = fake_ad
+        mock_build_video_spec.return_value = MagicMock()
+        mock_should_skip.return_value = False
+        mock_generate_video_variants.return_value = []
+        mock_select_best_video.return_value = None
+
+        from app.workers.tasks.pipeline_task import _run_video_pipeline
+
+        result = _run_video_pipeline(
+            session_id="sess_video_copy",
+            config={
+                "session_type": "video",
+                "video_count": 1,
+                "audience": "parents",
+                "campaign_goal": "conversion",
+                "persona": "auto",
+                "creative_brief": "auto",
+            },
+            ledger_path="/tmp/video-copy-ledger.jsonl",
+            db=MagicMock(),
+        )
+
+        mock_generate_ad.assert_called_once()
+        _, kwargs = mock_build_video_spec.call_args
+        assert kwargs["ad_copy"]["primary_text"] == "Primary copy"
+        mock_generate_video_variants.assert_called_once()
+        assert mock_generate_video_variants.call_args.kwargs["ad_id"] == fake_ad.ad_id
+        assert result["videos_blocked"] == 1
+
+    @patch("app.workers.tasks.pipeline_task.publish_progress")
+    @patch("iterate.ledger.log_event")
+    @patch("generate_video.orchestrator.select_best_video")
+    @patch("generate_video.orchestrator.generate_video_variants")
+    @patch("generate_video.orchestrator.should_skip_video_ad")
+    @patch("generate_video.factory.build_video_client")
+    @patch("generate_video.video_spec.build_video_spec")
+    @patch("generate.ad_generator.generate_ad")
+    @patch("generate.brief_expansion.expand_brief")
+    @patch("iterate.pipeline_runner.generate_briefs")
+    @patch("evaluate.video_evaluator.check_video_coherence")
+    @patch("evaluate.video_evaluator.evaluate_video_attributes")
+    def test_video_pipeline_passes_variant_type_into_evaluators(
+        self,
+        mock_evaluate_video_attributes: MagicMock,
+        mock_check_video_coherence: MagicMock,
+        mock_generate_briefs: MagicMock,
+        mock_expand_brief: MagicMock,
+        mock_generate_ad: MagicMock,
+        mock_build_video_spec: MagicMock,
+        mock_build_client: MagicMock,
+        mock_should_skip: MagicMock,
+        mock_generate_video_variants: MagicMock,
+        mock_select_best_video: MagicMock,
+        mock_log_event: MagicMock,
+        mock_publish_progress: MagicMock,
+    ) -> None:
+        from evaluate.video_evaluator import VideoCoherenceResult, VideoEvalResult
+        from generate_video.orchestrator import VideoVariant
+
+        mock_generate_briefs.return_value = [{
+            "brief_id": "brief_001",
+            "audience": "parents",
+            "campaign_goal": "conversion",
+            "key_message": "Help your child raise their SAT score",
+            "platform": "facebook",
+            "product": "SAT tutoring",
+        }]
+        mock_expand_brief.return_value = MagicMock()
+        fake_ad = MagicMock()
+        fake_ad.ad_id = "ad_brief_001_c0_1234"
+        fake_ad.to_evaluator_input.return_value = {
+            "ad_id": fake_ad.ad_id,
+            "primary_text": "Primary copy",
+            "headline": "Headline copy",
+            "description": "Description copy",
+            "cta_button": "Learn More",
+        }
+        mock_generate_ad.return_value = fake_ad
+        mock_build_video_spec.return_value = MagicMock()
+        mock_should_skip.return_value = False
+        variant = VideoVariant(
+            ad_id=fake_ad.ad_id,
+            variant_type="anchor",
+            video_path="/tmp/test.mp4",
+            duration=8,
+            audio_mode="silent",
+            aspect_ratio="9:16",
+            prompt_used="prompt",
+            seed=1234,
+            credits_consumed=1200,
+            model_used="veo-3.1-fast",
+        )
+        mock_generate_video_variants.return_value = [variant]
+        mock_evaluate_video_attributes.return_value = VideoEvalResult(
+            ad_id=fake_ad.ad_id,
+            variant_type="anchor",
+            attributes={"hook_timing": True},
+            attribute_pass_pct=1.0,
+            meets_threshold=True,
+        )
+        mock_check_video_coherence.return_value = VideoCoherenceResult(
+            ad_id=fake_ad.ad_id,
+            variant_type="anchor",
+            dimensions={"message_alignment": 8.0},
+            avg_score=8.0,
+            is_coherent=True,
+        )
+        mock_select_best_video.return_value = variant
+
+        from app.workers.tasks.pipeline_task import _run_video_pipeline
+
+        result = _run_video_pipeline(
+            session_id="sess_video_eval",
+            config={
+                "session_type": "video",
+                "video_count": 1,
+                "audience": "parents",
+                "campaign_goal": "conversion",
+                "persona": "auto",
+                "creative_brief": "auto",
+            },
+            ledger_path="/tmp/video-eval-ledger.jsonl",
+            db=MagicMock(),
+        )
+
+        mock_evaluate_video_attributes.assert_called_once_with(
+            "/tmp/test.mp4",
+            {
+                "duration": 8,
+                "audio_mode": "silent",
+                "aspect_ratio": "9:16",
+                "prompt_used": "prompt",
+            },
+            fake_ad.ad_id,
+            "anchor",
+        )
+        mock_check_video_coherence.assert_called_once_with(
+            fake_ad.to_evaluator_input.return_value,
+            "/tmp/test.mp4",
+            fake_ad.ad_id,
+            "anchor",
+        )
+        assert result["videos_selected"] == 1
+
+
 # ── Progress event tests ───────────────────────────────────────────────
 
 

@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Ad-Ops-Autopilot — API + Worker image
 FROM python:3.11-slim
 
@@ -11,7 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy and install Python deps
 COPY requirements.txt ./requirements.txt
 COPY app/requirements.txt ./app_requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt -r app_requirements.txt
+# BuildKit: reuse pip download cache across builds (first build still slow; later rebuilds much faster)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt -r app_requirements.txt
 
 COPY . .
 

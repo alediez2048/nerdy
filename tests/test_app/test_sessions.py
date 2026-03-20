@@ -222,6 +222,41 @@ def test_list_sessions_includes_ad_preview(alice):
     assert session["results_summary"]["ads_generated"] == 1
     assert session["ad_preview"]["headline"] == "Preview headline"
     assert session["ad_preview"]["image_url"] == "/images/ad_001.png"
+    assert session["ad_preview"].get("video_url") in (None, "")
+
+
+def test_list_sessions_ad_preview_includes_video_url(alice):
+    create_resp = _create(alice)
+    sid = create_resp.json()["session_id"]
+
+    from app.models.session import Session as SessionModel
+
+    db = _TestSessionLocal()
+    row = db.query(SessionModel).filter(SessionModel.session_id == sid).first()
+    assert row is not None
+    row.config = {**(row.config or {}), "session_type": "video"}
+    db.commit()
+    db.close()
+
+    with patch(
+        "app.api.routes.sessions._get_session_ad_preview",
+        return_value={
+            "ad_id": "ad_vid_001",
+            "image_url": None,
+            "video_url": "/videos/ad_vid_001_anchor_9x16.mp4",
+            "primary_text": "Video copy",
+            "headline": "Video headline",
+            "cta_button": "Learn More",
+            "status": "published",
+            "aggregate_score": 7.2,
+        },
+    ):
+        resp = alice.get("/sessions")
+
+    assert resp.status_code == 200
+    session = resp.json()["sessions"][0]
+    assert session["ad_preview"]["video_url"] == "/videos/ad_vid_001_anchor_9x16.mp4"
+    assert session["ad_preview"]["image_url"] is None
 
 
 # --- Pagination ---
@@ -373,6 +408,18 @@ def test_create_video_session(alice):
     assert cfg["video_duration"] == 5
     assert cfg["video_audio_mode"] == "with_audio"
     assert cfg["video_aspect_ratio"] == "16:9"
+
+
+def test_video_duration_defaults_to_8(alice):
+    resp = alice.post("/sessions", json={
+        "config": {
+            "session_type": "video",
+            "audience": "students",
+            "campaign_goal": "awareness",
+        },
+    })
+    assert resp.status_code == 201
+    assert resp.json()["config"]["video_duration"] == 8
 
 
 def test_video_count_out_of_range_returns_422(alice):

@@ -142,6 +142,23 @@ def test_build_video_spec_auto_derive(mock_gemini):
     assert mock_gemini.called
 
 
+@patch("generate_video.video_spec._call_gemini_for_video_spec")
+def test_build_video_spec_auto_derive_non_dict_falls_back(mock_gemini):
+    """Non-dict Gemini output falls back to persona defaults instead of crashing."""
+    mock_gemini.return_value = ["bad", "shape"]
+
+    from generate_video.video_spec import build_video_spec
+
+    config = _make_config()
+    brief = _make_brief()
+    copy = _make_copy()
+
+    spec = build_video_spec(brief, config, copy)
+
+    assert spec.scene.startswith("Student preparing for SAT exam")
+    assert spec.camera_movement == "handheld"
+
+
 # --- Persona mapping ---
 
 

@@ -219,6 +219,59 @@ def test_empty_ledger_graceful(tmp_path: Path) -> None:
     assert data["ad_library"] == []
 
 
+def test_ad_library_maps_video_selected_to_video_url(tmp_path: Path) -> None:
+    ledger_path = str(tmp_path / "ledger.jsonl")
+    video_path = tmp_path / "output" / "videos" / "session_test" / "ad_001.mp4"
+    video_path.parent.mkdir(parents=True, exist_ok=True)
+    video_path.write_bytes(b"video")
+
+    log_event(ledger_path, {
+        "event_type": "AdGenerated", "ad_id": "ad_001", "brief_id": "b001",
+        "cycle_number": 0, "action": "generation", "tokens_consumed": 10,
+        "model_used": "gemini-2.0-flash", "seed": "42",
+        "outputs": {"headline": "Boost SAT Scores", "primary_text": "Expert tutoring."},
+    })
+    log_event(ledger_path, {
+        "event_type": "VideoSelected", "ad_id": "ad_001", "brief_id": "b001",
+        "cycle_number": 0, "action": "video_selected", "tokens_consumed": 0,
+        "model_used": "kling-v2.6-pro", "seed": "42",
+        "outputs": {
+            "winner_video_path": str(video_path),
+            "composite_score": 0.82,
+            "attribute_pass_pct": 1.0,
+            "coherence_avg": 4.9,
+        },
+    })
+
+    data = build_dashboard_data(ledger_path)
+    ad = data["ad_library"][0]
+    assert ad["status"] == "published"
+    assert ad["video_url"].endswith("/videos/session_test/ad_001.mp4")
+    assert ad["video_scores"]["composite_score"] == 0.82
+
+
+def test_ad_library_maps_video_blocked_to_discarded(tmp_path: Path) -> None:
+    ledger_path = str(tmp_path / "ledger.jsonl")
+
+    log_event(ledger_path, {
+        "event_type": "AdGenerated", "ad_id": "ad_002", "brief_id": "b001",
+        "cycle_number": 0, "action": "generation", "tokens_consumed": 10,
+        "model_used": "gemini-2.0-flash", "seed": "42",
+        "outputs": {"headline": "Boost SAT Scores", "primary_text": "Expert tutoring."},
+    })
+    log_event(ledger_path, {
+        "event_type": "VideoBlocked", "ad_id": "ad_002", "brief_id": "b001",
+        "cycle_number": 0, "action": "video_blocked", "tokens_consumed": 0,
+        "model_used": "kling-v2.6-pro", "seed": "0",
+        "outputs": {"reason": "all_variants_failed_thresholds"},
+    })
+
+    data = build_dashboard_data(ledger_path)
+    ad = data["ad_library"][0]
+    assert ad["status"] == "discarded"
+    assert ad["video_url"] is None
+
+
 def test_quality_trends_batch_scores(tmp_path: Path) -> None:
     """Quality trends includes batch scores."""
     ledger_path = str(tmp_path / "ledger.jsonl")

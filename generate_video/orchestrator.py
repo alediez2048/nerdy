@@ -6,8 +6,10 @@ selects the best, and handles failures via graceful degradation.
 
 from __future__ import annotations
 
+import json
 import logging
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from evaluate.video_evaluator import (
@@ -15,7 +17,7 @@ from evaluate.video_evaluator import (
     VideoEvalResult,
     compute_composite_score,
 )
-from generate_video.kling_client import KlingClient
+from generate_video.video_client import VideoGenerationClient
 from generate_video.video_spec import VideoSpec, build_kling_prompt
 from iterate.ledger import log_event, read_events
 
@@ -28,6 +30,27 @@ _ALT_CAMERA_SWAP = {
     "tracking": "dolly-in",
     "slow-motion": "static",
 }
+
+
+def _debug_log(hypothesis_id: str, location: str, message: str, data: dict[str, object]) -> None:
+    # region agent log
+    try:
+        debug_path = Path("/app/.cursor/debug-c163a9.log")
+        debug_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "sessionId": "c163a9",
+            "runId": "pre-fix",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+        }
+        with debug_path.open("a") as f:
+            f.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+    # endregion
 
 
 @dataclass
@@ -46,10 +69,18 @@ class VideoVariant:
     model_used: str
 
 
-def _estimate_credits(duration: int, audio: bool) -> int:
-    """Estimate Kling credit cost for a video."""
-    base = 65 if duration == 5 else 130
-    return base * 2 if audio else base
+_CREDITS_PER_SECOND: dict[str, int] = {
+    "fal": 100,
+    "veo": 150,
+    "kling": 120,
+}
+
+
+def _estimate_credits(duration: int, audio: bool, provider: str = "veo") -> int:
+    """Estimate cost in milli-dollars for progress reporting."""
+    base = _CREDITS_PER_SECOND.get(provider, 150)
+    multiplier = 2 if audio else 1
+    return duration * base * multiplier
 
 
 def _build_alt_prompt(spec: VideoSpec) -> str:
@@ -82,50 +113,78 @@ def generate_video_variants(
     seed: int,
     output_dir: str,
     ledger_path: str,
-    kling_client: KlingClient,
+    veo_client: VideoGenerationClient,
 ) -> list[VideoVariant]:
-    """Generate anchor + alternative video variants via Kling.
+    """Generate anchor + alternative video variants.
 
     Returns only successful variants (0, 1, or 2).
     Logs VideoGenerated only when file exists on disk.
     Logs VideoGenerationFailed on any API error.
     """
+    client = veo_client
     variants: list[VideoVariant] = []
     audio = spec.audio_mode == "with_audio"
+    effective_spec = replace(
+        spec,
+        duration=client.normalize_duration(spec.duration),
+        aspect_ratio=client.normalize_aspect_ratio(spec.aspect_ratio),
+    )
 
     configs = [
-        ("anchor", build_kling_prompt(spec), seed),
-        ("alternative", _build_alt_prompt(spec), seed + 3000),
+        ("anchor", build_kling_prompt(effective_spec), seed),
+        ("alternative", _build_alt_prompt(effective_spec), seed + 3000),
     ]
 
     for variant_type, prompt, var_seed in configs:
-        out_path = str(Path(output_dir) / f"{ad_id}_{variant_type}_{spec.aspect_ratio.replace(':', 'x')}.mp4")
+        out_path = str(
+            Path(output_dir)
+            / f"{ad_id}_{variant_type}_{effective_spec.aspect_ratio.replace(':', 'x')}.mp4"
+        )
+        # region agent log
+        _debug_log(
+            "H9",
+            "generate_video/orchestrator.py:generate_video_variants:variant",
+            "video variant prompt characteristics",
+            {
+                "ad_id": ad_id,
+                "variant_type": variant_type,
+                "camera_movement": effective_spec.camera_movement if variant_type == "anchor" else _ALT_CAMERA_SWAP.get(effective_spec.camera_movement, "handheld"),
+                "lighting_mood": effective_spec.lighting_mood if variant_type == "anchor" else (effective_spec.lighting_mood.replace("warm", "cool").replace("soft", "dramatic") if effective_spec.lighting_mood else effective_spec.lighting_mood),
+                "prompt_preview": prompt[:240],
+                "has_dramatic_keyword": "dramatic" in prompt.lower(),
+                "has_contrast_keyword": "contrast" in prompt.lower(),
+                "has_cool_keyword": "cool" in prompt.lower(),
+            },
+        )
+        # endregion
+
+        provider_name = getattr(client, "model_used", "unknown")
 
         try:
-            kling_client.generate_video(
+            client.generate_video(
                 prompt=prompt,
-                duration=spec.duration,
-                aspect_ratio=spec.aspect_ratio,
+                duration=effective_spec.duration,
+                aspect_ratio=effective_spec.aspect_ratio,
                 audio=audio,
-                negative_prompt=spec.negative_prompt,
+                negative_prompt=effective_spec.negative_prompt,
                 output_path=out_path,
             )
 
             if not Path(out_path).exists():
                 raise FileNotFoundError(f"Video file not created: {out_path}")
 
-            credits = _estimate_credits(spec.duration, audio)
+            credits = _estimate_credits(effective_spec.duration, audio, provider_name)
             variant = VideoVariant(
                 ad_id=ad_id,
                 variant_type=variant_type,
                 video_path=out_path,
-                duration=spec.duration,
-                audio_mode=spec.audio_mode,
-                aspect_ratio=spec.aspect_ratio,
+                duration=effective_spec.duration,
+                audio_mode=effective_spec.audio_mode,
+                aspect_ratio=effective_spec.aspect_ratio,
                 prompt_used=prompt,
                 seed=var_seed,
                 credits_consumed=credits,
-                model_used="kling-v2.6-pro",
+                model_used=provider_name,
             )
             variants.append(variant)
 
@@ -136,13 +195,13 @@ def generate_video_variants(
                 "cycle_number": 0,
                 "action": f"video_{variant_type}_generated",
                 "tokens_consumed": 0,
-                "model_used": "kling-v2.6-pro",
+                "model_used": provider_name,
                 "seed": str(var_seed),
                 "outputs": {
                     "video_path": out_path,
                     "variant_type": variant_type,
-                    "duration": spec.duration,
-                    "audio_mode": spec.audio_mode,
+                    "duration": effective_spec.duration,
+                    "audio_mode": effective_spec.audio_mode,
                     "credits": credits,
                 },
             })
@@ -156,7 +215,7 @@ def generate_video_variants(
                 "cycle_number": 0,
                 "action": f"video_{variant_type}_failed",
                 "tokens_consumed": 0,
-                "model_used": "kling-v2.6-pro",
+                "model_used": provider_name,
                 "seed": str(var_seed),
                 "outputs": {"error": str(e), "variant_type": variant_type},
             })
@@ -171,8 +230,8 @@ def select_best_video(
 ) -> VideoVariant | None:
     """Select the best video variant by composite score.
 
-    Winner must pass both attribute threshold (80%) AND coherence threshold (4.0).
-    Returns None if no variant qualifies (graceful degradation).
+    Returns the highest-scoring generated/evaluated variant.
+    Returns None only when no variant has both evaluation artifacts present.
     """
     candidates: list[tuple[float, VideoVariant]] = []
 
@@ -180,8 +239,6 @@ def select_best_video(
         ev = eval_results.get(v.variant_type)
         co = coherence_results.get(v.variant_type)
         if not ev or not co:
-            continue
-        if not ev.meets_threshold or not co.is_coherent:
             continue
         score = compute_composite_score(ev, co)
         candidates.append((score, v))

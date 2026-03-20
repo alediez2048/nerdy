@@ -10,7 +10,9 @@ import json
 import logging
 import os
 import re
+import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from iterate.retry import retry_with_backoff
@@ -18,6 +20,27 @@ from iterate.retry import retry_with_backoff
 logger = logging.getLogger(__name__)
 
 BRAND_SAFETY_NEGATIVE = "blur, distort, low quality, brand logos, trademarks, competitor names"
+
+
+def _debug_log(hypothesis_id: str, location: str, message: str, data: dict[str, Any]) -> None:
+    # region agent log
+    try:
+        debug_path = Path("/app/.cursor/debug-c163a9.log")
+        debug_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "sessionId": "c163a9",
+            "runId": "pre-fix",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+        }
+        with debug_path.open("a") as f:
+            f.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+    # endregion
 
 
 @dataclass
@@ -154,7 +177,24 @@ Output ONLY valid JSON with these exact keys:
 }}"""
 
     try:
-        return _call_gemini_for_video_spec(prompt)
+        result = _call_gemini_for_video_spec(prompt)
+        # region agent log
+        _debug_log(
+            "H6",
+            "generate_video/video_spec.py:_auto_derive_spec",
+            "auto-derived spec response",
+            {
+                "result_type": type(result).__name__,
+                "is_dict": isinstance(result, dict),
+                "is_list": isinstance(result, list),
+                "keys": sorted(list(result.keys())) if isinstance(result, dict) else [],
+                "length": len(result) if isinstance(result, (list, dict, str)) else None,
+            },
+        )
+        # endregion
+        if not isinstance(result, dict):
+            raise ValueError(f"Auto-derived video spec must be a dict, got {type(result).__name__}")
+        return result
     except Exception as e:
         logger.warning("Auto-derive video spec failed: %s — using persona defaults", e)
         return {
@@ -179,6 +219,19 @@ def build_video_spec(
     If user provided explicit 8-part fields, use them directly.
     If fields are empty, auto-derive from persona + brief via Gemini Flash.
     """
+    # region agent log
+    _debug_log(
+        "H2",
+        "generate_video/video_spec.py:build_video_spec:inputs",
+        "build_video_spec inputs",
+        {
+            "ad_copy_type": type(ad_copy).__name__,
+            "ad_copy_keys": sorted(list(ad_copy.keys())) if isinstance(ad_copy, dict) else [],
+            "brief_id": expanded_brief.get("brief_id", ""),
+            "has_explicit_fields": _has_explicit_fields(session_config),
+        },
+    )
+    # endregion
     if _has_explicit_fields(session_config):
         derived = {}
         scene = session_config.get("video_scene", "").strip()
@@ -209,7 +262,7 @@ def build_video_spec(
         ad_copy.get("cta_button", ""),
     ]
 
-    return VideoSpec(
+    spec = VideoSpec(
         scene=scene,
         visual_style=visual_style,
         camera_movement=camera_movement,
@@ -220,12 +273,30 @@ def build_video_spec(
         audio_detail=audio_detail,
         color_palette=color_palette,
         negative_prompt=negative_prompt,
-        duration=session_config.get("video_duration", 10),
+        duration=session_config.get("video_duration", 8),
         aspect_ratio=session_config.get("video_aspect_ratio", "9:16"),
         text_overlay_sequence=text_overlay,
         persona=session_config.get("persona", "auto"),
         campaign_goal=session_config.get("campaign_goal", "conversion"),
     )
+    # region agent log
+    _debug_log(
+        "H9",
+        "generate_video/video_spec.py:build_video_spec:output",
+        "built video spec",
+        {
+            "brief_id": expanded_brief.get("brief_id", ""),
+            "visual_style": spec.visual_style,
+            "camera_movement": spec.camera_movement,
+            "lighting_mood": spec.lighting_mood,
+            "color_palette": spec.color_palette,
+            "duration": spec.duration,
+            "aspect_ratio": spec.aspect_ratio,
+            "has_high_contrast_keyword": "contrast" in spec.lighting_mood.lower() or "dramatic" in spec.lighting_mood.lower(),
+        },
+    )
+    # endregion
+    return spec
 
 
 def build_kling_prompt(spec: VideoSpec) -> str:
@@ -266,4 +337,21 @@ def build_kling_prompt(spec: VideoSpec) -> str:
         "No visible logos, text, or watermarks in the scene."
     )
 
-    return " ".join(parts)
+    prompt = " ".join(parts)
+    # region agent log
+    _debug_log(
+        "H10",
+        "generate_video/video_spec.py:build_kling_prompt",
+        "built video prompt",
+        {
+            "visual_style": spec.visual_style,
+            "camera_movement": spec.camera_movement,
+            "lighting_mood": spec.lighting_mood,
+            "prompt_preview": prompt[:240],
+            "has_dramatic_keyword": "dramatic" in prompt.lower(),
+            "has_contrast_keyword": "contrast" in prompt.lower(),
+            "has_cool_keyword": "cool" in prompt.lower(),
+        },
+    )
+    # endregion
+    return prompt

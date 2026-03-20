@@ -375,7 +375,11 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
             )
 
             status = "in_progress"
-            if any(e.get("event_type") == "AdPublished" for e in instance_events):
+            if any(e.get("event_type") == "VideoSelected" for e in instance_events):
+                status = "published"
+            elif any(e.get("event_type") == "VideoBlocked" for e in instance_events):
+                status = "discarded"
+            elif any(e.get("event_type") == "AdPublished" for e in instance_events):
                 status = "published"
             elif any(e.get("event_type") == "AdDiscarded" for e in instance_events):
                 status = "discarded"
@@ -384,12 +388,40 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
             pub_event = pub_events[-1] if pub_events else None
             image_path = None
             image_url = None
+            video_path = None
+            video_url = None
+            video_scores = None
             if pub_event:
                 winning = pub_event.get("outputs", {}).get("winning_image")
                 if winning:
                     image_path = winning
                     filename = Path(winning).name
                     image_url = f"/images/{filename}"
+
+            video_events = [e for e in instance_events if e.get("event_type") == "VideoSelected"]
+            video_event = video_events[-1] if video_events else None
+            if video_event:
+                winning_video = video_event.get("outputs", {}).get("winner_video_path")
+                if winning_video:
+                    video_path = winning_video
+                    parts = Path(winning_video).parts
+                    if "output" in parts and "videos" in parts:
+                        try:
+                            output_idx = parts.index("output")
+                            if parts[output_idx + 1] == "videos":
+                                rel_parts = parts[output_idx + 2:]
+                                video_url = f"/videos/{'/'.join(rel_parts)}"
+                            else:
+                                video_url = f"/videos/{Path(winning_video).name}"
+                        except Exception:
+                            video_url = f"/videos/{Path(winning_video).name}"
+                    else:
+                        video_url = f"/videos/{Path(winning_video).name}"
+                video_scores = {
+                    "composite_score": float(video_event.get("outputs", {}).get("composite_score", 0.0)),
+                    "attribute_pass_pct": float(video_event.get("outputs", {}).get("attribute_pass_pct", 0.0)),
+                    "coherence_avg": float(video_event.get("outputs", {}).get("coherence_avg", 0.0)),
+                }
 
             # Only use the disk fallback when this ad_id appears once in the
             # ledger history. Reused deterministic ad_ids cannot be reliably
@@ -424,6 +456,9 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
                 "cycle_count": cycle_count,
                 "image_path": image_path,
                 "image_url": image_url,
+                "video_path": video_path,
+                "video_url": video_url,
+                "video_scores": video_scores,
             })
 
     library.sort(key=lambda item: item.get("created_at", ""), reverse=True)

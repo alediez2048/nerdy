@@ -56,6 +56,8 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/nerdy
       REDIS_URL: redis://redis:6379/0
+      # Do NOT set FAL_KEY/VIDEO_PROVIDER here with ${VAR:-} — an empty host
+      # interpolation overrides env_file and strips the key from the container.
     depends_on:
       db:
         condition: service_healthy

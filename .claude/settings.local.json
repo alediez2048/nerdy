@@ -1,5 +1,16 @@
 {
   "permissions": {
-    "allow": []
+    "allow": [
+      "Bash(curl -s \"https://api.arcads.ai\" -o /dev/null -w \"%{http_code} %{redirect_url}\")",
+      "Bash(curl -sL https://arcads.ai/sitemap.xml)",
+      "WebSearch",
+      "WebFetch(domain:intercom.help)",
+      "WebFetch(domain:www.arcads.ai)",
+      "WebFetch(domain:www.eesel.ai)",
+      "Bash(curl -s https://external-api.arcads.ai/docs/swagger.json)",
+      "Bash(curl -s https://external-api.arcads.ai/openapi.json)",
+      "WebFetch(domain:dupple.com)",
+      "Bash(curl -s https://external-api.arcads.ai/docs-json)"
+    ]
   }
 }

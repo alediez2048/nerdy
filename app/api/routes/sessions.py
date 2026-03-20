@@ -61,11 +61,20 @@ def _get_session_ad_preview(session_row: SessionModel) -> dict | None:
         if not library:
             return None
 
-        first_ad = min(library, key=lambda item: item.get("created_at", ""))
+        def _created_at(item: dict) -> str:
+            return item.get("created_at", "")
+
+        cfg = session_row.config or {}
+        if cfg.get("session_type") == "video":
+            with_video = [a for a in library if a.get("video_url")]
+            first_ad = min(with_video, key=_created_at) if with_video else min(library, key=_created_at)
+        else:
+            first_ad = min(library, key=_created_at)
         copy = first_ad.get("copy", {})
         return {
             "ad_id": first_ad.get("ad_id", ""),
             "image_url": first_ad.get("image_url"),
+            "video_url": first_ad.get("video_url"),
             "primary_text": copy.get("primary_text", ""),
             "headline": copy.get("headline", ""),
             "cta_button": copy.get("cta_button"),

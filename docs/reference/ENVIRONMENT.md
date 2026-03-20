@@ -55,8 +55,18 @@ Quick reference for running, testing, and troubleshooting the Ad-Ops-Autopilot p
 |---|---|---|---|
 | Nano Banana Pro (Gemini 3 Pro Image) | P1 | Ad image generation — same `GEMINI_API_KEY` | ~$0.13/image |
 | Nano Banana 2 (Gemini 3.1 Flash Image) | P3 | Cheap image tier for A/B variant volume | ~$0.02–0.05/image |
-| Veo 3.1 Fast | P3 | UGC video for Stories/Reels — same `GEMINI_API_KEY` | ~$0.15/sec (~$0.90/6-sec video) |
+| Fal.ai | PC | Video generation proxy — `FAL_KEY` (supports Veo 3, Kling, MiniMax) | ~$0.50–1.00/video |
+| Veo 3.1 Fast (direct) | PC | UGC video for Stories/Reels — same `GEMINI_API_KEY` | ~$0.15/sec (~$0.90/6-sec video) |
 | PostgreSQL + Redis | P1B | Application layer state | Local (Docker) |
+
+### Environment Variables for Video
+
+| Variable | Default | Description |
+|---|---|---|
+| `FAL_KEY` | — | Fal.ai API key (required when `video_provider=fal`) |
+| `GEMINI_API_KEY` | — | Used when `video_provider=veo` (direct Google Veo) |
+| `KLING_API_KEY` | — | Used when `video_provider=kling` |
+| `VIDEO_PROVIDER` | `fal` | Fallback provider if not set in session config or `config.yaml` |
 
 ### Verifying API Keys
 
@@ -65,6 +75,9 @@ Quick reference for running, testing, and troubleshooting the Ad-Ops-Autopilot p
 curl -sS "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"contents":[{"parts":[{"text":"Say hello"}]}]}' | python3 -c "import sys,json; d=json.load(sys.stdin); print('OK' if 'candidates' in d else f'ERROR: {d.get(\"error\", d)}')"
+
+# Fal.ai — verify key (should return model info)
+FAL_KEY=$FAL_KEY python3 -c "import fal_client; print('OK')"
 ```
 
 ---
