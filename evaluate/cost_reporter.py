@@ -16,20 +16,28 @@ from iterate.ledger import read_events
 logger = logging.getLogger(__name__)
 
 # Per-model cost rates (USD per 1K tokens or per call for non-token models)
+# Gemini rates: https://ai.google.dev/gemini-api/docs/pricing
+# Fal.ai rates: derived from invoices ($30 / 109 calls = ~$0.28/call)
 MODEL_COST_RATES: dict[str, float] = {
     "gemini-2.0-flash": 0.01 / 1000,          # $0.01 per 1K tokens
     "gemini-2.0-pro": 0.05 / 1000,            # $0.05 per 1K tokens
     "gemini-2.0-flash-preview-image-generation": 0.13,  # ~$0.13 per image call
     "gemini-3.1-flash-image": 0.035,           # ~$0.035 per image call
-    "veo-3.1-fast": 0.90,                      # ~$0.90 per 6-sec video
-    # Video provider aliases (actual model_used values from video clients)
-    "veo": 0.90,                               # Google Veo
-    "fal": 0.50,                               # Fal.ai
-    "fal-ai/veo3": 0.90,                       # Fal.ai Veo3
-    "fal-ai/kling-video/v2.1/standard": 0.50,  # Fal.ai Kling
-    "kling": 0.50,                             # Kling 2.6
-    "kling-2.6": 0.50,                         # Kling 2.6 alternate
+    # Video: Fal.ai per-call pricing (from actual invoices)
+    "veo-3.1-fast": 0.28,                     # Fal.ai Veo via veo-3.1-fast
+    "veo": 0.28,                              # Fal.ai Veo
+    "fal": 0.28,                              # Fal.ai generic
+    "fal-ai/veo3": 0.28,                      # Fal.ai Veo3
+    "fal-ai/kling-video/v2.1/standard": 0.28,  # Fal.ai Kling
+    "kling": 0.28,                             # Kling
+    "kling-2.6": 0.28,                         # Kling 2.6
 }
+
+# Known baseline spend for sessions created before token capture was added.
+# Gemini: $54.68 (from Google AI Studio billing, March 2026)
+# Fal.ai: $30.00 (from Fal.ai invoices, March 18-19 2026)
+# These sessions logged tokens_consumed=0 so ledger-based calculation returns ~$0.
+HISTORICAL_SPEND_USD = 84.68
 
 # Event types that use per-call pricing (not per-token)
 # Only actual generation calls — evaluation events use Gemini Flash (per-token)

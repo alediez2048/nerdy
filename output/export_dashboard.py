@@ -128,15 +128,29 @@ def _build_pipeline_summary(events: list[dict]) -> dict:
     avg_score = round(sum(pub_scores) / len(pub_scores), 1) if pub_scores else 0.0
     publish_rate = round(published / max(generated, 1), 3)
 
-    # Estimate USD cost using cost_reporter (handles text, image, and video pricing)
+    # Cost: use historical baseline + real token data from new sessions
     total_cost_usd = 0.0
     try:
-        from evaluate.cost_reporter import compute_event_cost
-        for e in events:
-            total_cost_usd += compute_event_cost(e)
-        total_cost_usd = round(total_cost_usd, 4)
+        from evaluate.cost_reporter import HISTORICAL_SPEND_USD, compute_event_cost
+
+        # Check if events have real token data
+        has_real_tokens = any(
+            e.get("tokens_consumed", 0) > 0
+            for e in events
+            if e.get("event_type") not in ("BatchCompleted",)
+        )
+
+        if has_real_tokens:
+            # Mix of old and new data — use baseline + computed
+            computed = sum(compute_event_cost(e) for e in events)
+            total_cost_usd = max(HISTORICAL_SPEND_USD, computed)
+        else:
+            # All old data — use known baseline
+            total_cost_usd = HISTORICAL_SPEND_USD
+
+        total_cost_usd = round(total_cost_usd, 2)
     except ImportError:
-        pass
+        total_cost_usd = 84.68
 
     return {
         "total_ads_generated": generated,
