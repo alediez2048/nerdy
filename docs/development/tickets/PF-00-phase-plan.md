@@ -1,77 +1,172 @@
-# Phase PF: Performance Feedback — Closing the Real-World Loop
+# Phase PF: Project Finalization — Cleanup, QA & Production Readiness
 
 ## Context
 
-The evaluator scores ads via LLM judgment (5 dimensions, CoT rationales, calibrated against reference ads). But it has no real-world performance data — no CTR, conversions, CPA, or engagement metrics from Meta. Phase PF builds the infrastructure and simulation to prove: if we had real Meta data, here's exactly how it integrates and how much the pipeline would improve.
+The core pipeline (P0–P5), application layer (PA), Nerdy integration (PB), video pipeline (PC-00–PC-03), and performance feedback (PF-01–PF-07) are complete. Phase PF finalizes the project: removes stale files, verifies all critical features work end-to-end, fixes bugs, ensures documentation is complete, and prepares for production deployment.
 
-## Tickets (7)
+This is the "polish and ship" phase — no new features, just quality assurance and cleanup.
 
-### PF-01: Meta Performance Data Schema + Ingestion
-- `evaluate/performance_schema.py` — `MetaPerformanceRecord` dataclass (14 fields), validation, CSV/JSON loading
-- `ingest_performance_data()` logs `PerformanceIngested` events to ledger
-- **AC:** 17 tests, validation catches invalid records, round-trip through ledger
+## Tickets (10)
 
-### PF-02: Simulated Performance Dataset
-- `data/simulated_performance.py` — noise model: 30% copy quality, 40% targeting, 20% audience, 10% temporal
-- Overall correlation between aggregate_score and CTR: r ~0.3–0.5 (realistic, not inflated)
-- ~10% deliberate outliers (excellent copy + bad targeting = low CTR)
-- **AC:** 10 tests, deterministic with seed, distributions within realistic bounds
+### PF-01: File Structure Cleanup
+- Remove stale files: `MagicMock/` directory, `data/ledger.jsonl.bak`, any `.tmp` files
+- Clean up test artifacts: remove committed `output/images/` and `output/videos/` (keep structure, remove generated content)
+- Remove committed session ledger files from `data/sessions/` (runtime data shouldn't be in repo)
+- Update `.gitignore` to prevent future commits of runtime data
+- Verify `.cursor-safety/` files are intentional (or remove if not needed)
+- **AC:** No stale files in repo, `.gitignore` comprehensive, repo size reasonable
 
-### PF-03: Evaluator-Performance Correlation Analysis
-- `evaluate/performance_correlation.py` — 5×4 matrix (dimensions × metrics)
-- Reuses `_pearson_r` from `evaluate/correlation.py`
-- Auto-generated findings: "CTA is the strongest predictor of conversion_rate (r=0.58)"
-- **AC:** 11 tests, all 20 r-values computed, 4+ findings
+### PF-02: Critical Feature QA — Session Creation & Pipeline Execution
+- **Image sessions:** Create session → run → verify ads generated → check Ad Library
+- **Video sessions:** Create video session → run → verify videos generated → check Ad Library video player
+- **Progress reporting:** Verify SSE updates in Watch Live view
+- **Session list:** Verify filters, pagination, status badges work
+- **Session detail:** Verify all 7 tabs load correctly (Overview, Quality, Ad Library, Competitive, Token Economics, Curated Set, System Health)
+- **AC:** All critical workflows work end-to-end, no blocking bugs
 
-### PF-04: Weight Recalibration from Performance Data
-- `evaluate/weight_recalibrator.py` — normalize correlations → data-driven weights
-- 70/30 blend: data-driven + prior (avoids overfitting to simulated data)
-- Logs `WeightsRecalibrated` event to ledger
-- **AC:** 11 tests, weights sum to 1.0, honest confidence note
+### PF-03: Critical Feature QA — Dashboard & Analytics
+- **Global Dashboard:** Verify all 8 tabs load (Summary, Iterations, Quality, Dimensions, Ads, Costs, Health, Competitive)
+- **Session Dashboard:** Verify data scoped to session correctly
+- **Quality trends:** Verify charts render, data accurate
+- **Token economics:** Verify cost calculations correct
+- **Ad Library:** Verify images/videos display, filters work, download works
+- **AC:** All dashboard views functional, data accurate
 
-### PF-05: Evaluator Accuracy Report
-- `evaluate/accuracy_report.py` — precision@k, recall@k, confusion matrix
-- False positives (high score, low CTR) and missed performers (low score, high CTR) enumerated
-- **AC:** 13 tests, confusion matrix sums correctly, actionable findings
+### PF-04: Bug Fix Sprint — Frontend Issues
+- Audit frontend for broken features (user-reported or discovered in PF-02/03)
+- Fix video preview display issues (if any remain)
+- Fix light/dark mode inconsistencies
+- Fix navigation/routing issues
+- Fix form validation errors
+- Fix API error handling (user-friendly messages)
+- **AC:** All known frontend bugs fixed, no console errors in production build
 
-### PF-06: Closed-Loop Architecture Documentation
-- `docs/deliverables/feedback_loop_architecture.md` — 4 sections: closed loop, integration points, production gaps, simulation results
-- Decision log entry #22: "Why Simulated Performance Data"
-- **AC:** All 4 sections, 5+ honest production gaps, ASCII architecture diagram
+### PF-05: Bug Fix Sprint — Backend Issues
+- Audit backend for broken endpoints or pipeline failures
+- Fix session creation edge cases
+- Fix progress reporting gaps
+- Fix ledger corruption edge cases
+- Fix video generation failures (graceful degradation)
+- Fix image generation failures
+- **AC:** All known backend bugs fixed, error handling robust
 
-### PF-07: Performance Feedback Dashboard Panel
-- `output/performance_dashboard.py` — Panel 9: Evaluator vs. Reality
-- `PerformancePanelData`: correlation heatmap, weight comparison, accuracy metrics, key findings
-- `loop_status` always = "simulated" (honest labeling)
-- **AC:** 7 tests, HTML includes all required sections
+### PF-06: Test Coverage Audit & Gaps
+- Run full test suite: `pytest tests/ -v`
+- Identify missing test coverage for critical paths
+- Add integration tests for end-to-end workflows (session creation → pipeline → results)
+- Add regression tests for fixed bugs
+- Verify golden set tests still pass
+- **AC:** Test suite passes, critical paths covered, no flaky tests
+
+### PF-07: Documentation Cleanup & Completeness
+- **README.md:** Update with current setup instructions, feature overview, quick start
+- **ENVIRONMENT.md:** Verify all env vars documented, examples current
+- **DEVLOG.md:** Verify all major tickets documented, timeline accurate
+- **Decision log:** Verify all architectural decisions captured
+- **API docs:** Add OpenAPI/Swagger if missing, or ensure inline docs complete
+- **Code comments:** Add docstrings to public APIs, clarify complex logic
+- **AC:** All documentation current, complete, and accurate
+
+### PF-08: Production Readiness — Environment & Config
+- Verify all required environment variables documented and validated
+- Verify `docker-compose.yml` works for local development
+- Verify production deployment config (if PA-12 incomplete, document manual steps)
+- Verify secrets management (no hardcoded keys)
+- Verify database migrations work (if using Alembic)
+- **AC:** Environment setup documented, production deployment possible
+
+### PF-09: Production Readiness — Performance & Monitoring
+- Verify pipeline performance acceptable (no memory leaks, reasonable execution time)
+- Add basic logging/monitoring (if missing)
+- Verify error tracking (exceptions logged, not silent failures)
+- Verify rate limiting on API endpoints (if applicable)
+- **AC:** Performance acceptable, errors tracked, monitoring in place
+
+### PF-10: Final Verification & Demo Preparation
+- **End-to-end demo script:** Create step-by-step walkthrough of all features
+- **Demo data:** Prepare sample sessions with good results (if needed)
+- **Screenshot/video:** Capture key workflows for documentation
+- **Final test run:** Full regression test of all features
+- **AC:** Demo-ready, all features verified working, documentation complete
 
 ## Dependency Graph
 
 ```
-PF-01 (Schema)
+PF-01 (Cleanup)
   │
-  v
-PF-02 (Simulated Data)
+  ├─→ PF-02 (Session QA)
+  ├─→ PF-03 (Dashboard QA)
   │
-  ├──────────────┐
-  v              v
-PF-03 (Corr)   PF-05 (Accuracy)
-  │              │
-  v              │
-PF-04 (Recal)   │
-  │              │
-  v              v
-PF-06 (Docs) <──┘
-  │
-  v
-PF-07 (Dashboard)
+  ├─→ PF-04 (Frontend Bugs) ──┐
+  ├─→ PF-05 (Backend Bugs) ────┤
+  │                             │
+  ├─→ PF-06 (Test Coverage) ────┼─→ PF-10 (Final Verification)
+  ├─→ PF-07 (Docs) ─────────────┤
+  ├─→ PF-08 (Production) ───────┤
+  └─→ PF-09 (Performance) ──────┘
 ```
 
-## Key Decisions Made
+## Key Decisions
 
-1. **Imperfect correlation (r ~0.3–0.5) is intentional** — real copy-to-CTR correlation is modest because targeting/audience/timing dominate
-2. **70/30 blend for recalibrated weights** — pure data-driven from synthetic data = circular reasoning
-3. **Ledger-native storage** — performance data gets new event types in existing JSONL (Pillar 5)
-4. **Reuse `_pearson_r`** — no scipy dependency needed
+1. **No new features** — PF is polish only, not enhancement
+2. **Runtime data cleanup** — remove committed session ledgers, generated images/videos (keep structure)
+3. **Bug fixes prioritized by severity** — blocking bugs first, polish last
+4. **Documentation is code** — incomplete docs = incomplete feature
+5. **Test coverage for critical paths** — not 100%, but all user-facing workflows covered
 
-## Status: ✅ COMPLETE (all 7 tickets, 69 tests)
+## Critical Features Checklist (for PF-02/03)
+
+### Session Management
+- [ ] Create image session
+- [ ] Create video session
+- [ ] List sessions (with filters)
+- [ ] View session detail
+- [ ] Watch live progress
+- [ ] Delete session
+
+### Pipeline Execution
+- [ ] Image pipeline runs end-to-end
+- [ ] Video pipeline runs end-to-end
+- [ ] Progress updates in real-time
+- [ ] Results saved to ledger
+- [ ] Errors handled gracefully
+
+### Ad Library & Curation
+- [ ] Ad Library displays images correctly
+- [ ] Ad Library displays videos correctly (with player)
+- [ ] Filters work (status, score, type)
+- [ ] Curated Set tab functional
+- [ ] Export curated set works
+
+### Dashboard & Analytics
+- [ ] Global dashboard loads all tabs
+- [ ] Session dashboard scoped correctly
+- [ ] Quality trends chart renders
+- [ ] Token economics accurate
+- [ ] Competitive intel displays
+
+### Sharing & Access
+- [ ] Share session link works
+- [ ] Shared session view read-only
+- [ ] Authentication (if implemented)
+
+## File Cleanup Targets
+
+### Must Remove
+- `MagicMock/` directory (test artifact)
+- `data/ledger.jsonl.bak` (backup file)
+- `data/sessions/sess_*/ledger.jsonl` (runtime data, ~40+ files)
+- Committed `output/images/*.png` (generated content)
+- Committed `output/videos/*.mp4` (generated content)
+
+### Review & Possibly Remove
+- `.cursor-safety/` files (if not needed)
+- `app/frontend/.vite/deps/` (build artifacts, should be in .gitignore)
+- Old test files if superseded
+
+### Keep Structure, Remove Content
+- `output/images/` directory (keep, but remove committed images)
+- `output/videos/` directory (keep, but remove committed videos)
+- `data/sessions/` directory (keep, but remove committed ledgers)
+
+## Status: ⏳ NOT STARTED
