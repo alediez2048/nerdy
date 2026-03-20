@@ -85,9 +85,9 @@ _PER_CALL_EVENTS = PER_CALL_EVENT_TYPES
 def compute_event_cost(event: dict) -> float:
     """Compute the USD cost of a single ledger event.
 
-    Uses per-call pricing for image/video generation events, per-token
-    for text/evaluation events. Falls back to credits from outputs for
-    video generation events.
+    Uses per-call pricing for image/video generation events (rates
+    derived from actual billing invoices), per-token for text/evaluation
+    events (rates from Gemini API pricing page).
     """
     event_type = event.get("event_type", "")
     model = event.get("model_used", "unknown")
@@ -96,12 +96,8 @@ def compute_event_cost(event: dict) -> float:
 
     if event_type in PER_CALL_EVENT_TYPES:
         # Per-call pricing for image/video generation
-        # Check for credits in outputs (video events store credits there)
-        outputs = event.get("outputs", {})
-        credits = outputs.get("credits", 0) or outputs.get("credits_consumed", 0)
-        if credits and credits > 0:
-            return credits * 0.001  # credits to USD
-        return rate  # one API call at the model's per-call rate
+        # Rates are from actual invoices, not estimated credits
+        return rate
 
     # Per-token pricing for text and evaluation events
     return rate * tokens
