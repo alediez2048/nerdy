@@ -7,6 +7,85 @@
 
 ---
 
+## PC-03: App Integration + Video Assembly ✅
+
+### Plain-English Summary
+- Video pipeline wired into Celery task — routes by `session_type` (video → video pipeline, image → image pipeline)
+- Video assembly: `output/video_assembler.py` creates copy + video output (no image in video track)
+- Frontend: Ad Library shows video player for video sessions, video-specific progress stages
+- Static video file serving at `/api/videos/` and session-specific paths
+- Backward compatible: existing image sessions unaffected
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** 34 video pipeline tests passing
+
+### Files Changed
+- `app/workers/tasks/pipeline_task.py` — session type routing
+- `output/video_assembler.py` — video ad assembly
+- `app/api/main.py` — video static file serving
+- `app/frontend/src/views/SessionDetail.tsx` — video session display
+- `app/frontend/src/tabs/AdLibrary.tsx` — video player component
+
+---
+
+## PC-02: Video Pipeline + Evaluation ✅
+
+### Plain-English Summary
+- Video orchestrator: `generate_video/orchestrator.py` — generates 2 variants per ad (anchor + alternative), evaluates, selects best
+- Video evaluator: `evaluate/video_evaluator.py` — 5 attributes + 4-dimension coherence (threshold 4.0 for short UGC clips)
+- Graceful degradation: missing files handled, correct ledger semantics (`VideoGenerated` only when file exists)
+- Checkpoint-resume for video ads
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** Video orchestrator + evaluator tests passing
+
+### Files Changed
+- `generate_video/orchestrator.py` — video pipeline loop
+- `evaluate/video_evaluator.py` — video attribute + coherence evaluation
+
+---
+
+## PC-01: Video Client + Video Spec Builder ✅
+
+### Plain-English Summary
+- Video client factory: `generate_video/factory.py` — protocol-based routing (fal/veo/kling)
+- Fal.ai client: `generate_video/fal_client.py` — async task-based API (submit → poll → download)
+- Video spec builder: `generate_video/video_spec.py` — VideoSpec dataclass, `build_video_spec()` (auto-derive or explicit fields), `build_kling_prompt()` (8-part framework)
+- Rate limiter, retry logic, brand safety negative prompt
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** Fal client + video spec tests passing
+
+### Files Changed
+- `generate_video/fal_client.py` — Fal.ai API client
+- `generate_video/factory.py` — video client factory
+- `generate_video/video_client.py` — VideoGenerationClient protocol
+- `generate_video/video_spec.py` — video spec builder
+
+---
+
+## PC-00: Session Type + Schema Foundation ✅
+
+### Plain-English Summary
+- Added `session_type` (image/video) to `SessionConfig` and frontend form
+- Video form: simple mode (persona, key message, audio, duration) + advanced accordion (8-part framework: scene/style/camera/subject/setting/lighting/audio/color)
+- Session list: type badge + filter
+- Backward compatible: image sessions unchanged, `session_type` defaults to `image`
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+
+### Files Changed
+- `app/api/schemas/session.py` — SessionType enum, video fields in SessionConfig
+- `app/frontend/src/views/NewSessionForm.tsx` — video form fields
+- `app/frontend/src/types/session.ts` — frontend types
+- `app/frontend/src/components/SessionFilters.tsx` — session type filter
+
+---
+
 ## Frontend: Light mode — counter-invert `<video>` (Ad Library) ✅
 
 ### Plain-English Summary
