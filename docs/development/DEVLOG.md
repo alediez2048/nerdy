@@ -7,6 +7,39 @@
 
 ---
 
+## PC-07: NewCampaignForm Frontend ✅
+
+### Plain-English Summary
+- Created campaign creation form at `/campaigns/new` — users can create campaigns with name, description, and default settings
+- Required field: Campaign name (validated, max 256 chars)
+- Optional fields: Description, default audience (parents/students), default campaign goal (awareness/conversion), default persona
+- Advanced section (collapsible): Default session type, ad count, quality threshold, model tier
+- On submit: Creates campaign via API and navigates to campaign detail page
+- Back link to campaigns list
+- Design consistent with NewSessionForm (same styling, progressive disclosure pattern)
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 2026  |  **Branch:** `video-implementation-2.0`
+- **Tests:** Frontend component created, route registered, no backend changes
+
+### Files Changed
+- `app/frontend/src/views/NewCampaignForm.tsx` — Campaign creation form component
+- `app/frontend/src/App.tsx` — Added `/campaigns/new` route
+
+### Key Achievements
+- Campaign creation form fully functional
+- Form validation (name required, no whitespace)
+- Progressive disclosure for advanced defaults
+- Success navigation to campaign detail (PC-08 will build the detail page)
+- Error handling for API failures
+
+### Learnings
+- Reused NewSessionForm patterns for consistency (same styling, toggle groups, collapsible sections)
+- Campaign form simpler than session form (no clone feature, no video-specific fields)
+- Default config stored as JSON object in campaign model — will be used in PC-09 to pre-fill session forms
+
+---
+
 ## PC-06: CampaignList + CampaignCard Frontend Views ✅
 
 ### Plain-English Summary
