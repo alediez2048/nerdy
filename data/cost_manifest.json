@@ -1,0 +1,313 @@
+{
+  "billing_reference_total_usd": 84.68,
+  "global_ledger_usd": 84.298,
+  "allocated_session_pool_usd": 0.382,
+  "sessions": {
+    "sess_02ca1299a8dd1bd4": {
+      "estimated_cost_usd": 0.0038,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.02445,
+      "weight": 0.9
+    },
+    "sess_0c418da931a4ffe1": {
+      "estimated_cost_usd": 0.0062,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.1196,
+      "weight": 1.44
+    },
+    "sess_0da2629774d64153": {
+      "estimated_cost_usd": 0.0021,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.03027,
+      "weight": 0.48
+    },
+    "sess_0f327a991601fc61": {
+      "estimated_cost_usd": 0.0205,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 3.45109,
+      "weight": 4.8
+    },
+    "sess_174ca7c80c7749a6": {
+      "estimated_cost_usd": 0.0062,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.13569,
+      "weight": 1.44
+    },
+    "sess_190028431dd9ed92": {
+      "estimated_cost_usd": 0.0,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.0,
+      "weight": 0.01
+    },
+    "sess_1aff6689dff92b57": {
+      "estimated_cost_usd": 0.0082,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.11722,
+      "weight": 1.92
+    },
+    "sess_235e6f89a15986c4": {
+      "estimated_cost_usd": 0.0058,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.03723,
+      "weight": 1.35
+    },
+    "sess_24a592ebe99aeea3": {
+      "estimated_cost_usd": 0.0004,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.1193,
+      "weight": 0.09
+    },
+    "sess_329444f32cbeee82": {
+      "estimated_cost_usd": 0.0058,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.03861,
+      "weight": 1.35
+    },
+    "sess_37cd434c63c68d59": {
+      "estimated_cost_usd": 0.0133,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 1.77142,
+      "weight": 3.12
+    },
+    "sess_3c9423e41d43db16": {
+      "estimated_cost_usd": 0.0,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.0,
+      "weight": 0.01
+    },
+    "sess_40921f4d002ae443": {
+      "estimated_cost_usd": 0.0038,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.02495,
+      "weight": 0.9
+    },
+    "sess_429ef4106b7439cf": {
+      "estimated_cost_usd": 0.0129,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 1.71642,
+      "weight": 3.03
+    },
+    "sess_4865428d25fc666e": {
+      "estimated_cost_usd": 0.0062,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.13651,
+      "weight": 1.44
+    },
+    "sess_4af2bb2f32ffeb1b": {
+      "estimated_cost_usd": 0.0062,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.08705,
+      "weight": 1.44
+    },
+    "sess_4c4c6ce96bffadc7": {
+      "estimated_cost_usd": 0.0021,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.03029,
+      "weight": 0.48
+    },
+    "sess_4f60644729c02591": {
+      "estimated_cost_usd": 0.0205,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 3.45161,
+      "weight": 4.8
+    },
+    "sess_5114e76d8b66e06f": {
+      "estimated_cost_usd": 0.0021,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.03032,
+      "weight": 0.48
+    },
+    "sess_5859e9466adc658f": {
+      "estimated_cost_usd": 0.0103,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.22621,
+      "weight": 2.4
+    },
+    "sess_6359a58a065cd1b3": {
+      "estimated_cost_usd": 0.0103,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.227,
+      "weight": 2.4
+    },
+    "sess_676a8621d49adae5": {
+      "estimated_cost_usd": 0.0082,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.16572,
+      "weight": 1.92
+    },
+    "sess_684ad873414d2ad5": {
+      "estimated_cost_usd": 0.0,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.0,
+      "weight": 0.01
+    },
+    "sess_6d45dfe43af4e7ad": {
+      "estimated_cost_usd": 0.0094,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.87514,
+      "weight": 2.19
+    },
+    "sess_6fe94375b3f95376": {
+      "estimated_cost_usd": 0.0021,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.03032,
+      "weight": 0.48
+    },
+    "sess_702efd82f42baf3f": {
+      "estimated_cost_usd": 0.0021,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.02901,
+      "weight": 0.48
+    },
+    "sess_73babbb6400b5ffe": {
+      "estimated_cost_usd": 0.0103,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.22659,
+      "weight": 2.4
+    },
+    "sess_7abbe6d7df506039": {
+      "estimated_cost_usd": 0.0205,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 3.45088,
+      "weight": 4.8
+    },
+    "sess_7ec246122adab333": {
+      "estimated_cost_usd": 0.0062,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.13553,
+      "weight": 1.44
+    },
+    "sess_82d5cc2c775f088f": {
+      "estimated_cost_usd": 0.0103,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.22658,
+      "weight": 2.4
+    },
+    "sess_8a2fc5fcd96c254a": {
+      "estimated_cost_usd": 0.0103,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.14509,
+      "weight": 2.4
+    },
+    "sess_8b35cc77f235e1bf": {
+      "estimated_cost_usd": 0.0043,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.57196,
+      "weight": 1.01
+    },
+    "sess_9e1346e41770d372": {
+      "estimated_cost_usd": 0.0103,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.19935,
+      "weight": 2.4
+    },
+    "sess_a09b2b0083d839f1": {
+      "estimated_cost_usd": 0.0205,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 3.45095,
+      "weight": 4.8
+    },
+    "sess_a7dbcd1065a227ea": {
+      "estimated_cost_usd": 0.0021,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.02901,
+      "weight": 0.48
+    },
+    "sess_aaf2ccf3ca302cea": {
+      "estimated_cost_usd": 0.0043,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.57285,
+      "weight": 1.01
+    },
+    "sess_aba9e4619d051210": {
+      "estimated_cost_usd": 0.0,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.0,
+      "weight": 0.01
+    },
+    "sess_af1d5a2a9e86640b": {
+      "estimated_cost_usd": 0.0021,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.04521,
+      "weight": 0.48
+    },
+    "sess_b6da8ef157da4bda": {
+      "estimated_cost_usd": 0.0133,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 1.77126,
+      "weight": 3.12
+    },
+    "sess_b7c4ce1c2a0a8295": {
+      "estimated_cost_usd": 0.0157,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 2.33098,
+      "weight": 3.68
+    },
+    "sess_c25e293c1f58d705": {
+      "estimated_cost_usd": 0.0038,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.02466,
+      "weight": 0.9
+    },
+    "sess_c39222f8b58dbca0": {
+      "estimated_cost_usd": 0.0205,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 3.45103,
+      "weight": 4.8
+    },
+    "sess_caa6d72fd03fe85f": {
+      "estimated_cost_usd": 0.0205,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 3.45077,
+      "weight": 4.8
+    },
+    "sess_d278adbbe25b40ee": {
+      "estimated_cost_usd": 0.0106,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 1.15669,
+      "weight": 2.47
+    },
+    "sess_d43cf2641c702e81": {
+      "estimated_cost_usd": 0.0021,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.03066,
+      "weight": 0.48
+    },
+    "sess_d9fd23ca17b3a65b": {
+      "estimated_cost_usd": 0.0021,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.03016,
+      "weight": 0.48
+    },
+    "sess_dae0625cf4e99f6a": {
+      "estimated_cost_usd": 0.0,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.0,
+      "weight": 0.01
+    },
+    "sess_dcfc3dd8a5d75c5d": {
+      "estimated_cost_usd": 0.0038,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.02469,
+      "weight": 0.9
+    },
+    "sess_eee19f8a5cdeccd2": {
+      "estimated_cost_usd": 0.0,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.0,
+      "weight": 0.01
+    },
+    "sess_f90fc9c3ab21a8ea": {
+      "estimated_cost_usd": 0.0103,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.22628,
+      "weight": 2.4
+    },
+    "sess_fc3b9ba46d0abf8e": {
+      "estimated_cost_usd": 0.0103,
+      "method": "backfill_estimate",
+      "ledger_usd_at_backfill": 0.22702,
+      "weight": 2.4
+    }
+  }
+}

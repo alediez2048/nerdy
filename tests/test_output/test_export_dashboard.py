@@ -151,6 +151,7 @@ def test_pipeline_summary_counts(tmp_path: Path) -> None:
     assert 0 < summary["publish_rate"] <= 1.0
     assert summary["total_batches"] == 1
     assert summary["total_tokens"] > 0
+    assert summary["videos_in_library"] == 0
 
 
 def test_iteration_cycles_before_after(tmp_path: Path) -> None:
@@ -215,6 +216,7 @@ def test_empty_ledger_graceful(tmp_path: Path) -> None:
 
     assert data["pipeline_summary"]["total_ads_generated"] == 0
     assert data["pipeline_summary"]["total_ads_published"] == 0
+    assert data["pipeline_summary"]["videos_in_library"] == 0
     assert data["iteration_cycles"] == []
     assert data["ad_library"] == []
 
@@ -244,6 +246,7 @@ def test_ad_library_maps_video_selected_to_video_url(tmp_path: Path) -> None:
     })
 
     data = build_dashboard_data(ledger_path)
+    assert data["pipeline_summary"]["videos_in_library"] == 1
     ad = data["ad_library"][0]
     assert ad["status"] == "published"
     assert ad["video_url"].endswith("/videos/session_test/ad_001.mp4")
@@ -267,6 +270,7 @@ def test_ad_library_maps_video_blocked_to_discarded(tmp_path: Path) -> None:
     })
 
     data = build_dashboard_data(ledger_path)
+    assert data["pipeline_summary"]["videos_in_library"] == 0
     ad = data["ad_library"][0]
     assert ad["status"] == "discarded"
     assert ad["video_url"] is None

@@ -113,16 +113,17 @@ export default function SessionProgressBar({ sessionId, adCount, initialProgress
   } else if (status === 'failed') {
     stageLabel = 'Failed'
   } else if (isVideoProgress) {
-    const vidGenerated = (progressAny?.videos_generated as number) || 0
+    const vidAds = (progressAny?.videos_generated as number) || 0
+    const vidVariants = (progressAny?.video_variants_generated as number) || 0
     const vidSelected = (progressAny?.videos_selected as number) || 0
     if (progressType === 'video_generating') {
       stageLabel = `Generating video ${progressAny?.ad_index || ''}...`
     } else if (progressType === 'video_evaluating') {
       stageLabel = `Evaluating video ${progressAny?.ad_index || ''}...`
     } else if (progressType === 'video_pipeline_complete') {
-      stageLabel = `Complete — ${vidSelected} videos selected`
+      stageLabel = `Complete — ${vidSelected} selected (${vidAds} ads, ${vidVariants} Fal jobs)`
     } else {
-      stageLabel = `Videos: ${vidGenerated} generated, ${vidSelected} selected`
+      stageLabel = `Video ads: ${vidAds} · Fal jobs: ${vidVariants} · Selected: ${vidSelected}`
     }
   } else if (generated > 0 && numBatches > 0) {
     stageLabel = `Cycle ${cycle} — Batch ${batch}/${numBatches} — ${generated} ads generated`

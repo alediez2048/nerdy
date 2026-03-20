@@ -1,6 +1,5 @@
 # PC-04: Campaign CRUD API
 import secrets
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -40,44 +39,28 @@ def _get_user_campaign(db: Session, campaign_id: str, user_id: str) -> CampaignM
     return row
 
 
-def _total_ledger_cost() -> float:
-    """Calculate total cost: historical baseline + real data from new sessions.
+def _sum_session_costs_for_sessions(sessions: list[SessionModel]) -> float:
+    """Sum display cost for sessions (ledger + manifest for historical)."""
+    from evaluate.cost_reporter import compute_session_cost_usd
 
-    Sessions created before token capture logged tokens_consumed=0,
-    so we use a known baseline from actual billing dashboards.
-    New sessions (with real token data) add incremental cost on top.
-    """
-    try:
-        from evaluate.cost_reporter import HISTORICAL_SPEND_USD, compute_event_cost
+    total = 0.0
+    for s in sessions:
+        r = s.results_summary or {}
+        db_cost = r.get("cost_so_far")
+        db_cost_f = float(db_cost) if isinstance(db_cost, (int, float)) else 0.0
 
-        # Start with known historical spend
-        total = HISTORICAL_SPEND_USD
+        lp = s.ledger_path
+        if not lp:
+            total += db_cost_f
+            continue
 
-        # Add real cost from any new sessions that have actual token data
-        # (sessions created after the gemini_client.py wrapper was added)
-        for p in sorted(Path("data/sessions").glob("*/ledger.jsonl")):
-            has_real_tokens = False
-            session_cost = 0.0
-            for line in open(p):
-                line = line.strip()
-                if not line or not line.startswith("{"):
-                    continue
-                try:
-                    import json
-                    evt = json.loads(line)
-                    tokens = evt.get("tokens_consumed", 0)
-                    if tokens > 0 and evt.get("event_type") not in ("BatchCompleted",):
-                        has_real_tokens = True
-                    session_cost += compute_event_cost(evt)
-                except Exception:
-                    continue
-            # Only add if this session has real token data (not historical)
-            if has_real_tokens and session_cost > 1.0:
-                total += session_cost
-
-        return round(total, 2)
-    except Exception:
-        return 84.68  # Fallback to known spend
+        scr = compute_session_cost_usd(s.session_id, lp)
+        cost = scr.total_usd
+        # Tests / pending runs: no ledger file or empty manifest yet — use DB rollup
+        if cost < 0.0001 and db_cost_f > 0:
+            cost = db_cost_f
+        total += cost
+    return round(total, 2)
 
 
 def _compute_campaign_stats(db: Session, campaign_id: str) -> CampaignStats:
@@ -111,8 +94,7 @@ def _compute_campaign_stats(db: Session, campaign_id: str) -> CampaignStats:
         stype = c.get("session_type", "image")
         type_counts[stype] = type_counts.get(stype, 0) + 1
 
-    # Use real cost from merged ledgers (global + session)
-    total_cost = _total_ledger_cost()
+    total_cost = _sum_session_costs_for_sessions(sessions)
 
     return CampaignStats(
         total_sessions=len(sessions),

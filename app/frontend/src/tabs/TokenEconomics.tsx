@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { colors, radii, font } from '../design/tokens'
 import { fetchCosts } from '../api/dashboard'
 
+/** Fallback for marginal recommendation (token savings) when only tokens are available */
 const PRICE_PER_TOKEN = 0.00001
 
 export default function TokenEconomics({ sessionId }: { sessionId: string }) {
@@ -25,7 +26,11 @@ export default function TokenEconomics({ sessionId }: { sessionId: string }) {
   const dimBreakdown = (marginal.dimension_breakdown || []) as { dimension: string; cycle_1: number; cycle_2: number; cycle_3: number }[]
 
   const totalTokens = Object.values(byStage).reduce((a, b) => a + b, 0) || Object.values(byModel).reduce((a, b) => a + b, 0)
-  const totalCost = totalTokens * PRICE_PER_TOKEN
+  const totalCostUsd =
+    typeof econ.total_cost_usd === 'number'
+      ? econ.total_cost_usd
+      : totalTokens * PRICE_PER_TOKEN
+  const costSource = typeof econ.cost_source === 'string' ? econ.cost_source : 'ledger'
 
   return (
     <div>
@@ -39,10 +44,11 @@ export default function TokenEconomics({ sessionId }: { sessionId: string }) {
           </div>
         </div>
         <div style={s.summaryCard}>
-          <div style={{ ...s.summaryValue, color: colors.mint }}>${totalCost.toFixed(2)}</div>
+          <div style={{ ...s.summaryValue, color: colors.mint }}>${totalCostUsd.toFixed(2)}</div>
           <div style={s.summaryLabel}>Total Cost</div>
           <div style={s.summarySub}>
-            Estimated spend at ~$0.01 per 1K tokens (Gemini Flash pricing)
+            From API ledger + model rates (per-call for image/video). Source: {costSource}
+            {costSource === 'manifest_estimate' ? ' — historical estimate' : ''}
           </div>
         </div>
         {costPerPub !== undefined && costPerPub > 0 && (

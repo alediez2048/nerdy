@@ -17,9 +17,11 @@ import CompetitiveIntel from '../tabs/CompetitiveIntel'
 import TokenEconomics from '../tabs/TokenEconomics'
 import CuratedSet from '../tabs/CuratedSet'
 import SystemHealth from '../tabs/SystemHealth'
+import ExpandedBriefPanel from '../tabs/ExpandedBrief'
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
+  { key: 'brief', label: 'Expanded Brief' },
   { key: 'quality', label: 'Quality' },
   { key: 'ads', label: 'Ad Library' },
   { key: 'competitive', label: 'Competitive' },
@@ -187,6 +189,21 @@ export default function SessionDetail() {
               <StatusBadge status={session.status} />
               <span style={{ color: colors.muted, fontSize: '13px' }}>
                 {new Date(session.created_at).toLocaleDateString()} · {(config.audience as string) || ''} · {(config.campaign_goal as string) || ''}
+                {(session.campaign_id && (campaignName || session.campaign_name)) ? (
+                  <> · <span style={{ color: colors.cyan }}>{campaignName || session.campaign_name}</span></>
+                ) : null}
+                {config.session_type === 'video' && (
+                  <>
+                    {' '}
+                    ·{' '}
+                    <span style={{ color: colors.white }}>
+                      {(config.video_provider as string) || 'fal'}
+                      {config.video_provider === 'fal' && (config.video_fal_model as string)
+                        ? ` · ${String(config.video_fal_model)}`
+                        : ''}
+                    </span>
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -288,6 +305,9 @@ export default function SessionDetail() {
         {/* Tab content */}
         <div style={s.tabContent}>
           {activeTab === 'overview' && <Overview sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} />}
+          {activeTab === 'brief' && (
+            <ExpandedBriefPanel sessionId={sessionId!} sessionConfig={config} />
+          )}
           {activeTab === 'quality' && <Quality sessionId={sessionId!} />}
           {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} />}
           {activeTab === 'competitive' && <CompetitiveIntel />}

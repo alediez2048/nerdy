@@ -104,6 +104,53 @@ def test_summary_returns_data(client):
     assert data["pipeline_summary"]["total_ads_generated"] == 50
 
 
+def test_summary_falls_back_to_results_summary_when_ledger_export_empty(client):
+    """Overview / costs API: DB results_summary fills KPIs when ledger file is missing."""
+    sid = _seed_session("sess_fb")
+    db = _TestSession()
+    row = db.query(SessionModel).filter(SessionModel.session_id == sid).first()
+    assert row is not None
+    row.results_summary = {
+        "ads_generated": 12,
+        "ads_published": 10,
+        "ads_discarded": 0,
+        "avg_score": 7.2,
+        "cost_so_far": 3.45,
+    }
+    row.ledger_path = None
+    db.commit()
+    db.close()
+
+    with patch("app.api.routes.dashboard._get_dashboard_data", return_value={}):
+        resp = client.get(f"/sessions/{sid}/summary")
+
+    assert resp.status_code == 200
+    ps = resp.json()["pipeline_summary"]
+    assert ps["total_ads_generated"] == 12
+    assert ps["total_ads_published"] == 10
+    assert ps["total_cost_usd"] == 3.45
+    assert ps["cost_source"] == "results_summary"
+
+
+def test_costs_falls_back_to_results_summary_when_ledger_export_empty(client):
+    sid = _seed_session("sess_cost_fb")
+    db = _TestSession()
+    row = db.query(SessionModel).filter(SessionModel.session_id == sid).first()
+    assert row is not None
+    row.results_summary = {"cost_so_far": 2.5}
+    row.ledger_path = None
+    db.commit()
+    db.close()
+
+    with patch("app.api.routes.dashboard._get_dashboard_data", return_value={}):
+        resp = client.get(f"/sessions/{sid}/costs")
+
+    assert resp.status_code == 200
+    te = resp.json()["token_economics"]
+    assert te["total_cost_usd"] == 2.5
+    assert te["cost_source"] == "results_summary"
+
+
 def test_cycles_returns_data(client):
     sid = _seed_session()
 

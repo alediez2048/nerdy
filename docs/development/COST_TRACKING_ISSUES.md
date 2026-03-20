@@ -10,6 +10,8 @@
 
 The cost tracking system has fundamental data integrity issues. Past sessions logged `tokens_consumed: 0` for all API calls because the code discarded the Gemini SDK's `usage_metadata` response. Video calls (Fal.ai) have no billing API, so per-call costs were estimated with made-up rates. Multiple attempts to fix the display led to cascading issues because the underlying data is unreliable.
 
+**Update (Mar 20, 2026):** Video cost is **per `model_used` in the ledger**, not one global number. **Google Veo** (`veo-3.1-fast`, `video_provider: veo`) uses **`video_google_veo_cost_per_call_usd`** (default **6.00**). **Fal hosted Veo3** (`fal-ai/veo3`, `video_provider: fal`) uses **`video_fal_veo3_cost_per_call_usd`** (default **6.40**). Other Fal presets use `MODEL_COST_RATES` in `evaluate/cost_reporter.py`. Calibrate each key from the matching vendor’s Usage ÷ job count.
+
 **Actual total spend (from billing dashboards):**
 - Gemini API: **$54.68** (Google AI Studio)
 - Fal.ai: **$30.00** (Fal.ai invoices: $20 on March 19 + $10 on March 18)

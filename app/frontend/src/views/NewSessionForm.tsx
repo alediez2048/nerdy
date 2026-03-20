@@ -17,8 +17,25 @@ import type {
   VideoProvider,
   Persona,
   SessionSummary,
+  FalModelTier,
 } from '../types/session'
-import { DEFAULT_CONFIG, PERSONA_LABELS, PERSONA_KEY_MESSAGES, CREATIVE_BRIEF_OPTIONS, CAMERA_MOVEMENT_OPTIONS, VIDEO_PROVIDER_LABELS } from '../types/session'
+import {
+  DEFAULT_CONFIG,
+  PERSONA_LABELS,
+  PERSONA_KEY_MESSAGES,
+  CREATIVE_BRIEF_OPTIONS,
+  CAMERA_MOVEMENT_OPTIONS,
+  VIDEO_PROVIDER_LABELS,
+  FAL_VIDEO_MODEL_PRESETS,
+  FAL_MODEL_TIER_LABELS,
+} from '../types/session'
+
+const FAL_PRESET_IDS = new Set(FAL_VIDEO_MODEL_PRESETS.map((p) => p.value))
+const FAL_MODEL_FALLBACK = 'fal-ai/veo3'
+
+function normalizeVideoFalModel(id: string): string {
+  return FAL_PRESET_IDS.has(id) ? id : FAL_MODEL_FALLBACK
+}
 
 export default function NewSessionForm() {
   const navigate = useNavigate()
@@ -63,6 +80,14 @@ export default function NewSessionForm() {
       .catch(() => {})
   }, [])
 
+  // Legacy configs may have a custom endpoint string; map to a known preset
+  useEffect(() => {
+    if (config.session_type !== 'video' || config.video_provider !== 'fal') return
+    if (!FAL_PRESET_IDS.has(config.video_fal_model)) {
+      setConfig((prev) => ({ ...prev, video_fal_model: FAL_MODEL_FALLBACK }))
+    }
+  }, [config.session_type, config.video_provider, config.video_fal_model])
+
   const update = <K extends keyof SessionConfig>(key: K, value: SessionConfig[K]) => {
     setConfig((prev) => ({ ...prev, [key]: value }))
   }
@@ -87,6 +112,7 @@ export default function NewSessionForm() {
       creative_brief: (c.creative_brief as string) || 'auto',
       copy_on_image: c.copy_on_image === true,
       video_provider: (c.video_provider as VideoProvider) || 'fal',
+      video_fal_model: normalizeVideoFalModel((c.video_fal_model as string) || FAL_MODEL_FALLBACK),
       video_count: (c.video_count as number) || 3,
       video_duration: (c.video_duration as number) || 8,
       video_audio_mode: (c.video_audio_mode as string) || 'silent',
@@ -109,9 +135,13 @@ export default function NewSessionForm() {
     setLoading(true)
     setError(null)
     try {
+      const payloadConfig =
+        config.session_type === 'video' && config.video_provider === 'fal'
+          ? { ...config, video_fal_model: normalizeVideoFalModel(config.video_fal_model) }
+          : config
       const result = await createSession({
         name: name || undefined,
-        config,
+        config: payloadConfig,
         campaign_id: campaignId,
       })
       // Navigate to campaign detail if created from campaign, otherwise to session detail
@@ -415,6 +445,40 @@ export default function NewSessionForm() {
                 </div>
               </div>
 
+              {config.video_provider === 'fal' && (
+                <div style={s.field}>
+                  <label style={s.label}>
+                    Fal model <span style={s.required}>*</span>
+                  </label>
+                  <p style={{ ...s.hint, marginBottom: '8px' }}>
+                    Serverless endpoints on Fal — tiers are rough guides; confirm current $ on{' '}
+                    <a href="https://fal.ai/models" target="_blank" rel="noreferrer" style={{ color: colors.cyan }}>
+                      fal.ai/models
+                    </a>
+                    .
+                  </p>
+                  <select
+                    value={normalizeVideoFalModel(config.video_fal_model)}
+                    onChange={(e) => update('video_fal_model', e.target.value)}
+                    style={s.input}
+                  >
+                    {(['budget', 'balanced', 'premium'] as FalModelTier[]).map((tier) => (
+                      <optgroup key={tier} label={FAL_MODEL_TIER_LABELS[tier]}>
+                        {FAL_VIDEO_MODEL_PRESETS.filter((p) => p.tier === tier).map((p) => (
+                          <option key={p.value} value={p.value} title={p.hint}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  <div style={s.hint}>
+                    {FAL_VIDEO_MODEL_PRESETS.find((p) => p.value === normalizeVideoFalModel(config.video_fal_model))
+                      ?.hint ?? ''}
+                  </div>
+                </div>
+              )}
+
               <div style={s.field}>
                 <label style={s.label}>
                   Video Count <span style={s.required}>*</span>
@@ -427,7 +491,7 @@ export default function NewSessionForm() {
                   onChange={(e) => update('video_count', Number(e.target.value))}
                   style={s.input}
                 />
-                <div style={s.hint}>~$0.49/video (silent) or ~$0.98/video (with audio)</div>
+                <div style={s.hint}>Cost varies widely by provider and model — check provider pricing.</div>
               </div>
 
               <div style={s.field}>

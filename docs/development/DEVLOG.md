@@ -7,6 +7,31 @@
 
 ---
 
+## Final submission: video session cost + library alignment + Expanded Brief (✅)
+
+### Plain-English Summary
+- **Video ads** count on Overview matches **Ad Library** playable videos (`videos_in_library` in pipeline summary).
+- **Total cost** for video sessions uses **`sum_session_display_cost_usd`**: Fal charges only the **winning** variant per ad when `VideoSelected` exists (A/B alternate excluded from display total); Gemini/eval costs unchanged.
+- Per-model Fal pricing: `video_fal_model_costs_usd`, `video_google_veo_cost_per_call_usd`, `video_fal_veo3_cost_per_call_usd` in `data/config.yaml`.
+- **Expanded Brief** tab + `GET .../brief-expansions`; session brief fallback from config when ledger has no `BriefExpanded`.
+- **`data/cost_manifest.json`** + **`scripts/backfill_session_costs.py`** for historical cost display.
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 20, 2026  |  **Branch:** `final-submission`
+- **Tests:** `test_cost_reporter`, `test_export_dashboard`, video pipeline tests passing (subset). Some `test_generation` failures remain on branch (brief expansion return shape) — tracked separately.
+
+### Key Files
+- `evaluate/cost_reporter.py` — `sum_session_display_cost_usd`, model overrides
+- `output/export_dashboard.py` — `videos_in_library`, token econ ledger USD
+- `app/workers/tasks/pipeline_task.py` — video metrics + display cost
+- `app/frontend` — Overview, SessionDetail, SessionProgressBar, ExpandedBrief
+- `docs/development/COST_TRACKING_ISSUES.md`
+
+### Learnings
+- UI “videos” = deliverables in library; ledger may include two Fal jobs per ad for A/B — display cost should match what users ship, not raw duplicate generations.
+
+---
+
 ## PC-12: Campaign Archiving + Management (Capstone) ✅
 
 ### Plain-English Summary

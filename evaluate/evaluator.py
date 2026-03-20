@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -16,7 +15,6 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from iterate.retry import retry_with_backoff
 
 load_dotenv()
 
@@ -558,7 +556,7 @@ def evaluate_ad(
             "brief_id": brief_id,
             "cycle_number": 0,
             "action": "evaluation",
-            "tokens_consumed": tokens_estimate,
+            "tokens_consumed": tokens_actual,
             "model_used": "gemini-2.0-flash",
             "seed": "0",
             "inputs": {"ad_id": ad_id, "campaign_goal": campaign_goal, "audience": audience},

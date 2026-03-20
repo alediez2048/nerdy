@@ -9,12 +9,10 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass
 from typing import Any
 
-from iterate.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 

@@ -159,6 +159,20 @@ class TestBuildVideoClient:
             client = factory_mod.build_video_client(provider="fal")
             assert isinstance(client, FalVideoClient)
 
+    @patch.dict("os.environ", {"FAL_KEY": "test-key"})
+    def test_fal_model_kwarg_selects_endpoint(self) -> None:
+        """Session config video_fal_model maps to FalVideoClient.model_used / subscribe id."""
+        import generate_video.factory as factory_mod
+        from generate_video.fal_client import FalVideoClient
+
+        with patch.object(factory_mod, "_load_config_provider", return_value=None):
+            client = factory_mod.build_video_client(
+                provider="fal",
+                model="fal-ai/kling-video/v2.1/standard",
+            )
+            assert isinstance(client, FalVideoClient)
+            assert client.model_used == "fal-ai/kling-video/v2.1/standard"
+
     def test_explicit_veo_provider(self) -> None:
         try:
             from generate_video.veo_client import VeoClient  # noqa: F401

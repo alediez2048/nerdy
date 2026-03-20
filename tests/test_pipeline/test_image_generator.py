@@ -54,14 +54,17 @@ def test_visual_spec_has_all_fields() -> None:
 @patch("generate.visual_spec._call_gemini_for_spec")
 def test_extract_visual_spec_returns_spec(mock_call: MagicMock) -> None:
     """extract_visual_spec returns a VisualSpec from an expanded brief."""
-    mock_call.return_value = {
-        "subject": "Student with tutor, collaborative posture",
-        "setting": "Modern library, warm ambient lighting",
-        "color_palette": ["#00838F", "#1A237E", "#FFFFFF"],
-        "composition": "Two-shot, eye-level, balanced",
-        "campaign_goal_cue": "Aspirational: student achieving goals",
-        "text_overlay": "",
-    }
+    mock_call.return_value = (
+        {
+            "subject": "Student with tutor, collaborative posture",
+            "setting": "Modern library, warm ambient lighting",
+            "color_palette": ["#00838F", "#1A237E", "#FFFFFF"],
+            "composition": "Two-shot, eye-level, balanced",
+            "campaign_goal_cue": "Aspirational: student achieving goals",
+            "text_overlay": "",
+        },
+        120,
+    )
     brief = {
         "brief_id": "b001",
         "audience": "parents",
@@ -120,7 +123,7 @@ def test_build_image_prompt_different_for_each_variant() -> None:
 @patch("generate.image_generator._call_image_api")
 def test_generate_variants_produces_three(mock_api: MagicMock) -> None:
     """generate_variants produces exactly 3 variants with correct types."""
-    mock_api.return_value = "/tmp/test_image.png"
+    mock_api.return_value = ("/tmp/test_image.png", 200, "nano-banana-pro-preview")
     spec = _mock_visual_spec()
 
     variants = generate_variants(spec, ad_id="ad_001", seed=42, output_dir="/tmp/images")
@@ -132,7 +135,7 @@ def test_generate_variants_produces_three(mock_api: MagicMock) -> None:
 @patch("generate.image_generator._call_image_api")
 def test_variant_seeds_are_deterministic(mock_api: MagicMock) -> None:
     """Variant seeds are derived from base seed deterministically."""
-    mock_api.return_value = "/tmp/test_image.png"
+    mock_api.return_value = ("/tmp/test_image.png", 200, "nano-banana-pro-preview")
     spec = _mock_visual_spec()
 
     v1 = generate_variants(spec, ad_id="ad_001", seed=42, output_dir="/tmp/images")
@@ -145,7 +148,7 @@ def test_variant_seeds_are_deterministic(mock_api: MagicMock) -> None:
 @patch("generate.image_generator._call_image_api")
 def test_default_aspect_ratio_is_1x1(mock_api: MagicMock) -> None:
     """Default aspect ratio for all variants is 1:1."""
-    mock_api.return_value = "/tmp/test_image.png"
+    mock_api.return_value = ("/tmp/test_image.png", 200, "nano-banana-pro-preview")
     spec = _mock_visual_spec()
 
     variants = generate_variants(spec, ad_id="ad_001", seed=42, output_dir="/tmp/images")
@@ -159,7 +162,7 @@ def test_default_aspect_ratio_is_1x1(mock_api: MagicMock) -> None:
 @patch("generate.image_generator._call_image_api")
 def test_generate_extra_ratios_produces_two(mock_api: MagicMock) -> None:
     """Extra ratios generates 4:5 and 9:16 variants."""
-    mock_api.return_value = "/tmp/test_image.png"
+    mock_api.return_value = ("/tmp/test_image.png", 200, "nano-banana-pro-preview")
     winner = ImageVariant(
         ad_id="ad_001",
         variant_type="anchor",

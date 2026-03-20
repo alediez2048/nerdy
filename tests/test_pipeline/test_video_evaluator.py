@@ -24,13 +24,16 @@ def missing_video():
 
 @patch("evaluate.video_evaluator._call_multimodal_video_eval")
 def test_evaluate_attributes_all_pass(mock_eval, real_video):
-    mock_eval.return_value = {
-        "hook_timing": True,
-        "ugc_authenticity": True,
-        "pacing": True,
-        "text_legibility": True,
-        "no_artifacts": True,
-    }
+    mock_eval.return_value = (
+        {
+            "hook_timing": True,
+            "ugc_authenticity": True,
+            "pacing": True,
+            "text_legibility": True,
+            "no_artifacts": True,
+        },
+        400,
+    )
 
     from evaluate.video_evaluator import evaluate_video_attributes
     result = evaluate_video_attributes(real_video, {}, "ad_001", "anchor")
@@ -42,13 +45,16 @@ def test_evaluate_attributes_all_pass(mock_eval, real_video):
 
 @patch("evaluate.video_evaluator._call_multimodal_video_eval")
 def test_evaluate_attributes_below_threshold(mock_eval, real_video):
-    mock_eval.return_value = {
-        "hook_timing": True,
-        "ugc_authenticity": False,
-        "pacing": False,
-        "text_legibility": True,
-        "no_artifacts": True,
-    }
+    mock_eval.return_value = (
+        {
+            "hook_timing": True,
+            "ugc_authenticity": False,
+            "pacing": False,
+            "text_legibility": True,
+            "no_artifacts": True,
+        },
+        400,
+    )
 
     from evaluate.video_evaluator import evaluate_video_attributes
     result = evaluate_video_attributes(real_video, {}, "ad_002", "alternative")
@@ -71,12 +77,15 @@ def test_evaluate_attributes_missing_file_returns_fail(missing_video):
 
 @patch("evaluate.video_evaluator._call_coherence_eval")
 def test_coherence_above_threshold(mock_eval, real_video):
-    mock_eval.return_value = {
-        "message_alignment": 5.0,
-        "audience_match": 6.0,
-        "emotional_consistency": 4.5,
-        "narrative_flow": 5.5,
-    }
+    mock_eval.return_value = (
+        {
+            "message_alignment": 5.0,
+            "audience_match": 6.0,
+            "emotional_consistency": 4.5,
+            "narrative_flow": 5.5,
+        },
+        300,
+    )
 
     from evaluate.video_evaluator import check_video_coherence
     result = check_video_coherence(
@@ -89,12 +98,15 @@ def test_coherence_above_threshold(mock_eval, real_video):
 
 @patch("evaluate.video_evaluator._call_coherence_eval")
 def test_coherence_below_threshold(mock_eval, real_video):
-    mock_eval.return_value = {
-        "message_alignment": 2.0,
-        "audience_match": 3.0,
-        "emotional_consistency": 3.5,
-        "narrative_flow": 3.0,
-    }
+    mock_eval.return_value = (
+        {
+            "message_alignment": 2.0,
+            "audience_match": 3.0,
+            "emotional_consistency": 3.5,
+            "narrative_flow": 3.0,
+        },
+        300,
+    )
 
     from evaluate.video_evaluator import check_video_coherence
     result = check_video_coherence(

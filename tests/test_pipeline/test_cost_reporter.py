@@ -6,12 +6,23 @@ grouping by model, format, and task with estimated USD costs.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+import pytest
+
+import evaluate.cost_reporter as cost_reporter_mod
 from evaluate.cost_reporter import (
     CrossFormatCostReport,
+    compute_event_cost,
     format_cost_report,
     generate_cost_report,
+    compute_session_cost_usd,
+    sum_session_display_cost_usd,
+    reload_cost_manifest,
+    reload_fal_veo3_cost_config,
+    reload_fal_model_cost_overrides,
+    reload_google_veo_cost_config,
 )
 from iterate.ledger import log_event
 
@@ -149,3 +160,109 @@ def test_format_cost_report_readable(tmp_path: Path) -> None:
     assert isinstance(text, str)
     assert "Total" in text
     assert "$" in text
+
+
+def test_fal_veo3_video_generated_uses_config_per_call_not_invoice_average() -> None:
+    """fal-ai/veo3 uses video_fal_veo3_cost_per_call_usd (Fal hosted), distinct from Google Veo."""
+    reload_fal_veo3_cost_config()
+    ev = {
+        "event_type": "VideoGenerated",
+        "model_used": "fal-ai/veo3",
+        "tokens_consumed": 0,
+    }
+    cost = compute_event_cost(ev)
+    assert cost >= 1.0, "Fal fal-ai/veo3 per-call should come from video_fal_veo3_cost_per_call_usd"
+    assert abs(cost - 6.40) < 0.01
+    reload_fal_veo3_cost_config()
+
+
+def test_google_veo_video_generated_uses_config_per_call() -> None:
+    """veo-3.1-fast (Google Veo API) uses video_google_veo_cost_per_call_usd, not Fal rates."""
+    reload_google_veo_cost_config()
+    ev = {
+        "event_type": "VideoGenerated",
+        "model_used": "veo-3.1-fast",
+        "tokens_consumed": 0,
+    }
+    cost = compute_event_cost(ev)
+    assert abs(cost - 6.00) < 0.01
+    reload_google_veo_cost_config()
+
+
+def test_sum_session_display_cost_excludes_non_winning_video_variant() -> None:
+    """When VideoSelected picks a winner, only that VideoGenerated is billed in session total."""
+    reload_fal_model_cost_overrides()
+    events = [
+        {
+            "event_type": "VideoGenerated",
+            "ad_id": "ad_x",
+            "model_used": "fal-ai/wan/v2.2-5b/text-to-video/distill",
+            "tokens_consumed": 0,
+            "outputs": {"variant_type": "anchor"},
+        },
+        {
+            "event_type": "VideoGenerated",
+            "ad_id": "ad_x",
+            "model_used": "fal-ai/wan/v2.2-5b/text-to-video/distill",
+            "tokens_consumed": 0,
+            "outputs": {"variant_type": "alternative"},
+        },
+        {
+            "event_type": "VideoSelected",
+            "ad_id": "ad_x",
+            "model_used": "fal-ai/wan/v2.2-5b/text-to-video/distill",
+            "tokens_consumed": 0,
+            "outputs": {"winner_variant": "anchor", "winner_video_path": "/tmp/a.mp4"},
+        },
+    ]
+    full = sum(compute_event_cost(e) for e in events)
+    display = sum_session_display_cost_usd(events)
+    one_job = compute_event_cost(events[0])
+    assert full > display
+    assert abs(display - one_job) < 0.001
+    reload_fal_model_cost_overrides()
+
+
+def test_fal_wan_distill_per_call_uses_table_or_config_override() -> None:
+    """Fal Wan distill uses MODEL_COST_RATES / video_fal_model_costs_usd (not Veo3 pricing)."""
+    reload_fal_model_cost_overrides()
+    ev = {
+        "event_type": "VideoGenerated",
+        "model_used": "fal-ai/wan/v2.2-5b/text-to-video/distill",
+        "tokens_consumed": 0,
+    }
+    cost = compute_event_cost(ev)
+    assert abs(cost - 1.50) < 0.01
+    reload_fal_model_cost_overrides()
+
+
+def test_compute_session_cost_uses_manifest_when_ledger_unreliable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Historical sessions with empty/low ledger use cost_manifest estimate."""
+    manifest_path = tmp_path / "cost_manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "sessions": {
+                    "sess_test": {
+                        "estimated_cost_usd": 5.25,
+                        "method": "backfill_estimate",
+                    },
+                },
+            },
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cost_reporter_mod, "COST_MANIFEST_PATH", manifest_path)
+    reload_cost_manifest()
+
+    ledger_path = str(tmp_path / "ledger.jsonl")
+    Path(ledger_path).touch()
+
+    result = compute_session_cost_usd("sess_test", ledger_path)
+    assert result.source == "manifest_estimate"
+    assert result.total_usd == 5.25
+
+    reload_cost_manifest()

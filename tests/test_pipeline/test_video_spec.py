@@ -119,16 +119,19 @@ def test_build_video_spec_explicit_fields():
 @patch("generate_video.video_spec._call_gemini_for_video_spec")
 def test_build_video_spec_auto_derive(mock_gemini):
     """When fields are empty, auto-derive from persona using Gemini Flash."""
-    mock_gemini.return_value = {
-        "scene": "Auto-generated scene",
-        "visual_style": "UGC realistic",
-        "camera_movement": "handheld",
-        "subject_action": "Student reviews practice test",
-        "setting": "Home study area",
-        "lighting_mood": "Natural afternoon light",
-        "audio_detail": "",
-        "color_palette": "#17e2ea",
-    }
+    mock_gemini.return_value = (
+        {
+            "scene": "Auto-generated scene",
+            "visual_style": "UGC realistic",
+            "camera_movement": "handheld",
+            "subject_action": "Student reviews practice test",
+            "setting": "Home study area",
+            "lighting_mood": "Natural afternoon light",
+            "audio_detail": "",
+            "color_palette": "#17e2ea",
+        },
+        80,
+    )
 
     from generate_video.video_spec import build_video_spec
 
@@ -145,7 +148,7 @@ def test_build_video_spec_auto_derive(mock_gemini):
 @patch("generate_video.video_spec._call_gemini_for_video_spec")
 def test_build_video_spec_auto_derive_non_dict_falls_back(mock_gemini):
     """Non-dict Gemini output falls back to persona defaults instead of crashing."""
-    mock_gemini.return_value = ["bad", "shape"]
+    mock_gemini.return_value = (["bad", "shape"], 0)
 
     from generate_video.video_spec import build_video_spec
 

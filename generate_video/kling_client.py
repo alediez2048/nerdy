@@ -60,6 +60,7 @@ class KlingClient:
             )
         self.base_url = base_url
         self.rpm = rpm
+        self.model_used = MODEL_KLING  # ledger + cost_reporter (per-call rate in MODEL_COST_RATES)
         self._call_timestamps: deque[float] = deque()
 
     def _headers(self) -> dict[str, str]:

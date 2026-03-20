@@ -38,6 +38,13 @@ retry_max_attempts: 3
 # Video generation
 video_provider: "fal"  # "fal", "veo", or "kling"
 video_fal_model: "fal-ai/veo3"  # fal.ai model endpoint
+# Google Veo API (video_provider: veo) — ledger model_used: veo-3.1-fast — tune from Google AI billing
+video_google_veo_cost_per_call_usd: 6.00
+# Fal hosted fal-ai/veo3 (video_provider: fal) — NOT the same $/job as Google Veo; tune from Fal Usage ÷ jobs
+video_fal_veo3_cost_per_call_usd: 6.40
+# Exact Fal endpoint id -> USD per completed job (overrides MODEL_COST_RATES for that model)
+video_fal_model_costs_usd:
+  "fal-ai/wan/v2.2-5b/text-to-video/distill": 1.50
 video_budget_per_session: 10.00  # dollars
 kling_rpm: 10
 kling_mode: "standard"

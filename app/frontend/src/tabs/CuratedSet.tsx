@@ -7,7 +7,7 @@ import {
   removeAdFromCurated,
   updateCuratedAd,
   batchReorder,
-  getExportUrl,
+  downloadExportZip,
   type CuratedAd,
   type CuratedSetData,
 } from '../api/curation'
@@ -28,6 +28,7 @@ export default function CuratedSet({ sessionId }: { sessionId: string }) {
   const [loading, setLoading] = useState(true)
   const [editingAd, setEditingAd] = useState<CuratedAd | null>(null)
   const [editText, setEditText] = useState('')
+  const [exporting, setExporting] = useState(false)
 
   const reload = async () => {
     setLoading(true)
@@ -129,9 +130,17 @@ export default function CuratedSet({ sessionId }: { sessionId: string }) {
           </p>
         </div>
         <div style={s.exportGroup}>
-          <a href={getExportUrl(sessionId)} style={s.exportBtn} download>
-            Export ZIP
-          </a>
+          <button
+            onClick={async () => {
+              setExporting(true)
+              try { await downloadExportZip(sessionId) } catch (e) { alert(`Export failed: ${e}`) }
+              setExporting(false)
+            }}
+            style={s.exportBtn}
+            disabled={exporting}
+          >
+            {exporting ? 'Exporting...' : 'Export ZIP'}
+          </button>
         </div>
       </div>
 

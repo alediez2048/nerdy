@@ -20,27 +20,59 @@ export default function Overview({ sessionId, sessionType = 'image' }: { session
 
   const isVideo = sessionType === 'video'
 
+  const costUsd =
+    typeof summary.total_cost_usd === 'number'
+      ? summary.total_cost_usd
+      : typeof results.cost_so_far === 'number'
+        ? results.cost_so_far
+        : undefined
+
+  const variantJobs =
+    typeof results.video_variants_generated === 'number'
+      ? results.video_variants_generated
+      : undefined
+
+  /** Matches Ad Library: rows with a final video file (same count as playable clips in the library). */
+  const videosInLibrary =
+    typeof summary.videos_in_library === 'number' ? summary.videos_in_library : undefined
+
   const metrics = isVideo
     ? [
-        { label: 'Videos Generated', value: results.videos_generated ?? summary.total_ads_generated ?? '—',
-          tip: 'Total number of video variants generated via Kling API.' },
+        {
+          label: 'Video ads',
+          value:
+            videosInLibrary ??
+            results.videos_generated ??
+            summary.total_ads_generated ??
+            '—',
+          tip:
+            'Number of videos listed in the Ad Library for this session (final output files). This matches what you see there.',
+        },
+        {
+          label: 'Fal jobs',
+          value: variantJobs ?? '—',
+          tip:
+            'Billable video generations (one per variant). Two jobs per ad is normal for A/B variants.',
+        },
         { label: 'Selected', value: results.videos_selected ?? '—',
-          tip: 'Videos that passed attribute + coherence thresholds and were selected.' },
+          tip: 'Winning clips after evaluation (one pick per ad when variants exist).' },
         { label: 'Blocked', value: results.videos_blocked ?? '—',
-          tip: 'Videos that failed quality thresholds — session falls back to copy-only for those ads.' },
-        { label: 'Total Cost', value: summary.total_cost_usd ? `$${(summary.total_cost_usd as number).toFixed(2)}` : results.cost_so_far ? `$${(results.cost_so_far as number).toFixed(2)}` : '—',
-          tip: 'Estimated Kling API credit cost for video generation.' },
+          tip: 'Ads where no clip passed thresholds.' },
+        { label: 'Total Cost', value: costUsd !== undefined ? `$${costUsd.toFixed(2)}` : '—',
+          tip:
+            'Estimated spend: Gemini + image/video rates. For video, Fal cost counts the winning variant per ad (not the A/B alternate). Tune rates in data/config.yaml to match Usage.',
+        },
       ]
     : [
-        { label: 'Ads Generated', value: summary.total_ads_generated ?? '—',
+        { label: 'Ads Generated', value: summary.total_ads_generated ?? results.ads_generated ?? '—',
           tip: 'Total number of ad variants created across all cycles, including regeneration attempts.' },
-        { label: 'Published', value: summary.total_ads_published ?? '—',
+        { label: 'Published', value: summary.total_ads_published ?? results.ads_published ?? '—',
           tip: 'Ads that met the quality threshold (7.0+) and passed compliance checks.' },
         { label: 'Publish Rate', value: summary.publish_rate ? `${((summary.publish_rate as number) * 100).toFixed(0)}%` : '—',
           tip: 'Percentage of generated ads that scored above threshold. Higher = better brief quality and fewer wasted tokens.' },
-        { label: 'Avg Score', value: summary.avg_score ?? '—',
+        { label: 'Avg Score', value: summary.avg_score ?? results.avg_score ?? '—',
           tip: 'Mean aggregate score across all 5 dimensions (Clarity, Value Prop, CTA, Brand Voice, Emotional Resonance) for published ads.' },
-        { label: 'Total Cost', value: summary.total_cost_usd ? `$${(summary.total_cost_usd as number).toFixed(2)}` : '—',
+        { label: 'Total Cost', value: costUsd !== undefined ? `$${costUsd.toFixed(2)}` : '—',
           tip: 'Estimated API spend for generation, evaluation, and image creation. Based on token counts and per-model pricing.' },
         { label: 'Total Tokens', value: summary.total_tokens ? (summary.total_tokens as number).toLocaleString() : '—',
           tip: 'Sum of input + output tokens consumed across all LLM and image API calls in this session.' },

@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -52,6 +51,7 @@ class VisualSpec:
     text_overlay: str
     aspect_ratio: str = "1:1"
     negative_prompt: str = "No competitor branding, no AI artifacts, no text in image"
+    spec_extraction_tokens: int = 0
 
     def spec_hash(self) -> str:
         """Deterministic hash for cache/dedup."""
@@ -59,31 +59,18 @@ class VisualSpec:
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
-def _call_gemini_for_spec(prompt: str) -> dict[str, Any]:
-    """Call Gemini Flash to extract visual spec from brief."""
-    from google import genai
-    from google.genai import types
+def _call_gemini_for_spec(prompt: str) -> tuple[dict[str, Any], int]:
+    """Call Gemini Flash to extract visual spec from brief. Returns (parsed_json, total_tokens)."""
+    from generate.gemini_client import call_gemini
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
-
-    def _do_call() -> dict[str, Any]:
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.3,
-                max_output_tokens=1024,
-            ),
-        )
-        text = response.text or ""
+    def _do_call() -> tuple[dict[str, Any], int]:
+        resp = call_gemini(prompt, model="gemini-2.0-flash", temperature=0.3, max_output_tokens=1024)
+        text = resp.text or ""
         stripped = text.strip()
         match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped)
         if match:
             stripped = match.group(1).strip()
-        return json.loads(stripped)
+        return json.loads(stripped), resp.total_tokens
 
     return retry_with_backoff(_do_call)
 
@@ -180,8 +167,9 @@ Output ONLY valid JSON:
   "text_overlay": "<headline text if applicable, empty string if none>"
 }}"""
 
+    spec_tokens = 0
     try:
-        raw = _call_gemini_for_spec(prompt)
+        raw, spec_tokens = _call_gemini_for_spec(prompt)
     except Exception as e:
         logger.warning("Visual spec extraction failed for %s: %s, using defaults", ad_id, e)
         raw = {
@@ -213,6 +201,7 @@ Output ONLY valid JSON:
         text_overlay=text_overlay,
         aspect_ratio=aspect_ratio,
         negative_prompt=negative_prompt,
+        spec_extraction_tokens=spec_tokens,
     )
     return spec
 

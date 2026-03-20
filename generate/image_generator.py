@@ -23,6 +23,14 @@ logger = logging.getLogger(__name__)
 MODEL_NANO_BANANA_PRO = "nano-banana-pro-preview"
 MODEL_NANO_BANANA_2 = "gemini-2.5-flash-image"
 
+
+def _usage_total_tokens(response: object) -> int:
+    """Read total_token_count from a Gemini generate_content response."""
+    usage = getattr(response, "usage_metadata", None)
+    if usage is None:
+        return 0
+    return int(getattr(usage, "total_token_count", 0) or 0)
+
 # Budget threshold: below this, all variants use NB2 regardless of type
 _BUDGET_THRESHOLD = 2.0
 
@@ -50,7 +58,7 @@ def _call_image_api(
     aspect_ratio: str,
     seed: int,
     output_path: str,
-) -> str:
+) -> tuple[str, int, str]:
     """Call Nano Banana Pro (Gemini image model) API.
 
     Args:
@@ -60,7 +68,7 @@ def _call_image_api(
         output_path: Where to save the generated image.
 
     Returns:
-        The output path of the saved image.
+        Tuple of (saved image path, tokens from usage_metadata, model id).
     """
     from google import genai
     from google.genai import types
@@ -78,7 +86,7 @@ def _call_image_api(
     ar_instruction = _AR_INSTRUCTIONS.get(aspect_ratio, _AR_INSTRUCTIONS["1:1"])
     full_prompt = f"{ar_instruction}\n\n{prompt}"
 
-    def _do_call() -> str:
+    def _do_call() -> tuple[str, int, str]:
         client = genai.Client(api_key=api_key)
 
         # Save image from response
@@ -93,12 +101,13 @@ def _call_image_api(
                 response_modalities=["IMAGE", "TEXT"],
             ),
         )
+        tokens = _usage_total_tokens(response)
 
         for part in response.candidates[0].content.parts:
             if part.inline_data is not None:
                 with open(path, "wb") as f:
                     f.write(part.inline_data.data)
-                return str(path)
+                return str(path), tokens, MODEL_NANO_BANANA_PRO
 
         raise RuntimeError("No image data in API response")
 
@@ -134,7 +143,7 @@ def generate_variants(
         output_path = str(Path(output_dir) / filename)
 
         try:
-            image_path = _call_image_api(
+            image_path, img_tokens, img_model = _call_image_api(
                 prompt=prompt,
                 aspect_ratio=visual_spec.aspect_ratio,
                 seed=variant_seed,
@@ -143,6 +152,7 @@ def generate_variants(
         except Exception as e:
             logger.error("Image generation failed for %s/%s: %s", ad_id, variant_type, e)
             image_path = output_path  # placeholder path
+            img_tokens, img_model = 0, MODEL_NANO_BANANA_PRO
 
         variants.append(ImageVariant(
             ad_id=ad_id,
@@ -152,6 +162,8 @@ def generate_variants(
             visual_spec_hash=spec_hash,
             prompt_used=prompt,
             seed=variant_seed,
+            tokens_consumed=img_tokens,
+            model_used=img_model,
         ))
 
         logger.info("Generated %s variant for %s (seed=%d)", variant_type, ad_id, variant_seed)
@@ -184,7 +196,7 @@ def generate_extra_ratios(
         output_path = str(Path(output_dir) / filename)
 
         try:
-            image_path = _call_image_api(
+            image_path, img_tokens, img_model = _call_image_api(
                 prompt=image_variant.prompt_used,
                 aspect_ratio=ratio,
                 seed=image_variant.seed,
@@ -194,6 +206,7 @@ def generate_extra_ratios(
             logger.error("Extra ratio generation failed for %s at %s: %s",
                          image_variant.ad_id, ratio, e)
             image_path = output_path
+            img_tokens, img_model = 0, image_variant.model_used
 
         extras.append(ImageVariant(
             ad_id=image_variant.ad_id,
@@ -203,6 +216,8 @@ def generate_extra_ratios(
             visual_spec_hash=image_variant.visual_spec_hash,
             prompt_used=image_variant.prompt_used,
             seed=image_variant.seed,
+            tokens_consumed=img_tokens,
+            model_used=img_model,
         ))
 
         logger.info("Generated %s at %s for %s", image_variant.variant_type, ratio, image_variant.ad_id)
@@ -264,7 +279,7 @@ def _call_image_api_with_model(
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY not set in environment")
 
-    def _do_call() -> str:
+    def _do_call() -> tuple[str, int, str]:
         client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
             model=model,
@@ -273,6 +288,7 @@ def _call_image_api_with_model(
                 response_modalities=["IMAGE", "TEXT"],
             ),
         )
+        tokens = _usage_total_tokens(response)
 
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -281,7 +297,7 @@ def _call_image_api_with_model(
             if part.inline_data is not None:
                 with open(path, "wb") as f:
                     f.write(part.inline_data.data)
-                return str(path)
+                return str(path), tokens, model
 
         raise RuntimeError("No image data in API response")
 
@@ -316,7 +332,7 @@ def generate_image_routed(
     model = select_image_model(variant_type, budget_remaining)
 
     try:
-        image_path = _call_image_api(
+        image_path, img_tokens, img_model = _call_image_api(
             prompt=prompt,
             aspect_ratio=aspect_ratio,
             seed=seed,
@@ -326,6 +342,7 @@ def generate_image_routed(
         logger.error("Routed image generation failed for %s/%s (%s): %s",
                      ad_id, variant_type, model, e)
         image_path = output_path
+        img_tokens, img_model = 0, model
 
     return ImageVariant(
         ad_id=ad_id,
@@ -335,7 +352,8 @@ def generate_image_routed(
         visual_spec_hash="",
         prompt_used=prompt,
         seed=seed,
-        model_used=model,
+        tokens_consumed=img_tokens,
+        model_used=img_model,
     )
 
 
@@ -373,7 +391,7 @@ def generate_variants_routed(
         output_path = str(Path(output_dir) / filename)
 
         try:
-            image_path = _call_image_api(
+            image_path, img_tokens, img_model = _call_image_api(
                 prompt=prompt,
                 aspect_ratio=visual_spec.aspect_ratio,
                 seed=variant_seed,
@@ -383,6 +401,7 @@ def generate_variants_routed(
             logger.error("Routed generation failed for %s/%s (%s): %s",
                          ad_id, variant_type, model, e)
             image_path = output_path
+            img_tokens, img_model = 0, model
 
         variants.append(ImageVariant(
             ad_id=ad_id,
@@ -392,7 +411,8 @@ def generate_variants_routed(
             visual_spec_hash=spec_hash,
             prompt_used=prompt,
             seed=variant_seed,
-            model_used=model,
+            tokens_consumed=img_tokens,
+            model_used=img_model,
         ))
 
         logger.info("Generated %s variant for %s via %s (seed=%d)",

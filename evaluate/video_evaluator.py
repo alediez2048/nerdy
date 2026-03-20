@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -39,6 +38,7 @@ class VideoEvalResult:
     attributes: dict[str, bool]
     attribute_pass_pct: float
     meets_threshold: bool
+    tokens_consumed: int = 0
 
 
 @dataclass
@@ -50,72 +50,67 @@ class VideoCoherenceResult:
     dimensions: dict[str, float]
     avg_score: float
     is_coherent: bool
+    tokens_consumed: int = 0
 
 
-def _call_multimodal_video_eval(video_path: str, prompt: str) -> dict[str, bool]:
+def _call_multimodal_video_eval(video_path: str, prompt: str) -> tuple[dict[str, bool], int]:
     """Call Gemini Flash multimodal with video for attribute evaluation."""
-    from google import genai
     from google.genai import types
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set")
+    from generate.gemini_client import call_gemini_multimodal
 
-    def _do_call() -> dict[str, bool]:
-        client = genai.Client(api_key=api_key)
+    def _do_call() -> tuple[dict[str, bool], int]:
         with open(video_path, "rb") as f:
             video_data = f.read()
 
-        response = client.models.generate_content(
+        contents = [
+            types.Part.from_bytes(data=video_data, mime_type="video/mp4"),
+            prompt,
+        ]
+        resp = call_gemini_multimodal(
+            contents,
             model="gemini-2.0-flash",
-            contents=[
-                types.Part.from_bytes(data=video_data, mime_type="video/mp4"),
-                prompt,
-            ],
-            config=types.GenerateContentConfig(
-                temperature=0.1,
-                max_output_tokens=512,
-            ),
+            temperature=0.1,
+            max_output_tokens=512,
         )
-        text = response.text or ""
+        text = resp.text or ""
         match = re.search(r"\{[\s\S]*\}", text)
         if match:
-            return json.loads(match.group(0))
-        return json.loads(text)
+            parsed = json.loads(match.group(0))
+        else:
+            parsed = json.loads(text)
+        return parsed, resp.total_tokens
 
     return retry_with_backoff(_do_call)
 
 
-def _call_coherence_eval(video_path: str, prompt: str) -> dict[str, float]:
+def _call_coherence_eval(video_path: str, prompt: str) -> tuple[dict[str, float], int]:
     """Call Gemini Flash multimodal for coherence scoring."""
-    from google import genai
     from google.genai import types
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set")
+    from generate.gemini_client import call_gemini_multimodal
 
-    def _do_call() -> dict[str, float]:
-        client = genai.Client(api_key=api_key)
+    def _do_call() -> tuple[dict[str, float], int]:
         with open(video_path, "rb") as f:
             video_data = f.read()
 
-        response = client.models.generate_content(
+        contents = [
+            types.Part.from_bytes(data=video_data, mime_type="video/mp4"),
+            prompt,
+        ]
+        resp = call_gemini_multimodal(
+            contents,
             model="gemini-2.0-flash",
-            contents=[
-                types.Part.from_bytes(data=video_data, mime_type="video/mp4"),
-                prompt,
-            ],
-            config=types.GenerateContentConfig(
-                temperature=0.1,
-                max_output_tokens=512,
-            ),
+            temperature=0.1,
+            max_output_tokens=512,
         )
-        text = response.text or ""
+        text = resp.text or ""
         match = re.search(r"\{[\s\S]*\}", text)
         if match:
-            return json.loads(match.group(0))
-        return json.loads(text)
+            parsed = json.loads(match.group(0))
+        else:
+            parsed = json.loads(text)
+        return parsed, resp.total_tokens
 
     return retry_with_backoff(_do_call)
 
@@ -138,6 +133,7 @@ def evaluate_video_attributes(
             attributes={attr: False for attr in VIDEO_ATTRIBUTES},
             attribute_pass_pct=0.0,
             meets_threshold=False,
+            tokens_consumed=0,
         )
 
     prompt = """Evaluate this video ad for a Varsity Tutors SAT test prep campaign.
@@ -153,8 +149,9 @@ Score each attribute as true (pass) or false (fail):
 Output ONLY valid JSON:
 {"hook_timing": true/false, "ugc_authenticity": true/false, "pacing": true/false, "text_legibility": true/false, "no_artifacts": true/false}"""
 
+    eval_tokens = 0
     try:
-        raw = _call_multimodal_video_eval(video_path, prompt)
+        raw, eval_tokens = _call_multimodal_video_eval(video_path, prompt)
     except Exception as e:
         logger.warning("Video attribute eval failed for %s/%s: %s", ad_id, variant_type, e)
         raw = {attr: False for attr in VIDEO_ATTRIBUTES}
@@ -169,6 +166,7 @@ Output ONLY valid JSON:
         attributes=attributes,
         attribute_pass_pct=pass_pct,
         meets_threshold=pass_pct >= _ATTR_PASS_THRESHOLD,
+        tokens_consumed=eval_tokens,
     )
 
 
@@ -195,6 +193,7 @@ def check_video_coherence(
             dimensions={d: 0.0 for d in dims},
             avg_score=0.0,
             is_coherent=False,
+            tokens_consumed=0,
         )
 
     primary_text = ad_copy.get("primary_text", "")
@@ -217,8 +216,9 @@ Score each dimension 1-10:
 Output ONLY valid JSON:
 {{"message_alignment": N, "audience_match": N, "emotional_consistency": N, "narrative_flow": N}}"""
 
+    coh_tokens = 0
     try:
-        raw = _call_coherence_eval(video_path, prompt)
+        raw, coh_tokens = _call_coherence_eval(video_path, prompt)
     except Exception as e:
         logger.warning("Video coherence check failed for %s/%s: %s", ad_id, variant_type, e)
         raw = {d: 0.0 for d in dims}
@@ -232,6 +232,7 @@ Output ONLY valid JSON:
         dimensions=dimensions,
         avg_score=avg,
         is_coherent=avg >= _COHERENCE_THRESHOLD,
+        tokens_consumed=coh_tokens,
     )
 
 

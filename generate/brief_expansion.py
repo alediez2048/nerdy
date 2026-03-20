@@ -10,9 +10,8 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -433,6 +432,8 @@ def expand_brief(
                 "key_differentiators": result.key_differentiators,
                 "persona": resolved_persona,
                 "hooks_used": [h.get("hook_id") for h in hooks],
+                # Full structured brief for QA / dashboard (JSON-serializable dataclass dump)
+                "expanded_brief": asdict(result),
             },
         },
     )

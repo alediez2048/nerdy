@@ -126,7 +126,7 @@ def process_batch(
         try:
             # Stage 1: Expand brief (with persona context)
             from generate.brief_expansion import expand_brief
-            expanded = expand_brief(brief, persona=brief_persona)
+            expanded = expand_brief(brief, persona=brief_persona, ledger_path=ledger_path)
 
             # Stage 2: Generate ad copy (per-brief seed for structural diversity)
             from generate.ad_generator import generate_ad
@@ -281,6 +281,20 @@ def _generate_and_select_image(
             headline_text=ad.headline,
         )
 
+        if getattr(visual_spec, "spec_extraction_tokens", 0) > 0:
+            log_event(ledger_path, {
+                "event_type": "VisualSpecExtracted",
+                "ad_id": ad.ad_id,
+                "brief_id": brief.get("brief_id", "unknown"),
+                "cycle_number": 0,
+                "action": "visual-spec-extraction",
+                "tokens_consumed": visual_spec.spec_extraction_tokens,
+                "model_used": "gemini-2.0-flash",
+                "seed": str(brief_seed),
+                "inputs": {"brief_id": brief.get("brief_id", "unknown")},
+                "outputs": {"brief_id": brief.get("brief_id", "unknown")},
+            })
+
         # Step 2: Generate 3 image variants
         output_dir = "output/images"
         Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -291,6 +305,20 @@ def _generate_and_select_image(
             output_dir=output_dir,
             creative_brief=creative_brief,
         )
+
+        for variant in variants:
+            log_event(ledger_path, {
+                "event_type": "ImageGenerated",
+                "ad_id": ad.ad_id,
+                "brief_id": brief.get("brief_id", "unknown"),
+                "cycle_number": 0,
+                "action": f"image_gen_{variant.variant_type}",
+                "tokens_consumed": variant.tokens_consumed,
+                "model_used": variant.model_used,
+                "seed": str(variant.seed),
+                "inputs": {"variant_type": variant.variant_type},
+                "outputs": {"image_path": variant.image_path},
+            })
 
         # Step 3: Evaluate each variant (attributes + coherence)
         variant_results: list[ImageVariantResult] = []

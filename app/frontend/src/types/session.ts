@@ -14,6 +14,60 @@ export const VIDEO_PROVIDER_LABELS: Record<VideoProvider, string> = {
   veo: 'Google Veo 3.1',
   kling: 'Kling AI',
 }
+
+/** Rough price/quality tier for Fal presets (copy-only UX; check fal.ai pricing). */
+export type FalModelTier = 'budget' | 'balanced' | 'premium'
+
+export const FAL_MODEL_TIER_LABELS: Record<FalModelTier, string> = {
+  budget: 'Budget — best for drafts & volume',
+  balanced: 'Balanced — quality vs cost',
+  premium: 'Premium — highest quality ($$$)',
+}
+
+/** Fal.ai serverless endpoint IDs — passed to Fal `subscribe()` when Video Provider is Fal. */
+export const FAL_VIDEO_MODEL_PRESETS: {
+  value: string
+  label: string
+  tier: FalModelTier
+  hint: string
+}[] = [
+  {
+    value: 'fal-ai/wan/v2.2-5b/text-to-video/distill',
+    label: 'Wan 2.2 · 5B distill',
+    tier: 'budget',
+    hint: 'Fast distil; lower cost, good for iteration (check Fal for resolution caps).',
+  },
+  {
+    value: 'fal-ai/minimax/hailuo-02/standard/text-to-video',
+    label: 'MiniMax Hailuo 02 · Standard',
+    tier: 'budget',
+    hint: 'Often among the cheaper $/s options on Fal; 768p class.',
+  },
+  {
+    value: 'fal-ai/kling-video/v2.1/standard',
+    label: 'Kling v2.1 · Standard',
+    tier: 'balanced',
+    hint: 'Strong all‑rounder on Fal; mid-tier cost vs Wan distill.',
+  },
+  {
+    value: 'fal-ai/wan-22',
+    label: 'Wan 2.2 · full',
+    tier: 'balanced',
+    hint: 'Full Wan 2.2 (not distil); better motion than 5B distill, more $ than distill.',
+  },
+  {
+    value: 'fal-ai/minimax/hailuo-2.3/pro/text-to-video',
+    label: 'MiniMax Hailuo 2.3 · Pro',
+    tier: 'premium',
+    hint: '1080p-class Pro; high quality, higher cost than Hailuo 02 Standard.',
+  },
+  {
+    value: 'fal-ai/veo3',
+    label: 'Veo 3',
+    tier: 'premium',
+    hint: 'Google Veo-class on Fal; flagship quality, typically the priciest tier.',
+  },
+]
 export type Persona = 'auto' | 'athlete_recruit' | 'suburban_optimizer' | 'immigrant_navigator' | 'cultural_investor' | 'system_optimizer' | 'neurodivergent_advocate' | 'burned_returner'
 
 export const PERSONA_LABELS: Record<Persona, string> = {
@@ -73,6 +127,8 @@ export interface SessionConfig {
   creative_brief: string
   copy_on_image: boolean
   video_provider: VideoProvider
+  /** Fal serverless model id when video_provider is fal (e.g. fal-ai/veo3). */
+  video_fal_model: string
   video_count: number
   video_duration: number
   video_audio_mode: string
@@ -167,6 +223,7 @@ export const DEFAULT_CONFIG: SessionConfig = {
   creative_brief: 'auto',
   copy_on_image: false,
   video_provider: 'fal',
+  video_fal_model: 'fal-ai/veo3',
   video_count: 3,
   video_duration: 8,
   video_audio_mode: 'silent',

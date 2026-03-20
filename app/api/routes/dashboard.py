@@ -43,10 +43,104 @@ def _get_dashboard_data(session: SessionModel) -> dict:
 
     try:
         from output.export_dashboard import build_dashboard_data
-        return build_dashboard_data(ledger_path)
+        return build_dashboard_data(ledger_path, session_id=session.session_id)
     except Exception as e:
         logger.warning("Failed to build dashboard data: %s", e)
         return {}
+
+
+def _ledger_export_has_metrics(pipeline_summary: dict[str, Any]) -> bool:
+    """True when ledger-derived summary has meaningful KPIs (prefer over DB fallback)."""
+    gen = int(pipeline_summary.get("total_ads_generated") or 0)
+    tok = int(pipeline_summary.get("total_tokens") or 0)
+    cost = float(pipeline_summary.get("total_cost_usd") or 0.0)
+    return gen > 0 or tok > 0 or cost > 0
+
+
+def _merge_pipeline_summary_from_db(
+    session: SessionModel,
+    pipeline_summary: dict[str, Any],
+) -> dict[str, Any]:
+    """Fill pipeline_summary from DB ``results_summary`` / manifest when ledger export is empty.
+
+    Sessions that ran in another environment, moved disks, or only have manifest
+    cost still show Overview + Token Economics totals.
+    """
+    rs = session.results_summary or {}
+    out = dict(pipeline_summary)
+
+    # Ledger (or mocked) export already has KPIs — keep them; patch cost if ledger priced at 0
+    if _ledger_export_has_metrics(out):
+        cost = float(out.get("total_cost_usd") or 0.0)
+        if cost <= 0 and rs.get("cost_so_far") is not None:
+            out["total_cost_usd"] = float(rs["cost_so_far"])
+            out.setdefault("cost_source", "results_summary")
+        return out
+
+    if rs.get("ads_generated") is not None:
+        out["total_ads_generated"] = int(rs["ads_generated"])
+    if rs.get("ads_published") is not None:
+        out["total_ads_published"] = int(rs["ads_published"])
+    if rs.get("ads_discarded") is not None:
+        out["total_ads_discarded"] = int(rs["ads_discarded"])
+    if rs.get("avg_score") is not None:
+        out["avg_score"] = float(rs["avg_score"])
+    if rs.get("videos_generated") is not None:
+        out.setdefault("total_ads_generated", int(rs["videos_generated"]))
+    gen = int(out.get("total_ads_generated") or 0)
+    pub = int(out.get("total_ads_published") or 0)
+    if gen or pub:
+        out["publish_rate"] = round(pub / max(gen, 1), 3)
+
+    if rs.get("cost_so_far") is not None:
+        out["total_cost_usd"] = float(rs["cost_so_far"])
+        out["cost_source"] = "results_summary"
+    elif session.ledger_path:
+        try:
+            from evaluate.cost_reporter import compute_session_cost_usd
+
+            scr = compute_session_cost_usd(session.session_id, session.ledger_path)
+            if scr.total_usd > 0:
+                out["total_cost_usd"] = scr.total_usd
+                out["cost_source"] = scr.source
+        except Exception:
+            logger.debug("Manifest cost fallback failed for session %s", session.session_id)
+
+    return out
+
+
+def _merge_token_economics_from_db(
+    session: SessionModel,
+    token_economics: dict[str, Any],
+    pipeline_summary: dict[str, Any],
+) -> dict[str, Any]:
+    """Ensure token_economics carries total_cost_usd when ledger panel is empty."""
+    te = dict(token_economics)
+    existing = te.get("total_cost_usd")
+    if isinstance(existing, (int, float)) and float(existing) > 0:
+        return te
+    pc = pipeline_summary.get("total_cost_usd")
+    if isinstance(pc, (int, float)) and float(pc) > 0:
+        te["total_cost_usd"] = float(pc)
+        src = pipeline_summary.get("cost_source")
+        if isinstance(src, str):
+            te["cost_source"] = src
+        return te
+    rs = session.results_summary or {}
+    if rs.get("cost_so_far") is not None:
+        te["total_cost_usd"] = float(rs["cost_so_far"])
+        te["cost_source"] = "results_summary"
+    elif session.ledger_path:
+        try:
+            from evaluate.cost_reporter import compute_session_cost_usd
+
+            scr = compute_session_cost_usd(session.session_id, session.ledger_path)
+            if scr.total_usd > 0:
+                te["total_cost_usd"] = scr.total_usd
+                te["cost_source"] = scr.source
+        except Exception:
+            pass
+    return te
 
 
 @router.get("/{session_id}/summary")
@@ -59,9 +153,10 @@ def get_summary(
     init_db()
     session = _get_session(db, session_id, user["user_id"])
     data = _get_dashboard_data(session)
+    ps = _merge_pipeline_summary_from_db(session, data.get("pipeline_summary", {}))
     return {
         "session_id": session_id,
-        "pipeline_summary": data.get("pipeline_summary", {}),
+        "pipeline_summary": ps,
         "results_summary": session.results_summary or {},
     }
 
@@ -109,9 +204,11 @@ def get_costs(
     init_db()
     session = _get_session(db, session_id, user["user_id"])
     data = _get_dashboard_data(session)
+    ps = _merge_pipeline_summary_from_db(session, data.get("pipeline_summary", {}))
+    te = _merge_token_economics_from_db(session, data.get("token_economics", {}), ps)
     return {
         "session_id": session_id,
-        "token_economics": data.get("token_economics", {}),
+        "token_economics": te,
     }
 
 
@@ -164,17 +261,27 @@ def get_global_dashboard(timeframe: str = "all") -> dict[str, Any]:
             filter_events_by_timeframe,
             merge_ledger_events,
         )
+        session_pairs: list[tuple[str, str]] = []
         session_ledgers = sorted(Path("data/sessions").glob("*/ledger.jsonl"))
         ledger_paths = [str(ledger), *[str(path) for path in session_ledgers]]
         session_labels: dict[str, str] = {}
         init_db()
         db = SessionLocal()
         try:
-            session_rows = db.query(SessionModel.session_id, SessionModel.name).all()
+            rows = db.query(
+                SessionModel.session_id,
+                SessionModel.name,
+                SessionModel.ledger_path,
+            ).all()
             session_labels = {
                 session_id: (name or session_id)
-                for session_id, name in session_rows
+                for session_id, name, _lp in rows
             }
+            session_pairs = [
+                (session_id, lp)
+                for session_id, _name, lp in rows
+                if lp and Path(lp).exists()
+            ]
         finally:
             db.close()
 
@@ -183,16 +290,22 @@ def get_global_dashboard(timeframe: str = "all") -> dict[str, Any]:
         data = build_dashboard_data_from_events(filtered_events, "merged")
         data.setdefault("pipeline_summary", {})
 
-        # Apply historical baseline for global cost (individual sessions
-        # compute their own cost from ledger data only)
+        # Global total: all DB sessions (manifest + ledger) + standalone global ledger
         try:
-            from evaluate.cost_reporter import HISTORICAL_SPEND_USD
-            computed = data["pipeline_summary"].get("total_cost_usd", 0)
-            data["pipeline_summary"]["total_cost_usd"] = round(
-                max(HISTORICAL_SPEND_USD, computed), 2
+            from evaluate.cost_reporter import compute_global_total_cost_usd
+
+            data["pipeline_summary"]["total_cost_usd"] = compute_global_total_cost_usd(
+                session_pairs,
+                global_ledger_path=str(ledger),
             )
-        except ImportError:
+            data["pipeline_summary"]["cost_source"] = "global_aggregate"
+        except Exception:
             pass
+
+        token_econ = data.get("token_economics") or {}
+        token_econ["total_cost_usd"] = data["pipeline_summary"].get("total_cost_usd", 0.0)
+        token_econ["cost_source"] = "global_aggregate"
+        data["token_economics"] = token_econ
 
         data["timeframe"] = timeframe
         return data

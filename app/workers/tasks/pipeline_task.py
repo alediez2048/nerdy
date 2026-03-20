@@ -153,7 +153,13 @@ def _run_image_pipeline(
         total_published += batch_result.published
         total_discarded += batch_result.discarded
         total_regenerated += batch_result.regenerated
-        cost_so_far += batch_result.generated * 0.2
+        try:
+            from evaluate.cost_reporter import sum_session_display_cost_usd
+            from iterate.ledger import read_events
+
+            cost_so_far = round(sum_session_display_cost_usd(read_events(ledger_path)), 4)
+        except Exception:
+            cost_so_far += batch_result.generated * 0.2
 
         publish_progress(session_id, {
             "type": BATCH_COMPLETE,
@@ -243,7 +249,12 @@ def _run_video_pipeline(
     # endregion
 
     video_provider = config.get("video_provider")
-    client = build_video_client(provider=video_provider)
+    client_kwargs: dict = {}
+    if video_provider == "fal":
+        fal_model = (config.get("video_fal_model") or "").strip()
+        if fal_model:
+            client_kwargs["model"] = fal_model
+    client = build_video_client(provider=video_provider, **client_kwargs)
     # region agent log
     _debug_log(
         "H7",
@@ -283,12 +294,16 @@ def _run_video_pipeline(
         "type": VIDEO_PIPELINE_START,
         "videos_total": video_count,
         "videos_generated": 0,
+        "video_variants_generated": 0,
         "videos_selected": 0,
         "videos_blocked": 0,
         "cost_so_far": 0.0,
     })
 
+    # videos_generated = video ads that produced ≥1 variant (user-facing "videos")
+    # video_variants_generated = Fal API jobs (anchor + alt per ad)
     videos_generated = 0
+    video_variants_generated = 0
     videos_selected = 0
     videos_blocked = 0
     cost_so_far = 0.0
@@ -324,12 +339,13 @@ def _run_video_pipeline(
             "ad_id": ad_id,
             "videos_total": video_count,
             "videos_generated": videos_generated,
+            "video_variants_generated": video_variants_generated,
             "videos_selected": videos_selected,
             "cost_so_far": cost_so_far,
         })
 
         try:
-            expanded = expand_brief(brief, persona=persona)
+            expanded = expand_brief(brief, persona=persona, ledger_path=ledger_path)
             ad = generate_ad(
                 expanded,
                 seed=seed,
@@ -346,12 +362,27 @@ def _run_video_pipeline(
                 ad_copy=ad_copy,
             )
 
+            if getattr(spec, "spec_extraction_tokens", 0) > 0:
+                log_event(ledger_path, {
+                    "event_type": "VideoSpecExtracted",
+                    "ad_id": ad_id,
+                    "brief_id": brief.get("brief_id", "unknown"),
+                    "cycle_number": 0,
+                    "action": "video-spec-extraction",
+                    "tokens_consumed": spec.spec_extraction_tokens,
+                    "model_used": "gemini-2.0-flash",
+                    "seed": str(seed),
+                    "inputs": {},
+                    "outputs": {},
+                })
+
             publish_progress(session_id, {
                 "type": VIDEO_GENERATING,
                 "ad_index": i + 1,
                 "ad_id": ad_id,
                 "videos_total": video_count,
                 "videos_generated": videos_generated,
+                "video_variants_generated": video_variants_generated,
                 "cost_so_far": cost_so_far,
             })
 
@@ -363,7 +394,9 @@ def _run_video_pipeline(
                 ledger_path=ledger_path,
                 veo_client=client,
             )
-            videos_generated += len(variants)
+            video_variants_generated += len(variants)
+            if variants:
+                videos_generated += 1
 
             publish_progress(session_id, {
                 "type": VIDEO_EVALUATING,
@@ -371,6 +404,7 @@ def _run_video_pipeline(
                 "ad_id": ad_id,
                 "videos_total": video_count,
                 "videos_generated": videos_generated,
+                "video_variants_generated": video_variants_generated,
                 "cost_so_far": cost_so_far,
             })
 
@@ -403,7 +437,7 @@ def _run_video_pipeline(
                     "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
                     "cycle_number": 0,
                     "action": f"video_{v.variant_type}_evaluated",
-                    "tokens_consumed": 0,
+                    "tokens_consumed": ev.tokens_consumed + co.tokens_consumed,
                     "model_used": "gemini-2.0-flash",
                     "seed": str(v.seed),
                     "outputs": {
@@ -439,7 +473,6 @@ def _run_video_pipeline(
                     },
                 })
                 videos_selected += 1
-                cost_so_far += winner.credits_consumed * 0.001
             else:
                 block_reason = (
                     "no_variants_generated"
@@ -476,12 +509,21 @@ def _run_video_pipeline(
             # endregion
             videos_blocked += 1
 
+        try:
+            from evaluate.cost_reporter import sum_session_display_cost_usd
+            from iterate.ledger import read_events
+
+            cost_so_far = round(sum_session_display_cost_usd(read_events(ledger_path)), 4)
+        except Exception:
+            pass
+
         publish_progress(session_id, {
             "type": VIDEO_AD_COMPLETE,
             "ad_index": i + 1,
             "ad_id": ad_id,
             "videos_total": video_count,
             "videos_generated": videos_generated,
+            "video_variants_generated": video_variants_generated,
             "videos_selected": videos_selected,
             "videos_blocked": videos_blocked,
             "cost_so_far": cost_so_far,
@@ -491,6 +533,7 @@ def _run_video_pipeline(
         "type": VIDEO_PIPELINE_COMPLETE,
         "videos_total": video_count,
         "videos_generated": videos_generated,
+        "video_variants_generated": video_variants_generated,
         "videos_selected": videos_selected,
         "videos_blocked": videos_blocked,
         "cost_so_far": cost_so_far,
@@ -498,6 +541,7 @@ def _run_video_pipeline(
 
     return {
         "videos_generated": videos_generated,
+        "video_variants_generated": video_variants_generated,
         "videos_selected": videos_selected,
         "videos_blocked": videos_blocked,
         "cost_so_far": cost_so_far,
@@ -541,6 +585,7 @@ def run_pipeline_session(self, session_id: str) -> dict:
             result = _run_video_pipeline(session_id, config, ledger_path, db)
             summary = {
                 "videos_generated": result.get("videos_generated", 0),
+                "video_variants_generated": result.get("video_variants_generated", 0),
                 "videos_selected": result.get("videos_selected", 0),
                 "videos_blocked": result.get("videos_blocked", 0),
                 "cost_so_far": result.get("cost_so_far", 0.0),
@@ -556,12 +601,12 @@ def run_pipeline_session(self, session_id: str) -> dict:
                 "cost_so_far": result.get("cost_so_far", 0.0),
             }
 
-        # Calculate real cost from ledger (handles text, image, and video pricing)
+        # Display-aligned cost (video: excludes non-winning variant Fal charges when VideoSelected exists)
         try:
             from iterate.ledger import read_events
-            from evaluate.cost_reporter import compute_event_cost
-            real_cost = sum(compute_event_cost(evt) for evt in read_events(ledger_path))
-            summary["cost_so_far"] = round(real_cost, 4)
+            from evaluate.cost_reporter import sum_session_display_cost_usd
+
+            summary["cost_so_far"] = round(sum_session_display_cost_usd(read_events(ledger_path)), 4)
         except Exception:
             pass  # Keep the estimate if ledger read fails
 

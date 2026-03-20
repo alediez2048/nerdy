@@ -2,7 +2,7 @@
 import secrets
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
@@ -329,6 +329,28 @@ def update_session(
         "updated_at": row.updated_at,
         "completed_at": row.completed_at,
     }
+
+
+@router.get("/{session_id}/brief-expansions")
+def get_brief_expansions(
+    session_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_current_user)],
+) -> dict[str, Any]:
+    """Brief expansion events from this session's ledger (testing / QA).
+
+    Each event may include ``outputs.expanded_brief`` — the full structured
+    brief after ``expand_brief()`` — when using a current pipeline build.
+    """
+    init_db()
+    row = _get_user_session(db, session_id, user["user_id"])
+    ledger_path = row.ledger_path
+    if not ledger_path or not Path(ledger_path).exists():
+        return {"session_id": session_id, "events": []}
+    from iterate.ledger import read_events
+
+    events = [e for e in read_events(ledger_path) if e.get("event_type") == "BriefExpanded"]
+    return {"session_id": session_id, "events": events}
 
 
 @router.delete("/{session_id}", status_code=204)

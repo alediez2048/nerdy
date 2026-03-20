@@ -76,6 +76,12 @@ class SessionConfig(BaseModel):
     copy_on_image: bool = False
     # PC-00: Video session fields (ignored when session_type=image)
     video_provider: VideoProvider = VideoProvider.fal
+    # Fal.ai serverless model id (passed to fal_client.subscribe). Empty = server default from config.yaml.
+    video_fal_model: str = Field(
+        default="",
+        max_length=256,
+        description="Fal endpoint e.g. fal-ai/veo3; only used when video_provider=fal",
+    )
     video_count: int = Field(default=3, ge=1, le=20)
     video_duration: int = Field(default=8, ge=5, le=10)
     video_audio_mode: str = "silent"

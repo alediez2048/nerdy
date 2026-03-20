@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 import time
 from dataclasses import dataclass, field
@@ -62,6 +61,7 @@ class VideoSpec:
     text_overlay_sequence: list[str] = field(default_factory=list)
     persona: str = "auto"
     campaign_goal: str = "conversion"
+    spec_extraction_tokens: int = 0
 
 
 _PERSONA_VIDEO_DIRECTION: dict[str, str] = {
@@ -110,31 +110,18 @@ def _has_explicit_fields(config: dict[str, Any]) -> bool:
     )
 
 
-def _call_gemini_for_video_spec(prompt: str) -> dict[str, Any]:
-    """Call Gemini Flash to auto-derive video spec fields."""
-    from google import genai
-    from google.genai import types
+def _call_gemini_for_video_spec(prompt: str) -> tuple[dict[str, Any], int]:
+    """Call Gemini Flash to auto-derive video spec fields. Returns (parsed_json, total_tokens)."""
+    from generate.gemini_client import call_gemini
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
-
-    def _do_call() -> dict[str, Any]:
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.4,
-                max_output_tokens=1024,
-            ),
-        )
-        text = response.text or ""
+    def _do_call() -> tuple[dict[str, Any], int]:
+        resp = call_gemini(prompt, model="gemini-2.0-flash", temperature=0.4, max_output_tokens=1024)
+        text = resp.text or ""
         stripped = text.strip()
         match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped)
         if match:
             stripped = match.group(1).strip()
-        return json.loads(stripped)
+        return json.loads(stripped), resp.total_tokens
 
     return retry_with_backoff(_do_call)
 
@@ -142,7 +129,7 @@ def _call_gemini_for_video_spec(prompt: str) -> dict[str, Any]:
 def _auto_derive_spec(
     brief: dict[str, Any],
     config: dict[str, Any],
-) -> dict[str, str]:
+) -> tuple[dict[str, Any], int]:
     """Use Gemini Flash to generate the 8-part framework from persona + brief."""
     persona = config.get("persona", "auto")
     audience = config.get("audience", "parents")
@@ -177,7 +164,7 @@ Output ONLY valid JSON with these exact keys:
 }}"""
 
     try:
-        result = _call_gemini_for_video_spec(prompt)
+        result, spec_tokens = _call_gemini_for_video_spec(prompt)
         # region agent log
         _debug_log(
             "H6",
@@ -194,7 +181,7 @@ Output ONLY valid JSON with these exact keys:
         # endregion
         if not isinstance(result, dict):
             raise ValueError(f"Auto-derived video spec must be a dict, got {type(result).__name__}")
-        return result
+        return result, spec_tokens
     except Exception as e:
         logger.warning("Auto-derive video spec failed: %s — using persona defaults", e)
         return {
@@ -206,7 +193,7 @@ Output ONLY valid JSON with these exact keys:
             "lighting_mood": "Natural, warm, encouraging",
             "audio_detail": "",
             "color_palette": "#17e2ea, #0a2240",
-        }
+        }, 0
 
 
 def build_video_spec(
@@ -232,6 +219,7 @@ def build_video_spec(
         },
     )
     # endregion
+    spec_tokens = 0
     if _has_explicit_fields(session_config):
         derived = {}
         scene = session_config.get("video_scene", "").strip()
@@ -243,7 +231,7 @@ def build_video_spec(
         audio_detail = session_config.get("video_audio_detail", "").strip()
         color_palette = session_config.get("video_color_palette", "").strip() or "#17e2ea, #0a2240"
     else:
-        derived = _auto_derive_spec(expanded_brief, session_config)
+        derived, spec_tokens = _auto_derive_spec(expanded_brief, session_config)
         scene = derived.get("scene", "Student studying for SAT")
         visual_style = derived.get("visual_style", "UGC realistic")
         camera_movement = derived.get("camera_movement", "handheld")
@@ -278,6 +266,7 @@ def build_video_spec(
         text_overlay_sequence=text_overlay,
         persona=session_config.get("persona", "auto"),
         campaign_goal=session_config.get("campaign_goal", "conversion"),
+        spec_extraction_tokens=spec_tokens,
     )
     # region agent log
     _debug_log(

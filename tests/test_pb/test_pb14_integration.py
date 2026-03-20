@@ -88,7 +88,7 @@ def test_gap_report_creative_brief():
 
 def test_creative_brief_flows_to_visual_spec():
     brief = {"product": "SAT Tutoring", "audience": "parents", "campaign_goal": "conversion"}
-    with patch("generate.visual_spec._call_gemini_for_spec", return_value=_mock_visual()):
+    with patch("generate.visual_spec._call_gemini_for_spec", return_value=(_mock_visual(), 100)):
         spec = extract_visual_spec(brief, "conversion", "parents", "ad_int", creative_brief="stat_focused")
     assert spec is not None
 

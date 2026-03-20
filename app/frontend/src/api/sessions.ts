@@ -99,3 +99,12 @@ export async function deleteSession(sessionId: string): Promise<void> {
     throw new Error(body.detail || `HTTP ${resp.status}`)
   }
 }
+
+/** Ledger `BriefExpanded` events; `outputs.expanded_brief` has the full structured brief (when logged). */
+export async function fetchBriefExpansions(sessionId: string): Promise<{
+  session_id: string
+  events: Record<string, unknown>[]
+}> {
+  const resp = await fetch(`${BASE}/${sessionId}/brief-expansions`, { headers: getHeaders() })
+  return handleResponse(resp)
+}

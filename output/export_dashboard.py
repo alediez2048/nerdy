@@ -109,7 +109,11 @@ def merge_ledger_events(
     return _dedupe_events_by_checkpoint(merged_events)
 
 
-def _build_pipeline_summary(events: list[dict]) -> dict:
+def _build_pipeline_summary(
+    events: list[dict],
+    ledger_path: str | None = None,
+    session_id: str | None = None,
+) -> dict:
     """Panel 1: Hero KPIs."""
     generated = sum(1 for e in events if e.get("event_type") == "AdGenerated")
     published = sum(1 for e in events if e.get("event_type") == "AdPublished")
@@ -128,13 +132,20 @@ def _build_pipeline_summary(events: list[dict]) -> dict:
     avg_score = round(sum(pub_scores) / len(pub_scores), 1) if pub_scores else 0.0
     publish_rate = round(published / max(generated, 1), 3)
 
-    # Compute cost from ledger events (per-session: real data only, no baseline)
+    # Compute cost: session-scoped uses manifest + ledger via compute_session_cost_usd
     total_cost_usd = 0.0
+    cost_source = "ledger"
     try:
-        from evaluate.cost_reporter import compute_event_cost
-        for e in events:
-            total_cost_usd += compute_event_cost(e)
-        total_cost_usd = round(total_cost_usd, 4)
+        from evaluate.cost_reporter import compute_event_cost, compute_session_cost_usd
+
+        if session_id and ledger_path:
+            scr = compute_session_cost_usd(session_id, ledger_path)
+            total_cost_usd = round(scr.total_usd, 4)
+            cost_source = scr.source
+        else:
+            for e in events:
+                total_cost_usd += compute_event_cost(e)
+            total_cost_usd = round(total_cost_usd, 4)
     except ImportError:
         pass
 
@@ -146,6 +157,7 @@ def _build_pipeline_summary(events: list[dict]) -> dict:
         "total_batches": batches,
         "total_tokens": total_tokens,
         "total_cost_usd": total_cost_usd,
+        "cost_source": cost_source,
         "avg_score": avg_score,
     }
 
@@ -502,12 +514,20 @@ def _build_token_economics(ledger_path: str, events: list[dict] | None = None) -
         if event.get("event_type") == "AdPublished":
             published += 1
 
-    return {
+    out: dict = {
         "by_stage": dict(by_stage),
         "by_model": dict(by_model),
         "cost_per_published": round(total_tokens / published, 2) if published > 0 else 0,
         "marginal_analysis": {},
     }
+    # USD total — same rules as session Overview (winning variant only for billed video gen)
+    try:
+        from evaluate.cost_reporter import sum_session_display_cost_usd
+
+        out["ledger_cost_usd"] = round(sum_session_display_cost_usd(events), 4)
+    except ImportError:
+        out["ledger_cost_usd"] = 0.0
+    return out
 
 
 def _build_system_health(ledger_path: str, events: list[dict] | None = None) -> dict:
@@ -632,34 +652,48 @@ def _build_competitive_intel(ledger_path: str) -> dict:
         return {}
 
 
-def build_dashboard_data_from_events(events: list[dict], ledger_path: str) -> dict:
+def build_dashboard_data_from_events(
+    events: list[dict],
+    ledger_path: str,
+    session_id: str | None = None,
+) -> dict:
     """Build the complete dashboard data structure from preloaded events."""
+    ad_library = _build_ad_library(events)
+    pipeline = _build_pipeline_summary(events, ledger_path=ledger_path, session_id=session_id)
+    # Same notion of "a video" as the Ad Library tab (rows with a playable/output path)
+    pipeline["videos_in_library"] = sum(
+        1 for item in ad_library if item.get("video_url") or item.get("video_path")
+    )
+    token_econ = _build_token_economics(ledger_path, events)
+    token_econ["total_cost_usd"] = pipeline.get("total_cost_usd", 0.0)
+    token_econ["cost_source"] = pipeline.get("cost_source", "ledger")
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "ledger_path": ledger_path,
-        "pipeline_summary": _build_pipeline_summary(events),
+        "pipeline_summary": pipeline,
         "iteration_cycles": _build_iteration_cycles(events),
         "quality_trends": _build_quality_trends(events),
         "dimension_deep_dive": _build_dimension_deep_dive(events),
-        "ad_library": _build_ad_library(events),
-        "token_economics": _build_token_economics(ledger_path, events),
+        "ad_library": ad_library,
+        "token_economics": token_econ,
         "system_health": _build_system_health(ledger_path, events),
         "competitive_intel": _build_competitive_intel(ledger_path),
     }
 
 
-def build_dashboard_data(ledger_path: str) -> dict:
+def build_dashboard_data(ledger_path: str, session_id: str | None = None) -> dict:
     """Build the complete dashboard data structure from a ledger.
 
     Args:
         ledger_path: Path to the JSONL ledger.
+        session_id: When set, total cost uses manifest + ledger (historical sessions).
 
     Returns:
         Dict with all 8 panel data sections.
     """
     events = read_events(ledger_path)
 
-    return build_dashboard_data_from_events(events, ledger_path)
+    return build_dashboard_data_from_events(events, ledger_path, session_id=session_id)
 
 
 def export_dashboard(

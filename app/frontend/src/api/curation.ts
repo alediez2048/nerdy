@@ -83,7 +83,18 @@ export async function batchReorder(sessionId: string, adIds: string[]) {
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
 }
 
-export function getExportUrl(sessionId: string): string {
-  const token = localStorage.getItem('token')
-  return `${BASE}/${sessionId}/curated/export${token ? '?token=' + token : ''}`
+export async function downloadExportZip(sessionId: string): Promise<void> {
+  const resp = await fetch(`${BASE}/${sessionId}/curated/export`, {
+    headers: getHeaders(),
+  })
+  if (!resp.ok) throw new Error(`Export failed: HTTP ${resp.status}`)
+  const blob = await resp.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `curated_${sessionId}.zip`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }

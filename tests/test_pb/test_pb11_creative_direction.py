@@ -60,7 +60,7 @@ def test_creative_brief_directions_defined():
 def test_visual_spec_gap_report_changes_prompt():
     brief = {"product": "SAT Tutoring", "audience": "parents", "campaign_goal": "conversion"}
 
-    with patch("generate.visual_spec._call_gemini_for_spec", return_value=_mock_visual_spec()):
+    with patch("generate.visual_spec._call_gemini_for_spec", return_value=(_mock_visual_spec(), 100)):
         spec = extract_visual_spec(brief, "conversion", "parents", "ad_test", creative_brief="gap_report")
 
     assert spec.subject is not None
@@ -69,7 +69,7 @@ def test_visual_spec_gap_report_changes_prompt():
 def test_visual_spec_auto_brief_no_extra_direction():
     brief = {"product": "SAT Tutoring", "audience": "parents", "campaign_goal": "conversion"}
 
-    with patch("generate.visual_spec._call_gemini_for_spec", return_value=_mock_visual_spec()):
+    with patch("generate.visual_spec._call_gemini_for_spec", return_value=(_mock_visual_spec(), 100)):
         spec = extract_visual_spec(brief, "conversion", "parents", "ad_test", creative_brief="auto")
 
     assert spec.subject is not None
@@ -78,7 +78,10 @@ def test_visual_spec_auto_brief_no_extra_direction():
 def test_visual_spec_copy_on_image():
     brief = {"product": "SAT Tutoring", "audience": "parents", "campaign_goal": "conversion"}
 
-    with patch("generate.visual_spec._call_gemini_for_spec", return_value={**_mock_visual_spec(), "text_overlay": "SAT Tutoring Works"}):
+    with patch(
+        "generate.visual_spec._call_gemini_for_spec",
+        return_value=({**_mock_visual_spec(), "text_overlay": "SAT Tutoring Works"}, 100),
+    ):
         spec = extract_visual_spec(brief, "conversion", "parents", "ad_test", copy_on_image=True)
 
     assert spec is not None
@@ -87,7 +90,10 @@ def test_visual_spec_copy_on_image():
 def test_visual_spec_copy_on_image_uses_generated_headline():
     brief = {"product": "SAT Tutoring", "audience": "parents", "campaign_goal": "conversion"}
 
-    with patch("generate.visual_spec._call_gemini_for_spec", return_value={**_mock_visual_spec(), "text_overlay": "Model guessed text"}):
+    with patch(
+        "generate.visual_spec._call_gemini_for_spec",
+        return_value=({**_mock_visual_spec(), "text_overlay": "Model guessed text"}, 100),
+    ):
         spec = extract_visual_spec(
             brief,
             "conversion",
@@ -104,7 +110,7 @@ def test_visual_spec_copy_on_image_uses_generated_headline():
 def test_build_image_prompt_includes_overlay_text_when_enabled():
     brief = {"product": "SAT Tutoring", "audience": "parents", "campaign_goal": "conversion"}
 
-    with patch("generate.visual_spec._call_gemini_for_spec", return_value=_mock_visual_spec()):
+    with patch("generate.visual_spec._call_gemini_for_spec", return_value=(_mock_visual_spec(), 100)):
         spec = extract_visual_spec(
             brief,
             "conversion",

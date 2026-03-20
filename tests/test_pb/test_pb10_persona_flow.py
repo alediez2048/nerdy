@@ -67,7 +67,10 @@ def test_visual_spec_persona_changes_prompt():
     """Persona should inject creative direction into the visual spec prompt."""
     brief = {"product": "SAT Tutoring", "audience": "parents", "campaign_goal": "conversion", "key_message": "test"}
 
-    with patch("generate.visual_spec._call_gemini_for_spec", return_value=_mock_gemini_visual_spec()):
+    with patch(
+        "generate.visual_spec._call_gemini_for_spec",
+        return_value=(_mock_gemini_visual_spec(), 100),
+    ):
         spec_generic = extract_visual_spec(brief, "conversion", "parents", "ad_001", persona=None)
         spec_athlete = extract_visual_spec(brief, "conversion", "parents", "ad_002", persona="athlete_recruit")
 
