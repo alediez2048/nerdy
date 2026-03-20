@@ -11,6 +11,7 @@ from app.models.base import Base
 import app.models.user  # noqa: F401
 import app.models.session  # noqa: F401
 import app.models.curation  # noqa: F401
+import app.models.campaign  # noqa: F401
 
 config = context.config
 
