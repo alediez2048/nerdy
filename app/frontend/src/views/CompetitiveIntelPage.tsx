@@ -159,6 +159,56 @@ export default function CompetitiveIntelPage() {
         )}
       </div>
 
+      {/* How competitive data flows into ad generation */}
+      <div style={s.explainer}>
+        <h3 style={s.explainerTitle}>How this data powers ad generation</h3>
+        <div style={s.explainerSteps}>
+          <div style={s.explainerStep}>
+            <span style={s.stepNum}>1</span>
+            <div>
+              <strong style={{ color: colors.white }}>Scrape & Classify</strong>
+              <p style={s.explainerText}>
+                Competitor ads are scraped from Meta Ad Library and classified into structural patterns:
+                hook type, body pattern, CTA style, and emotional register. This is the raw competitive intelligence.
+              </p>
+            </div>
+          </div>
+          <div style={s.explainerStep}>
+            <span style={s.stepNum}>2</span>
+            <div>
+              <strong style={{ color: colors.white }}>Brief Expansion</strong>
+              <p style={s.explainerText}>
+                When a session runs, the brief expansion step calls <code style={s.code}>get_landscape_context()</code> to
+                inject competitive insights into the prompt — what hooks competitors favor, what emotional angles they play,
+                and how Varsity Tutors can differentiate.
+              </p>
+            </div>
+          </div>
+          <div style={s.explainerStep}>
+            <span style={s.stepNum}>3</span>
+            <div>
+              <strong style={{ color: colors.white }}>Structural Atom Selection</strong>
+              <p style={s.explainerText}>
+                The ad generator calls <code style={s.code}>query_patterns()</code> to pull proven structural atoms from the
+                competitive pattern database. Instead of inventing ad structures, it recombines hook types, body patterns,
+                and CTA styles that work in the SAT prep market — fitted to the Varsity Tutors brand voice.
+              </p>
+            </div>
+          </div>
+          <div style={s.explainerStep}>
+            <span style={s.stepNum}>4</span>
+            <div>
+              <strong style={{ color: colors.white }}>Gap Analysis</strong>
+              <p style={s.explainerText}>
+                Underutilized hook types and emotional registers represent differentiation opportunities.
+                If competitors lean heavily on fear-based hooks, the system can explore aspirational or social-proof
+                approaches that the market isn't saturating.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Section 1 — Competitor Profiles */}
       {Object.keys(summaries).length > 0 && (
         <section style={s.section}>
@@ -282,6 +332,60 @@ function HookBarChart({ data }: { data: Record<string, number> }) {
 
 /* ---- Styles ---- */
 const s: Record<string, React.CSSProperties> = {
+  explainer: {
+    background: colors.surface,
+    borderRadius: radii.card,
+    padding: '24px 28px',
+    marginBottom: '32px',
+    borderLeft: `3px solid ${colors.cyan}`,
+  },
+  explainerTitle: {
+    fontSize: '16px',
+    fontWeight: 700,
+    color: colors.white,
+    margin: '0 0 16px',
+    fontFamily: font.family,
+  },
+  explainerSteps: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '16px',
+  },
+  explainerStep: {
+    display: 'flex',
+    gap: '14px',
+    alignItems: 'flex-start',
+  },
+  stepNum: {
+    width: '26px',
+    height: '26px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
+    color: colors.ink,
+    fontWeight: 700,
+    fontSize: '13px',
+    flexShrink: 0,
+    marginTop: '2px',
+    fontFamily: font.family,
+  },
+  explainerText: {
+    fontSize: '13px',
+    color: colors.muted,
+    margin: '4px 0 0',
+    lineHeight: 1.5,
+    fontFamily: font.family,
+  },
+  code: {
+    background: `${colors.muted}20`,
+    padding: '1px 6px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    color: colors.cyan,
+    fontFamily: 'monospace',
+  },
   page: {
     background: colors.ink,
     minHeight: '100vh',
