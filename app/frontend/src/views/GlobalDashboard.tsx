@@ -1,9 +1,9 @@
 // Global Performance Dashboard — all-session pipeline data (8 tabs)
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { colors, radii, font } from '../design/tokens'
 import { fetchGlobalDashboard } from '../api/dashboard'
-import Badge, { StatusBadge } from '../components/Badge'
+import { StatusBadge } from '../components/Badge'
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -37,25 +37,6 @@ interface BatchScore {
   tokens: number
 }
 
-interface Ad {
-  instance_id: string
-  created_at: string
-  ad_id: string
-  brief_id: string
-  session_id?: string | null
-  session_label?: string
-  copy: Record<string, string>
-  scores: Record<string, number>
-  aggregate_score: number
-  rationale: Record<string, string>
-  status: string
-  cycle_count: number
-  image_path: string | null
-  image_url: string | null
-  video_url?: string | null
-  video_scores?: Record<string, number> | null
-}
-
 // ── Tabs ───────────────────────────────────────────────────────────
 
 const TABS = [
@@ -63,10 +44,8 @@ const TABS = [
   { key: 'iterations', label: 'Iteration Cycles' },
   { key: 'quality', label: 'Quality Trends' },
   { key: 'dimensions', label: 'Dimension Deep-Dive' },
-  { key: 'ads', label: 'Ad Library' },
   { key: 'costs', label: 'Token Economics' },
   { key: 'health', label: 'System Health' },
-  { key: 'competitive', label: 'Competitive Intel' },
 ] as const
 
 type TabKey = typeof TABS[number]['key']
@@ -84,7 +63,6 @@ const TIMEFRAME_LABELS: Record<TimeframeKey, string> = {
 // ── Main Component ─────────────────────────────────────────────────
 
 export default function GlobalDashboard() {
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -171,10 +149,8 @@ export default function GlobalDashboard() {
           {activeTab === 'iterations' && <IterationCyclesTab data={data} />}
           {activeTab === 'quality' && <QualityTrendsTab data={data} />}
           {activeTab === 'dimensions' && <DimensionDeepDiveTab data={data} />}
-          {activeTab === 'ads' && <AdLibraryTab data={data} />}
           {activeTab === 'costs' && <TokenEconomicsTab data={data} />}
           {activeTab === 'health' && <SystemHealthTab data={data} />}
-          {activeTab === 'competitive' && <CompetitiveIntelTab data={data} />}
         </div>
       </div>
     </div>
@@ -459,218 +435,6 @@ function DimensionDeepDiveTab({ data }: { data: Record<string, unknown> }) {
   )
 }
 
-// ── Tab 5: Ad Library ──────────────────────────────────────────────
-
-function AdLibraryTab({ data }: { data: Record<string, unknown> }) {
-  const ads = (data.ad_library || []) as Ad[]
-  const [filter, setFilter] = useState('')
-  const [sessionFilter, setSessionFilter] = useState('')
-  const [expanded, setExpanded] = useState<string | null>(null)
-  const [archived, setArchived] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem('archived_ads')
-      return saved ? new Set(JSON.parse(saved)) : new Set()
-    } catch { return new Set() }
-  })
-  const [showArchived, setShowArchived] = useState(false)
-
-  const toggleArchive = (instanceId: string) => {
-    setArchived((prev) => {
-      const next = new Set(prev)
-      if (next.has(instanceId)) next.delete(instanceId)
-      else next.add(instanceId)
-      localStorage.setItem('archived_ads', JSON.stringify([...next]))
-      return next
-    })
-  }
-
-  const sessionOptions = Array.from(
-    new Map(
-      ads.map((ad) => {
-        const id = ad.session_id || 'global'
-        const label = ad.session_label || ad.session_id || 'Global ledger'
-        return [id, { id, label }]
-      })
-    ).values()
-  ).sort((a, b) => a.label.localeCompare(b.label))
-
-  const filtered = ads
-    .filter((a) => a.status !== 'discarded')
-    .filter((a) => showArchived ? archived.has(a.instance_id) : !archived.has(a.instance_id))
-    .filter((a) => {
-      if (!filter) return true
-      if (filter === 'video') return !!a.video_url
-      if (filter === 'image') return !!a.image_url && !a.video_url
-      if (filter === 'copy_only') return !a.image_url && !a.video_url
-      return a.status === filter
-    })
-    .filter((a) => !sessionFilter || (a.session_id || 'global') === sessionFilter)
-    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-
-  return (
-    <div>
-      <h3 style={s.heading}>How To Read Ad Library</h3>
-      <p style={{ ...s.sectionDescription, marginBottom: '12px' }}>
-        Showing every created ad instance across the global ledger and per-session ledgers. If the pipeline re-generated
-        the same deterministic `ad_id` in different runs, each creation appears as its own card here.
-      </p>
-      <div style={s.adLibraryControls}>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['', 'published', 'in_progress'].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={filter === f ? s.filterActive : s.filterBtn}
-            >
-              {f || 'All'} ({f ? ads.filter((a) => a.status === f).length : ads.filter((a) => a.status !== 'discarded').length})
-            </button>
-          ))}
-          <button
-            onClick={() => setFilter(filter === 'copy_only' ? '' : 'copy_only')}
-            style={filter === 'copy_only' ? s.filterActive : s.filterBtn}
-          >
-            Copy Only ({ads.filter((a) => !a.video_url && !a.image_url).length})
-          </button>
-          <button
-            onClick={() => setFilter(filter === 'image' ? '' : 'image')}
-            style={filter === 'image' ? s.filterActive : s.filterBtn}
-          >
-            Image ({ads.filter((a) => a.image_url && !a.video_url).length})
-          </button>
-          <button
-            onClick={() => setFilter(filter === 'video' ? '' : 'video')}
-            style={filter === 'video' ? s.filterActive : s.filterBtn}
-          >
-            Video ({ads.filter((a) => a.video_url).length})
-          </button>
-          <button
-            onClick={() => setShowArchived(!showArchived)}
-            style={showArchived ? s.filterActive : s.filterBtn}
-          >
-            Archived ({archived.size})
-          </button>
-        </div>
-        <label style={s.sessionFilterWrap}>
-          <span style={s.sessionFilterLabel}>Session</span>
-          <select
-            value={sessionFilter}
-            onChange={(e) => setSessionFilter(e.target.value)}
-            style={s.sessionSelect}
-          >
-            <option value="">All sessions ({sessionOptions.length})</option>
-            {sessionOptions.map((session) => (
-              <option key={session.id} value={session.id}>
-                {session.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {filtered.length === 0 ? (
-        <p style={{ color: colors.muted }}>No ads found</p>
-      ) : (
-        <div style={s.adGrid}>
-          {filtered.map((ad) => (
-            <div
-              key={ad.instance_id}
-              onClick={() => setExpanded(expanded === ad.instance_id ? null : ad.instance_id)}
-              style={{
-                ...s.adCard,
-                ...(expanded === ad.instance_id ? s.adCardExpanded : {}),
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontSize: '12px', color: colors.muted }}>{ad.ad_id}</span>
-                  <span style={{ fontSize: '11px', color: colors.cyan }}>
-                    {ad.session_label || ad.session_id || 'global'}
-                  </span>
-                  {ad.created_at && (
-                    <span style={{ fontSize: '11px', color: colors.muted }}>
-                      {new Date(ad.created_at).toLocaleString()}
-                    </span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <StatusBadge status={ad.status} />
-                  <Badge label={ad.aggregate_score.toFixed(1)} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleArchive(ad.instance_id) }}
-                    style={s.archiveBtn}
-                    title={archived.has(ad.instance_id) ? 'Unarchive' : 'Archive'}
-                  >
-                    {archived.has(ad.instance_id) ? 'Restore' : 'Archive'}
-                  </button>
-                </div>
-              </div>
-              <p style={{ fontSize: '14px', color: colors.white, margin: 0, lineHeight: 1.4 }}>
-                {ad.copy?.primary_text || ad.copy?.headline || '-'}
-              </p>
-
-              {ad.video_url && (
-                <video
-                  src={`/api${ad.video_url}`}
-                  controls
-                  muted
-                  playsInline
-                  style={{ width: '100%', maxHeight: '480px', borderRadius: radii.input, marginTop: '10px', background: '#000' }}
-                  onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none' }}
-                />
-              )}
-
-              {ad.image_url && !ad.video_url && (
-                <img
-                  src={`/api${ad.image_url}`}
-                  alt={`Ad ${ad.ad_id}`}
-                  style={{ width: '100%', maxHeight: '480px', objectFit: 'contain' as const, borderRadius: radii.input, marginTop: '10px' }}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
-              )}
-
-              {expanded === ad.instance_id && (
-                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.muted}20`, fontSize: '13px', color: colors.white }}>
-                  {ad.copy?.headline && <p><strong>Headline:</strong> {ad.copy.headline}</p>}
-                  {ad.copy?.description && <p><strong>Description:</strong> {ad.copy.description}</p>}
-                  {ad.copy?.cta_button && <p><strong>CTA:</strong> {ad.copy.cta_button}</p>}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginTop: '8px' }}>
-                    {Object.entries(ad.scores).map(([dim, score]) => (
-                      <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                        <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
-                        <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '-'}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {Object.keys(ad.rationale).length > 0 && (
-                    <div style={{ marginTop: '10px' }}>
-                      {Object.entries(ad.rationale).map(([dim, text]) => text && (
-                        <p key={dim} style={{ fontSize: '12px', color: colors.muted, margin: '4px 0' }}>
-                          <strong style={{ color: colors.white }}>{dim.replace(/_/g, ' ')}:</strong> {text}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                  {ad.video_scores && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px', padding: '8px', background: `${colors.muted}10`, borderRadius: radii.input }}>
-                      {Object.entries(ad.video_scores).map(([dim, score]) => (
-                        <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
-                          <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(2) : '-'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <p style={{ fontSize: '12px', color: colors.muted }}>Cycles: {ad.cycle_count}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── Tab 6: Token Economics ──────────────────────────────────────────
 
 function TokenEconomicsTab({ data }: { data: Record<string, unknown> }) {
@@ -850,117 +614,6 @@ function StatBox({ label, value, color }: { label: string; value: string; color?
     <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: '20px', fontWeight: 700, color: color || colors.white, fontFamily: font.family }}>{value}</div>
       <div style={{ fontSize: '11px', color: colors.muted, fontFamily: font.family }}>{label}</div>
-    </div>
-  )
-}
-
-// ── Tab 8: Competitive Intel ───────────────────────────────────────
-
-function CompetitiveIntelTab({ data }: { data: Record<string, unknown> }) {
-  const ci = (data.competitive_intel || {}) as Record<string, unknown>
-
-  if (Object.keys(ci).length === 0) {
-    return <p style={{ color: colors.muted }}>No competitive data available</p>
-  }
-
-  // Backend returns hook_distribution (dict of hook→pct), strategy_radar, gap_analysis, temporal_trends
-  const hookDist = (ci.hook_distribution || ci.hook_type_counts || ci.hook_types || {}) as Record<string, number>
-  const strategyRadar = (ci.strategy_radar || {}) as Record<string, Record<string, number>>
-  const gapAnalysis = (ci.gap_analysis || ci.gaps || []) as Array<Record<string, unknown> | string>
-  const trends = (ci.temporal_trends || []) as Array<Record<string, unknown>>
-
-  // Build competitor list from strategy_radar keys
-  const competitors = Object.entries(strategyRadar).map(([name, hooks]) => ({
-    name,
-    pattern_count: Object.values(hooks).reduce((sum, v) => sum + v, 0),
-  }))
-
-  return (
-    <div>
-      <FrequencyBars title="Hook Distribution" data={hookDist} barColor={colors.cyan} />
-
-      {competitors.length > 0 && (
-        <div style={s.section}>
-          <h3 style={s.heading}>Competitors</h3>
-          <table style={s.table}>
-            <thead>
-              <tr>
-                <th style={s.th}>Name</th>
-                <th style={s.th}>Patterns</th>
-              </tr>
-            </thead>
-            <tbody>
-              {competitors.map((c, i) => (
-                <tr key={i}>
-                  <td style={s.td}>{c.name}</td>
-                  <td style={s.td}>{c.pattern_count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {gapAnalysis.length > 0 && (
-        <div style={s.section}>
-          <h3 style={s.heading}>Gap Analysis</h3>
-          <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            {gapAnalysis.map((g, i) => (
-              <li key={i} style={{ color: colors.white, fontSize: '13px', marginBottom: '6px', fontFamily: font.family }}>
-                {typeof g === 'string' ? g : `${g.hook_type || ''} — ${g.opportunity || ''}`}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {trends.length > 0 && (
-        <div style={s.section}>
-          <h3 style={s.heading}>Temporal Trends</h3>
-          <table style={s.table}>
-            <thead>
-              <tr>
-                <th style={s.th}>Hook Type</th>
-                <th style={s.th}>Direction</th>
-                <th style={s.th}>Change</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trends.map((t, i) => (
-                <tr key={i}>
-                  <td style={s.td}>{String(t.hook_type || '-')}</td>
-                  <td style={s.td}>{String(t.direction || '-')}</td>
-                  <td style={s.td}>{typeof t.change_pct === 'number' ? `${t.change_pct.toFixed(1)}%` : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function FrequencyBars({ title, data, barColor }: { title: string; data: Record<string, number>; barColor: string }) {
-  const sorted = Object.entries(data).sort(([, a], [, b]) => b - a).slice(0, 10)
-  const max = sorted[0]?.[1] || 1
-
-  if (sorted.length === 0) return null
-
-  return (
-    <div style={{ marginBottom: '24px' }}>
-      <h3 style={s.heading}>{title}</h3>
-      {sorted.map(([label, count]) => (
-        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-          <span style={{ width: '140px', fontSize: '12px', color: colors.muted, textAlign: 'right', fontFamily: font.family }}>
-            {label}
-          </span>
-          <div style={{ flex: 1, height: '16px', background: `${colors.muted}20`, borderRadius: '4px', overflow: 'hidden' }}>
-            <div style={{ width: `${(count / max) * 100}%`, height: '100%', background: barColor, borderRadius: radii.input }} />
-          </div>
-          <span style={{ fontSize: '12px', color: colors.white, width: '30px', fontFamily: font.family }}>{count}</span>
-        </div>
-      ))}
     </div>
   )
 }
@@ -1172,61 +825,6 @@ const s: Record<string, React.CSSProperties> = {
     color: colors.yellow,
     fontFamily: font.family,
     textTransform: 'capitalize',
-  },
-  adLibraryControls: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '12px',
-    marginBottom: '16px',
-    flexWrap: 'wrap',
-  },
-  sessionFilterWrap: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  sessionFilterLabel: {
-    fontSize: '12px',
-    color: colors.muted,
-    fontFamily: font.family,
-  },
-  sessionSelect: {
-    padding: '8px 12px',
-    borderRadius: radii.button,
-    border: `1px solid ${colors.muted}40`,
-    background: colors.surface,
-    color: colors.white,
-    fontSize: '12px',
-    fontFamily: font.family,
-    outline: 'none',
-  },
-  adGrid: {
-    columnCount: 3,
-    columnGap: '12px',
-  },
-  adCard: {
-    background: colors.surface,
-    borderRadius: radii.input,
-    padding: '14px 18px',
-    cursor: 'pointer',
-    fontFamily: font.family,
-    overflow: 'hidden',
-    marginBottom: '12px',
-    breakInside: 'avoid' as const,
-  },
-  adCardExpanded: {},
-  filterBtn: {
-    padding: '6px 14px', borderRadius: radii.button, border: `1px solid ${colors.muted}40`,
-    background: 'transparent', color: colors.muted, cursor: 'pointer', fontSize: '12px', fontFamily: font.family,
-  },
-  filterActive: {
-    padding: '6px 14px', borderRadius: radii.button, border: `1px solid ${colors.cyan}`,
-    background: `${colors.cyan}20`, color: colors.cyan, cursor: 'pointer', fontSize: '12px', fontFamily: font.family,
-  },
-  archiveBtn: {
-    padding: '2px 8px', borderRadius: radii.button, border: `1px solid ${colors.muted}30`,
-    background: 'transparent', color: colors.muted, cursor: 'pointer', fontSize: '11px', fontFamily: font.family,
   },
   table: {
     width: '100%',

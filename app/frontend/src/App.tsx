@@ -11,6 +11,7 @@ import CampaignList from './views/CampaignList'
 import NewCampaignForm from './views/NewCampaignForm'
 import CampaignDetail from './views/CampaignDetail'
 import CompetitiveIntelPage from './views/CompetitiveIntelPage'
+import CuratedSetPage from './views/CuratedSetPage'
 import NavBar from './components/NavBar'
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/campaigns/:campaignId" element={<CampaignDetail />} />
         <Route path="/campaigns/:campaignId/sessions/new" element={<NewSessionForm />} />
         <Route path="/competitive" element={<CompetitiveIntelPage />} />
+        <Route path="/curated" element={<CuratedSetPage />} />
       </Routes>
     </BrowserRouter>
   )

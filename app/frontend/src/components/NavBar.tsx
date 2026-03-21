@@ -70,10 +70,10 @@ export default function NavBar() {
           Competitive
         </button>
         <button
-          onClick={() => navigate('/dashboard?tab=ads')}
-          style={location.pathname === '/dashboard' && location.search.includes('tab=ads') ? s.navLinkActive : s.navLink}
+          onClick={() => navigate('/curated')}
+          style={isActive('/curated') ? s.navLinkActive : s.navLink}
         >
-          Ad Library
+          Curated Set
         </button>
       </div>
       <div style={s.right}>
