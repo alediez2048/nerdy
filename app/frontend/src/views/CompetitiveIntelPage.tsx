@@ -1,5 +1,5 @@
-// PD-09: Standalone Competitive Intel page
-import { useEffect, useState } from 'react'
+// PD-09 + PD-11: Standalone Competitive Intel page with upload
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { colors, radii, font } from '../design/tokens'
 import { fetchCompetitive } from '../api/dashboard'
 
@@ -30,6 +30,15 @@ interface TrendItem {
   description?: string
 }
 
+interface UploadResult {
+  ads_parsed: number
+  ads_new: number
+  ads_duplicate: number
+  patterns_added: number
+  competitor: string
+  error?: string
+}
+
 const ARROW: Record<string, string> = { rising: '\u2191', falling: '\u2193', stable: '\u2192' }
 const ARROW_COLOR: Record<string, string> = { rising: colors.mint, falling: colors.red, stable: colors.muted }
 
@@ -37,9 +46,51 @@ export default function CompetitiveIntelPage() {
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  // Upload state (PD-11)
+  const [uploadExpanded, setUploadExpanded] = useState(false)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadCompetitor, setUploadCompetitor] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const reload = useCallback(() => {
     fetchCompetitive().then(setData).catch((e) => setError(e.message))
   }, [])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
+
+  const handleUpload = async () => {
+    if (!uploadFile || !uploadCompetitor.trim()) return
+    setUploading(true)
+    setUploadResult(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', uploadFile)
+      formData.append('competitor_name', uploadCompetitor.trim())
+
+      const token = localStorage.getItem('token')
+      const headers: HeadersInit = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const res = await fetch('/api/competitive/upload', {
+        method: 'POST',
+        headers,
+        body: formData,
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const result: UploadResult = await res.json()
+      setUploadResult(result)
+      setUploadFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      reload()
+    } catch (e) {
+      setUploadResult({ ads_parsed: 0, ads_new: 0, ads_duplicate: 0, patterns_added: 0, competitor: '', error: String(e) })
+    }
+    setUploading(false)
+  }
 
   if (error)
     return (
@@ -83,6 +134,63 @@ export default function CompetitiveIntelPage() {
           </>
         )}
       </div>
+
+      {/* PD-11: Upload Competitor Data */}
+      <section style={s.section}>
+        <button
+          onClick={() => setUploadExpanded((v) => !v)}
+          style={s.uploadToggle}
+        >
+          {uploadExpanded ? '- Hide' : '+ Upload Competitor Data'}
+        </button>
+
+        {uploadExpanded && (
+          <div style={s.uploadPanel}>
+            <div style={s.uploadRow}>
+              <label style={s.uploadLabel}>
+                Competitor Name
+                <input
+                  type="text"
+                  value={uploadCompetitor}
+                  onChange={(e) => setUploadCompetitor(e.target.value)}
+                  placeholder="e.g. Princeton Review"
+                  style={s.uploadInput}
+                />
+              </label>
+              <label style={s.uploadLabel}>
+                JSON File (Meta Ad Library export)
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                  style={s.uploadFileInput}
+                />
+              </label>
+            </div>
+            <button
+              onClick={handleUpload}
+              disabled={uploading || !uploadFile || !uploadCompetitor.trim()}
+              style={{
+                ...s.uploadBtn,
+                opacity: uploading || !uploadFile || !uploadCompetitor.trim() ? 0.5 : 1,
+              }}
+            >
+              {uploading ? 'Uploading...' : 'Upload & Classify'}
+            </button>
+
+            {uploadResult && !uploadResult.error && (
+              <div style={s.uploadSuccess}>
+                Processed {uploadResult.ads_parsed} ads for <strong>{uploadResult.competitor}</strong>
+                {' '}&mdash; {uploadResult.ads_new} new, {uploadResult.ads_duplicate} duplicates, {uploadResult.patterns_added} patterns added.
+              </div>
+            )}
+            {uploadResult?.error && (
+              <div style={s.uploadError}>{uploadResult.error}</div>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* Section 1 — Competitor Profiles */}
       {Object.keys(summaries).length > 0 && (
@@ -404,5 +512,84 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: '12px',
     color: colors.muted,
     flex: 1,
+  },
+
+  /* Upload section (PD-11) */
+  uploadToggle: {
+    background: 'none',
+    border: `1px solid ${colors.cyan}40`,
+    borderRadius: radii.card,
+    color: colors.cyan,
+    fontSize: '14px',
+    fontWeight: 600,
+    fontFamily: font.family,
+    padding: '10px 20px',
+    cursor: 'pointer',
+  },
+  uploadPanel: {
+    background: colors.surface,
+    borderRadius: radii.card,
+    padding: '24px',
+    marginTop: '16px',
+  },
+  uploadRow: {
+    display: 'flex',
+    gap: '20px',
+    flexWrap: 'wrap' as const,
+    marginBottom: '16px',
+  },
+  uploadLabel: {
+    fontSize: '13px',
+    color: colors.muted,
+    fontFamily: font.family,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+    flex: 1,
+    minWidth: '200px',
+  },
+  uploadInput: {
+    background: colors.ink,
+    border: `1px solid ${colors.muted}40`,
+    borderRadius: radii.input,
+    color: colors.white,
+    padding: '8px 12px',
+    fontSize: '14px',
+    fontFamily: font.family,
+    outline: 'none',
+  },
+  uploadFileInput: {
+    background: colors.ink,
+    border: `1px solid ${colors.muted}40`,
+    borderRadius: radii.input,
+    color: colors.muted,
+    padding: '8px 12px',
+    fontSize: '13px',
+    fontFamily: font.family,
+  },
+  uploadBtn: {
+    background: colors.cyan,
+    border: 'none',
+    borderRadius: radii.input,
+    color: colors.ink,
+    fontSize: '14px',
+    fontWeight: 600,
+    fontFamily: font.family,
+    padding: '10px 24px',
+    cursor: 'pointer',
+  },
+  uploadSuccess: {
+    marginTop: '14px',
+    fontSize: '13px',
+    color: colors.mint,
+    fontFamily: font.family,
+    lineHeight: 1.5,
+  },
+  uploadError: {
+    marginTop: '14px',
+    fontSize: '13px',
+    color: colors.red,
+    fontFamily: font.family,
+    lineHeight: 1.5,
   },
 }
