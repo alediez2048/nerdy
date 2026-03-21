@@ -7,6 +7,31 @@
 
 ---
 
+## Phase PD: Pipeline Debt — Consistency, Integrity & Honest Architecture (⏳)
+
+### Plain-English Summary
+Comprehensive audit of the codebase revealed 23 inconsistencies across evaluation, dashboard, config, and pipeline integration. Phase PD addresses these in 8 tickets:
+
+| Ticket | Title | Priority | Est. |
+|--------|-------|----------|------|
+| PD-01 | Critical Bug Fixes (tokens_estimate, hardcoded avg_score) | P0 | 30m |
+| PD-02 | Dashboard Video Session Support (5 broken tabs) | P1 | 2h |
+| PD-03 | Dead Config Cleanup (model_tier, budget_cap, dim weights) | P2 | 1h |
+| PD-04 | Video Evaluation Consolidation (2 conflicting impls) | P1 | 1h |
+| PD-05 | Curated Set Video Support | P2 | 30m |
+| PD-06 | Pipeline Iteration Wiring (ratchet, Pareto, routing) | P1 | 3-4h |
+| PD-07 | Cost Tracking Completion (backfill, validation) | P2 | 2h |
+| PD-08 | Honest Architecture Documentation | P3 | 1h |
+
+### Root Cause
+The pipeline grew from text-only (P1) → multi-modal (P3) → app layer (PA/PB/PC) under timeline pressure. The iterate/ modules (quality ratchet, Pareto selection, model routing) were implemented as standalone components with tests but never wired into the pipeline task. The dashboard was designed for 5-dimension text scoring and not updated for video's different scoring model. Several config fields were added to the schema and form but the pipeline never consumed them.
+
+### Metadata
+- **Status:** Pending  |  **Date:** March 21, 2026  |  **Branch:** TBD
+- **Primers:** `docs/development/tickets/PD-00-phase-plan.md` through `PD-08-primer.md`
+
+---
+
 ## Final submission: video session cost + library alignment + Expanded Brief (✅)
 
 ### Plain-English Summary

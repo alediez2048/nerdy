@@ -20,7 +20,7 @@ from generate.visual_spec import (
 
 
 def _mock_expansion():
-    return json.dumps({
+    return (json.dumps({
         "audience_profile": {"pain_points": ["test"], "tone": "urgent"},
         "brand_facts": [{"claim": "1-on-1", "source": "test"}],
         "competitive_context_summary": "VT vs competitors",
@@ -28,7 +28,7 @@ def _mock_expansion():
         "value_propositions": ["10X vs self-study", "100pts/month"],
         "key_differentiators": ["digital SAT"],
         "constraints": ["no fake urgency"],
-    })
+    }), 100)
 
 
 def _mock_visual():

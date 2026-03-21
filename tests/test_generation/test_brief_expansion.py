@@ -88,7 +88,7 @@ def test_expand_brief_produces_all_required_fields(
         "constraints": ["No guaranteed scores", "Factual claims only"],
     })
 
-    with patch("generate.brief_expansion._call_gemini", return_value=mock_response):
+    with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.brief_expansion.log_event"):
             result = expand_brief(minimal_brief)
 
@@ -123,7 +123,7 @@ def test_expansion_includes_only_verified_brand_facts(
         "constraints": ["No guaranteed scores"],
     })
 
-    with patch("generate.brief_expansion._call_gemini", return_value=mock_response):
+    with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.brief_expansion.log_event"):
             result = expand_brief(minimal_brief)
 
@@ -166,7 +166,7 @@ def test_competitive_context_included_in_expanded_brief(
         "constraints": [],
     })
 
-    with patch("generate.brief_expansion._call_gemini", return_value=mock_response):
+    with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.brief_expansion.log_event"):
             with patch(
                 "generate.brief_expansion.get_landscape_context",
@@ -197,7 +197,7 @@ def test_parent_brief_gets_parent_relevant_facts(minimal_brief: dict) -> None:
         "constraints": [],
     })
 
-    with patch("generate.brief_expansion._call_gemini", return_value=mock_response):
+    with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.brief_expansion.log_event"):
             result = expand_brief(minimal_brief)
 
@@ -221,7 +221,7 @@ def test_student_brief_gets_student_relevant_facts() -> None:
         "constraints": [],
     })
 
-    with patch("generate.brief_expansion._call_gemini", return_value=mock_response):
+    with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.brief_expansion.log_event"):
             result = expand_brief(brief)
 
@@ -233,7 +233,7 @@ def test_student_brief_gets_student_relevant_facts() -> None:
 
 def test_malformed_api_response_handled_gracefully(minimal_brief: dict) -> None:
     """Malformed JSON from API returns partial expansion with warning, not crash."""
-    with patch("generate.brief_expansion._call_gemini", return_value="not valid json {{{"):
+    with patch("generate.brief_expansion._call_gemini", return_value=("not valid json {{{", 100)):
         with patch("generate.brief_expansion.log_event"):
             result = expand_brief(minimal_brief)
 
@@ -249,7 +249,7 @@ def test_partial_json_response_parsed_gracefully(minimal_brief: dict) -> None:
         "value_propositions": ["1-on-1 tutoring"],
     })
 
-    with patch("generate.brief_expansion._call_gemini", return_value=partial):
+    with patch("generate.brief_expansion._call_gemini", return_value=(partial, 100)):
         with patch("generate.brief_expansion.log_event"):
             result = expand_brief(minimal_brief)
 
@@ -267,7 +267,7 @@ def test_retry_logic_invoked_on_api_failure(minimal_brief: dict) -> None:
     with patch("generate.brief_expansion.retry_with_backoff") as mock_retry:
         mock_retry.side_effect = lambda f: f()
         with patch("generate.brief_expansion._call_gemini") as mock_call:
-            mock_call.return_value = json.dumps({
+            mock_call.return_value = (json.dumps({
                 "audience_profile": {},
                 "brand_facts": [],
                 "competitive_context_summary": "",
@@ -275,7 +275,7 @@ def test_retry_logic_invoked_on_api_failure(minimal_brief: dict) -> None:
                 "value_propositions": [],
                 "key_differentiators": [],
                 "constraints": [],
-            })
+            }), 100)
             with patch("generate.brief_expansion.log_event"):
                 expand_brief(minimal_brief)
 
@@ -299,7 +299,7 @@ def test_minimal_brief_with_only_required_fields_expands_successfully(
         "constraints": [],
     })
 
-    with patch("generate.brief_expansion._call_gemini", return_value=mock_response):
+    with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.brief_expansion.log_event"):
             result = expand_brief(minimal_brief)
 

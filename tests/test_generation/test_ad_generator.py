@@ -81,7 +81,7 @@ def test_generate_ad_produces_all_four_components(sample_expanded_brief: Expande
         "cta_button": "Start Free Practice Test",
     })
 
-    with patch("generate.ad_generator._call_gemini", return_value=mock_response):
+    with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.ad_generator.log_event"):
             result = generate_ad(sample_expanded_brief)
 
@@ -100,7 +100,7 @@ def test_all_components_are_non_empty_strings(sample_expanded_brief: ExpandedBri
         "cta_button": "Learn More",
     })
 
-    with patch("generate.ad_generator._call_gemini", return_value=mock_response):
+    with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.ad_generator.log_event"):
             result = generate_ad(sample_expanded_brief)
 
@@ -122,7 +122,7 @@ def test_structural_atoms_selected_and_recorded(sample_expanded_brief: ExpandedB
         "cta_button": "Learn More",
     })
 
-    with patch("generate.ad_generator._call_gemini", return_value=mock_response):
+    with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.ad_generator.log_event"):
             result = generate_ad(sample_expanded_brief)
 
@@ -159,7 +159,7 @@ def test_seed_determinism_same_seed_same_ad_id(sample_expanded_brief: ExpandedBr
         "cta_button": "Get Started",
     })
 
-    with patch("generate.ad_generator._call_gemini", return_value=mock_response):
+    with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.ad_generator.log_event"):
             r1 = generate_ad(sample_expanded_brief, seed=12345)
             r2 = generate_ad(sample_expanded_brief, seed=12345)
@@ -176,7 +176,7 @@ def test_different_seed_different_ad_id(sample_expanded_brief: ExpandedBrief) ->
         "cta_button": "Learn More",
     })
 
-    with patch("generate.ad_generator._call_gemini", return_value=mock_response):
+    with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.ad_generator.log_event"):
             r1 = generate_ad(sample_expanded_brief, seed=111)
             r2 = generate_ad(sample_expanded_brief, seed=222)
@@ -189,7 +189,7 @@ def test_different_seed_different_ad_id(sample_expanded_brief: ExpandedBrief) ->
 
 def test_malformed_api_response_handled_gracefully(sample_expanded_brief: ExpandedBrief) -> None:
     """Malformed JSON returns partial GeneratedAd, does not crash."""
-    with patch("generate.ad_generator._call_gemini", return_value="not valid json {{{"):
+    with patch("generate.ad_generator._call_gemini", return_value=("not valid json {{{", 100)):
         with patch("generate.ad_generator.log_event"):
             result = generate_ad(sample_expanded_brief)
 
@@ -209,7 +209,7 @@ def test_cta_button_is_valid_meta_option(sample_expanded_brief: ExpandedBrief) -
         "cta_button": "Start Free Practice Test",
     })
 
-    with patch("generate.ad_generator._call_gemini", return_value=mock_response):
+    with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.ad_generator.log_event"):
             result = generate_ad(sample_expanded_brief)
 
@@ -234,7 +234,7 @@ def test_generation_metadata_populated(sample_expanded_brief: ExpandedBrief) -> 
         "cta_button": "Learn More",
     })
 
-    with patch("generate.ad_generator._call_gemini", return_value=mock_response):
+    with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.ad_generator.log_event"):
             result = generate_ad(sample_expanded_brief)
 
@@ -320,7 +320,7 @@ def test_generated_ad_compatible_with_evaluator_input(sample_expanded_brief: Exp
         "cta_button": "Start Free Practice Test",
     })
 
-    with patch("generate.ad_generator._call_gemini", return_value=mock_response):
+    with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
         with patch("generate.ad_generator.log_event"):
             result = generate_ad(sample_expanded_brief)
 

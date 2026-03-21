@@ -10,8 +10,8 @@ from generate.compliance import check_compliance, check_nerdy_positives
 from evaluate.evaluator import _apply_nerdy_adjustments
 
 
-def _mock_gemini_expansion() -> str:
-    return json.dumps({
+def _mock_gemini_expansion() -> tuple[str, int]:
+    return (json.dumps({
         "audience_profile": {"pain_points": ["recruiting timeline"], "emotional_drivers": ["scholarship fear"], "tone": "urgent"},
         "brand_facts": [{"claim": "1-on-1 SAT tutoring", "source": "supplementary"}],
         "competitive_context_summary": "VT: 1:1 vs Princeton Review group at $252/hr",
@@ -19,7 +19,7 @@ def _mock_gemini_expansion() -> str:
         "value_propositions": ["10X vs self-study", "100pts/month at 2x/week"],
         "key_differentiators": ["digital SAT training", "late evening availability"],
         "constraints": ["no fake urgency", "use your child"],
-    })
+    }), 100)
 
 
 def _mock_gemini_ad() -> str:

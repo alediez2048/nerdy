@@ -17,9 +17,9 @@ from generate.brief_expansion import (
 )
 
 
-def _mock_gemini_response() -> str:
-    """Return a valid JSON response mimicking Gemini output."""
-    return json.dumps({
+def _mock_gemini_response() -> tuple[str, int]:
+    """Return a valid (JSON text, tokens) tuple mimicking Gemini output."""
+    return (json.dumps({
         "audience_profile": {"pain_points": ["test anxiety"], "emotional_drivers": ["fear"], "tone": "reassuring"},
         "brand_facts": [{"claim": "1-on-1 SAT tutoring", "source": "supplementary"}],
         "competitive_context_summary": "Differentiate via 1:1 format and digital SAT training",
@@ -27,7 +27,7 @@ def _mock_gemini_response() -> str:
         "value_propositions": ["10X vs self-study", "100pts/month"],
         "key_differentiators": ["digital SAT interface", "tutor matching"],
         "constraints": ["no fake urgency", "use your child not your student"],
-    })
+    }), 100)
 
 
 # --- Persona resolution ---

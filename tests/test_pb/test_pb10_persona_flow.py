@@ -9,7 +9,7 @@ from generate.brief_expansion import expand_brief
 
 
 def _mock_gemini_expansion():
-    return json.dumps({
+    return (json.dumps({
         "audience_profile": {"pain_points": ["recruiting"], "tone": "urgent"},
         "brand_facts": [{"claim": "1-on-1", "source": "test"}],
         "competitive_context_summary": "test",
@@ -17,7 +17,7 @@ def _mock_gemini_expansion():
         "value_propositions": ["10X"],
         "key_differentiators": ["digital SAT"],
         "constraints": ["no fake urgency"],
-    })
+    }), 100)
 
 
 def _mock_gemini_visual_spec():
