@@ -32,31 +32,42 @@ function SessionBriefFromConfig({ config }: { config: Record<string, unknown> })
     if (v) rows.push({ label, value: v })
   }
 
+  const sessionType = str('session_type') || 'image'
+  const isVideo = sessionType === 'video'
+
   add('Session type', 'session_type')
   add('Audience', 'audience')
   add('Campaign goal', 'campaign_goal')
   if (personaLabel) rows.push({ label: 'Persona', value: personaLabel })
   add('Key message', 'key_message')
   add('Creative brief', 'creative_brief')
-  add('Ad count', 'ad_count')
-  add('Cycle count', 'cycle_count')
-  add('Quality threshold', 'quality_threshold')
-  add('Aspect ratio (image)', 'aspect_ratio')
-  add('Copy on image', 'copy_on_image')
-  add('Video provider', 'video_provider')
-  add('Fal video model', 'video_fal_model')
-  add('Video count', 'video_count')
-  add('Video duration (s)', 'video_duration')
-  add('Video aspect ratio', 'video_aspect_ratio')
-  add('Video scene', 'video_scene')
-  add('Visual style', 'video_visual_style')
-  add('Camera movement', 'video_camera_movement')
-  add('Subject / action', 'video_subject_action')
-  add('Setting', 'video_setting')
-  add('Lighting / mood', 'video_lighting_mood')
-  add('Audio detail', 'video_audio_detail')
-  add('Color palette', 'video_color_palette')
-  add('Negative prompt', 'video_negative_prompt')
+
+  // Image-only fields
+  if (!isVideo) {
+    add('Ad count', 'ad_count')
+    add('Cycle count', 'cycle_count')
+    add('Quality threshold', 'quality_threshold')
+    add('Aspect ratio (image)', 'aspect_ratio')
+    add('Copy on image', 'copy_on_image')
+  }
+
+  // Video-only fields
+  if (isVideo) {
+    add('Video provider', 'video_provider')
+    add('Fal video model', 'video_fal_model')
+    add('Video count', 'video_count')
+    add('Video duration (s)', 'video_duration')
+    add('Video aspect ratio', 'video_aspect_ratio')
+    add('Video scene', 'video_scene')
+    add('Visual style', 'video_visual_style')
+    add('Camera movement', 'video_camera_movement')
+    add('Subject / action', 'video_subject_action')
+    add('Setting', 'video_setting')
+    add('Lighting / mood', 'video_lighting_mood')
+    add('Audio detail', 'video_audio_detail')
+    add('Color palette', 'video_color_palette')
+    add('Negative prompt', 'video_negative_prompt')
+  }
 
   if (rows.length === 0) {
     return (
