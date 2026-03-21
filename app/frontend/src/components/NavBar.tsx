@@ -63,6 +63,12 @@ export default function NavBar() {
         >
           Sessions
         </button>
+        <button
+          onClick={() => navigate('/dashboard?tab=ads')}
+          style={location.pathname === '/dashboard' && location.search.includes('tab=ads') ? s.navLinkActive : s.navLink}
+        >
+          Ad Library
+        </button>
       </div>
       <div style={s.right}>
         <ThemeToggle />

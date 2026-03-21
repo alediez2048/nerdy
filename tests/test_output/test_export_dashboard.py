@@ -11,8 +11,10 @@ from pathlib import Path
 
 from iterate.ledger import log_event
 from output.export_dashboard import (
+    _build_ad_library,
     build_dashboard_data,
     export_dashboard,
+    merge_ledger_events,
 )
 
 
@@ -300,3 +302,129 @@ def test_system_health_spc(tmp_path: Path) -> None:
 
     assert "spc" in health
     assert "batch_averages" in health["spc"]
+
+
+# --- Cross-ledger merge and dedup tests ---
+
+
+def test_merge_ledger_events_sorts_by_timestamp(tmp_path: Path) -> None:
+    """Merged events from multiple ledgers are sorted chronologically."""
+    ledger_a = str(tmp_path / "a.jsonl")
+    ledger_b = str(tmp_path / "b.jsonl")
+
+    # Write events with timestamps out of file order
+    log_event(ledger_a, {
+        "event_type": "AdGenerated", "ad_id": "ad_late", "brief_id": "b1",
+        "cycle_number": 0, "action": "gen", "tokens_consumed": 10,
+        "model_used": "flash", "seed": "1",
+        "outputs": {"headline": "Late"},
+    })
+    log_event(ledger_b, {
+        "event_type": "AdGenerated", "ad_id": "ad_early", "brief_id": "b1",
+        "cycle_number": 0, "action": "gen", "tokens_consumed": 10,
+        "model_used": "flash", "seed": "2",
+        "outputs": {"headline": "Early"},
+    })
+
+    merged = merge_ledger_events([ledger_a, ledger_b])
+    timestamps = [e.get("timestamp", "") for e in merged]
+    assert timestamps == sorted(timestamps), "Merged events should be sorted by timestamp"
+
+
+def test_overlapping_ledgers_dedup_to_single_instance(tmp_path: Path) -> None:
+    """Same ad_id in global + session ledger produces one library entry, not two."""
+    global_ledger = str(tmp_path / "global.jsonl")
+    session_ledger = str(tmp_path / "sessions" / "sess_01" / "ledger.jsonl")
+    Path(session_ledger).parent.mkdir(parents=True)
+
+    # Same ad in both ledgers
+    for ledger in [global_ledger, session_ledger]:
+        log_event(ledger, {
+            "event_type": "AdGenerated", "ad_id": "ad_overlap", "brief_id": "b1",
+            "cycle_number": 0, "action": "gen", "tokens_consumed": 10,
+            "model_used": "flash", "seed": "1",
+            "outputs": {"headline": "Test Ad", "primary_text": "Overlap test."},
+        })
+    # Publish event only in session ledger
+    log_event(session_ledger, {
+        "event_type": "AdPublished", "ad_id": "ad_overlap", "brief_id": "b1",
+        "cycle_number": 0, "action": "publish", "tokens_consumed": 0,
+        "model_used": "none", "seed": "0",
+        "outputs": {},
+    })
+
+    merged = merge_ledger_events([global_ledger, session_ledger])
+    library = _build_ad_library(merged)
+
+    overlap_ads = [a for a in library if a["ad_id"] == "ad_overlap"]
+    assert len(overlap_ads) == 1, f"Expected 1 entry, got {len(overlap_ads)}"
+    assert overlap_ads[0]["status"] == "published"
+
+
+def test_published_status_wins_over_discarded(tmp_path: Path) -> None:
+    """An ad published in one run and discarded in another shows as published."""
+    ledger_path = str(tmp_path / "ledger.jsonl")
+
+    log_event(ledger_path, {
+        "event_type": "AdGenerated", "ad_id": "ad_mixed", "brief_id": "b1",
+        "cycle_number": 0, "action": "gen", "tokens_consumed": 10,
+        "model_used": "flash", "seed": "1",
+        "outputs": {"headline": "Mixed Status", "primary_text": "Test."},
+    })
+    log_event(ledger_path, {
+        "event_type": "AdDiscarded", "ad_id": "ad_mixed", "brief_id": "b1",
+        "cycle_number": 0, "action": "discard", "tokens_consumed": 0,
+        "model_used": "none", "seed": "0",
+        "outputs": {"reason": "below threshold"},
+    })
+    log_event(ledger_path, {
+        "event_type": "AdPublished", "ad_id": "ad_mixed", "brief_id": "b1",
+        "cycle_number": 1, "action": "publish", "tokens_consumed": 0,
+        "model_used": "none", "seed": "0",
+        "outputs": {},
+    })
+
+    data = build_dashboard_data(ledger_path)
+    ad = [a for a in data["ad_library"] if a["ad_id"] == "ad_mixed"]
+    assert len(ad) == 1
+    assert ad[0]["status"] == "published"
+
+
+def test_video_status_resolved_across_ledgers(tmp_path: Path) -> None:
+    """VideoSelected in session ledger marks ad as published even when
+    AdGenerated is only in the global ledger."""
+    global_ledger = str(tmp_path / "global.jsonl")
+    session_ledger = str(tmp_path / "sessions" / "sess_v" / "ledger.jsonl")
+    Path(session_ledger).parent.mkdir(parents=True)
+
+    log_event(global_ledger, {
+        "event_type": "AdGenerated", "ad_id": "ad_vid", "brief_id": "b1",
+        "cycle_number": 0, "action": "gen", "tokens_consumed": 10,
+        "model_used": "flash", "seed": "1",
+        "outputs": {"headline": "Video Ad", "primary_text": "Video test."},
+    })
+    log_event(session_ledger, {
+        "event_type": "AdGenerated", "ad_id": "ad_vid", "brief_id": "b1",
+        "cycle_number": 0, "action": "gen", "tokens_consumed": 10,
+        "model_used": "flash", "seed": "1",
+        "outputs": {"headline": "Video Ad", "primary_text": "Video test."},
+    })
+    log_event(session_ledger, {
+        "event_type": "VideoSelected", "ad_id": "ad_vid", "brief_id": "b1",
+        "cycle_number": 0, "action": "video_selected", "tokens_consumed": 0,
+        "model_used": "fal-ai/veo3", "seed": "1",
+        "outputs": {
+            "winner_video_path": "/output/videos/session_v/ad_vid.mp4",
+            "composite_score": 0.75,
+            "attribute_pass_pct": 0.8,
+            "coherence_avg": 5.0,
+        },
+    })
+
+    merged = merge_ledger_events([global_ledger, session_ledger])
+    library = _build_ad_library(merged)
+
+    vid_ads = [a for a in library if a["ad_id"] == "ad_vid"]
+    assert len(vid_ads) == 1
+    assert vid_ads[0]["status"] == "published"
+    assert vid_ads[0]["video_scores"]["composite_score"] == 0.75

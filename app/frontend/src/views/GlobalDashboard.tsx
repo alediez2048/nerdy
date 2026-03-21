@@ -52,6 +52,8 @@ interface Ad {
   cycle_count: number
   image_path: string | null
   image_url: string | null
+  video_url?: string | null
+  video_scores?: Record<string, number> | null
 }
 
 // ── Tabs ───────────────────────────────────────────────────────────
@@ -464,6 +466,23 @@ function AdLibraryTab({ data }: { data: Record<string, unknown> }) {
   const [filter, setFilter] = useState('')
   const [sessionFilter, setSessionFilter] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [archived, setArchived] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('archived_ads')
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch { return new Set() }
+  })
+  const [showArchived, setShowArchived] = useState(false)
+
+  const toggleArchive = (instanceId: string) => {
+    setArchived((prev) => {
+      const next = new Set(prev)
+      if (next.has(instanceId)) next.delete(instanceId)
+      else next.add(instanceId)
+      localStorage.setItem('archived_ads', JSON.stringify([...next]))
+      return next
+    })
+  }
 
   const sessionOptions = Array.from(
     new Map(
@@ -476,9 +495,17 @@ function AdLibraryTab({ data }: { data: Record<string, unknown> }) {
   ).sort((a, b) => a.label.localeCompare(b.label))
 
   const filtered = ads
-    .filter((a) => !filter || a.status === filter)
+    .filter((a) => a.status !== 'discarded')
+    .filter((a) => showArchived ? archived.has(a.instance_id) : !archived.has(a.instance_id))
+    .filter((a) => {
+      if (!filter) return true
+      if (filter === 'video') return !!a.video_url
+      if (filter === 'image') return !!a.image_url && !a.video_url
+      if (filter === 'copy_only') return !a.image_url && !a.video_url
+      return a.status === filter
+    })
     .filter((a) => !sessionFilter || (a.session_id || 'global') === sessionFilter)
-    .sort((a, b) => b.aggregate_score - a.aggregate_score)
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
 
   return (
     <div>
@@ -489,15 +516,39 @@ function AdLibraryTab({ data }: { data: Record<string, unknown> }) {
       </p>
       <div style={s.adLibraryControls}>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['', 'published', 'in_progress', 'discarded'].map((f) => (
+          {['', 'published', 'in_progress'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               style={filter === f ? s.filterActive : s.filterBtn}
             >
-              {f || 'All'} ({f ? ads.filter((a) => a.status === f).length : ads.length})
+              {f || 'All'} ({f ? ads.filter((a) => a.status === f).length : ads.filter((a) => a.status !== 'discarded').length})
             </button>
           ))}
+          <button
+            onClick={() => setFilter(filter === 'copy_only' ? '' : 'copy_only')}
+            style={filter === 'copy_only' ? s.filterActive : s.filterBtn}
+          >
+            Copy Only ({ads.filter((a) => !a.video_url && !a.image_url).length})
+          </button>
+          <button
+            onClick={() => setFilter(filter === 'image' ? '' : 'image')}
+            style={filter === 'image' ? s.filterActive : s.filterBtn}
+          >
+            Image ({ads.filter((a) => a.image_url && !a.video_url).length})
+          </button>
+          <button
+            onClick={() => setFilter(filter === 'video' ? '' : 'video')}
+            style={filter === 'video' ? s.filterActive : s.filterBtn}
+          >
+            Video ({ads.filter((a) => a.video_url).length})
+          </button>
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            style={showArchived ? s.filterActive : s.filterBtn}
+          >
+            Archived ({archived.size})
+          </button>
         </div>
         <label style={s.sessionFilterWrap}>
           <span style={s.sessionFilterLabel}>Session</span>
@@ -544,13 +595,31 @@ function AdLibraryTab({ data }: { data: Record<string, unknown> }) {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <StatusBadge status={ad.status} />
                   <Badge label={ad.aggregate_score.toFixed(1)} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleArchive(ad.instance_id) }}
+                    style={s.archiveBtn}
+                    title={archived.has(ad.instance_id) ? 'Unarchive' : 'Archive'}
+                  >
+                    {archived.has(ad.instance_id) ? 'Restore' : 'Archive'}
+                  </button>
                 </div>
               </div>
               <p style={{ fontSize: '14px', color: colors.white, margin: 0, lineHeight: 1.4 }}>
                 {ad.copy?.primary_text || ad.copy?.headline || '-'}
               </p>
 
-              {ad.image_url && (
+              {ad.video_url && (
+                <video
+                  src={`/api${ad.video_url}`}
+                  controls
+                  muted
+                  playsInline
+                  style={{ width: '100%', maxHeight: '480px', borderRadius: radii.input, marginTop: '10px', background: '#000' }}
+                  onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none' }}
+                />
+              )}
+
+              {ad.image_url && !ad.video_url && (
                 <img
                   src={`/api${ad.image_url}`}
                   alt={`Ad ${ad.ad_id}`}
@@ -578,6 +647,16 @@ function AdLibraryTab({ data }: { data: Record<string, unknown> }) {
                         <p key={dim} style={{ fontSize: '12px', color: colors.muted, margin: '4px 0' }}>
                           <strong style={{ color: colors.white }}>{dim.replace(/_/g, ' ')}:</strong> {text}
                         </p>
+                      ))}
+                    </div>
+                  )}
+                  {ad.video_scores && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px', padding: '8px', background: `${colors.muted}10`, borderRadius: radii.input }}>
+                      {Object.entries(ad.video_scores).map(([dim, score]) => (
+                        <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                          <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
+                          <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(2) : '-'}</span>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -1123,10 +1202,8 @@ const s: Record<string, React.CSSProperties> = {
     outline: 'none',
   },
   adGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: '12px',
-    alignItems: 'start',
+    columnCount: 3,
+    columnGap: '12px',
   },
   adCard: {
     background: colors.surface,
@@ -1134,12 +1211,11 @@ const s: Record<string, React.CSSProperties> = {
     padding: '14px 18px',
     cursor: 'pointer',
     fontFamily: font.family,
-    minHeight: '220px',
     overflow: 'hidden',
+    marginBottom: '12px',
+    breakInside: 'avoid' as const,
   },
-  adCardExpanded: {
-    minHeight: 'unset',
-  },
+  adCardExpanded: {},
   filterBtn: {
     padding: '6px 14px', borderRadius: radii.button, border: `1px solid ${colors.muted}40`,
     background: 'transparent', color: colors.muted, cursor: 'pointer', fontSize: '12px', fontFamily: font.family,
@@ -1147,6 +1223,10 @@ const s: Record<string, React.CSSProperties> = {
   filterActive: {
     padding: '6px 14px', borderRadius: radii.button, border: `1px solid ${colors.cyan}`,
     background: `${colors.cyan}20`, color: colors.cyan, cursor: 'pointer', fontSize: '12px', fontFamily: font.family,
+  },
+  archiveBtn: {
+    padding: '2px 8px', borderRadius: radii.button, border: `1px solid ${colors.muted}30`,
+    background: 'transparent', color: colors.muted, cursor: 'pointer', fontSize: '11px', fontFamily: font.family,
   },
   table: {
     width: '100%',

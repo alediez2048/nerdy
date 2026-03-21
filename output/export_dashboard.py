@@ -92,7 +92,12 @@ def merge_ledger_events(
     ledger_paths: list[str],
     session_labels: dict[str, str] | None = None,
 ) -> list[dict]:
-    """Merge events from multiple ledgers and retain source session metadata."""
+    """Merge events from multiple ledgers and retain source session metadata.
+
+    Events are sorted by timestamp after dedup so that downstream consumers
+    (e.g. _build_ad_library) can rely on chronological ordering even when
+    the same ad_id appears in both the global ledger and a session ledger.
+    """
     merged_events: list[dict] = []
     for ledger_path in ledger_paths:
         session_id = _session_id_from_ledger_path(ledger_path)
@@ -106,7 +111,9 @@ def merge_ledger_events(
             event_copy["source_session_id"] = session_id
             event_copy["source_label"] = source_label
             merged_events.append(event_copy)
-    return _dedupe_events_by_checkpoint(merged_events)
+    deduped = _dedupe_events_by_checkpoint(merged_events)
+    deduped.sort(key=lambda e: e.get("timestamp", ""))
+    return deduped
 
 
 def _build_pipeline_summary(
@@ -351,6 +358,14 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
         ):
             creation_events_by_ad.setdefault(aid, []).append(idx)
 
+    # Pre-compute all events per ad_id for status/asset resolution that
+    # needs to see across window boundaries (overlapping ledgers).
+    _all_events_by_ad: dict[str, list[dict]] = {}
+    for e in events:
+        aid = e.get("ad_id")
+        if aid:
+            _all_events_by_ad.setdefault(aid, []).append(e)
+
     library: list[dict] = []
     for ad_id, indices in creation_events_by_ad.items():
         for occurrence_idx, start_idx in enumerate(indices):
@@ -361,6 +376,9 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
                 for event in events[start_idx:end_idx]
                 if event.get("ad_id") == ad_id
             ]
+            # Also consider all events for this ad_id for terminal status
+            # and asset resolution — handles overlapping global/session ledgers
+            all_ad_events = _all_events_by_ad.get(ad_id, instance_events)
 
             evals = [e for e in instance_events if e.get("event_type") == "AdEvaluated"]
             latest_eval = evals[-1] if evals else None
@@ -384,16 +402,14 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
             )
 
             status = "in_progress"
-            if any(e.get("event_type") == "VideoSelected" for e in instance_events):
+            # Check published statuses first — an ad that was published in
+            # any run should show as published even if another run discarded it.
+            if any(e.get("event_type") in ("AdPublished", "VideoSelected") for e in all_ad_events):
                 status = "published"
-            elif any(e.get("event_type") == "VideoBlocked" for e in instance_events):
-                status = "discarded"
-            elif any(e.get("event_type") == "AdPublished" for e in instance_events):
-                status = "published"
-            elif any(e.get("event_type") == "AdDiscarded" for e in instance_events):
+            elif any(e.get("event_type") in ("AdDiscarded", "VideoBlocked") for e in all_ad_events):
                 status = "discarded"
 
-            pub_events = [e for e in instance_events if e.get("event_type") == "AdPublished"]
+            pub_events = [e for e in all_ad_events if e.get("event_type") == "AdPublished"]
             pub_event = pub_events[-1] if pub_events else None
             image_path = None
             image_url = None
@@ -407,7 +423,7 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
                     filename = Path(winning).name
                     image_url = f"/images/{filename}"
 
-            video_events = [e for e in instance_events if e.get("event_type") == "VideoSelected"]
+            video_events = [e for e in all_ad_events if e.get("event_type") == "VideoSelected"]
             video_event = video_events[-1] if video_events else None
             if video_event:
                 winning_video = video_event.get("outputs", {}).get("winner_video_path")
@@ -471,6 +487,25 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
             })
 
     library.sort(key=lambda item: item.get("created_at", ""), reverse=True)
+
+    # Collapse duplicate ad_id instances that arise from overlapping ledgers
+    # (the same ad appears in both the global ledger and a session ledger).
+    # Keep the instance with the best status (published > discarded > in_progress)
+    # and the highest score.
+    _STATUS_RANK = {"published": 2, "discarded": 1, "in_progress": 0}
+    best_by_ad: dict[str, dict] = {}
+    for item in library:
+        aid = item["ad_id"]
+        existing = best_by_ad.get(aid)
+        if existing is None:
+            best_by_ad[aid] = item
+            continue
+        item_rank = (_STATUS_RANK.get(item["status"], 0), item.get("aggregate_score", 0))
+        existing_rank = (_STATUS_RANK.get(existing["status"], 0), existing.get("aggregate_score", 0))
+        if item_rank > existing_rank:
+            best_by_ad[aid] = item
+    library = sorted(best_by_ad.values(), key=lambda item: item.get("created_at", ""), reverse=True)
+
     return library
 
 
