@@ -170,8 +170,8 @@ function PipelineSummaryTab({ data }: { data: Record<string, unknown> }) {
       tip: 'Ads that scored above the quality threshold (7.0+) and passed all 3 compliance layers.' },
     { label: 'Publish Rate', value: ps.publish_rate ? `${(ps.publish_rate * 100).toFixed(0)}%` : '0%', color: colors.cyan,
       tip: 'Percentage of generated ads that met the publish threshold. Higher rates mean better briefs and fewer wasted tokens.' },
-    { label: 'Avg Score', value: ps.avg_score?.toFixed(1) ?? '0.0', color: colors.yellow,
-      tip: 'Mean weighted score across all 5 dimensions (Clarity, Value Prop, CTA, Brand Voice, Emotional Resonance) for published ads.' },
+    { label: 'Avg Copy Score', value: ps.avg_score?.toFixed(1) ?? '0.0', color: colors.yellow,
+      tip: 'Mean weighted copy score across 5 dimensions (Clarity, Value Prop, CTA, Brand Voice, Emotional Resonance) for published ads. Image and video quality are not scored.' },
     { label: 'Total Batches', value: ps.total_batches ?? 0, color: colors.white,
       tip: 'Number of batch processing rounds completed. Each batch generates, evaluates, and optionally regenerates up to 10 ads.' },
     { label: 'Total Tokens', value: (ps.total_tokens ?? 0).toLocaleString(), color: colors.white,
@@ -286,7 +286,7 @@ function QualityTrendsTab({ data }: { data: Record<string, unknown> }) {
           <table style={s.table}>
             <thead>
               <tr>
-                {['Batch', 'Avg Score', 'Threshold', 'Published', 'Generated', 'Pub Rate', 'Tokens'].map((h) => (
+                {['Batch', 'Avg Copy Score', 'Threshold', 'Published', 'Generated', 'Pub Rate', 'Tokens'].map((h) => (
                   <th key={h} style={s.th}>{h}</th>
                 ))}
               </tr>
