@@ -1,4 +1,4 @@
-# PD-05 Primer: Curated Set Video Support
+# PD-05 Primer: Curated Set Video Support + Content-Type Filter
 
 **For:** New Cursor Agent session
 **Project:** Ad-Ops-Autopilot — Autonomous Content Generation System for FB/IG
@@ -9,7 +9,7 @@
 
 ## What Is This Ticket?
 
-PD-05 ports video rendering support from the Ad Library tab into the Curated Set tab. Currently, `CuratedSet.tsx` only handles image ads — it renders `image_url` via `<img>` tags but has zero awareness of `video_url`. The Ad Library tab (`AdLibrary.tsx`) already has full video support: `<video>` elements with hover-to-play on thumbnails, controls on expanded view, download buttons, copy-only fallback with film emoji, and conditional `video_scores` display. This ticket reuses those patterns in the curation workflow and extends the backend ZIP export to include video files alongside images.
+PD-05 ports video rendering support from the Ad Library tab into the Curated Set tab and extends the content-type filter pattern from PD-02 into the curation workflow. Currently, `CuratedSet.tsx` only handles image ads — it renders `image_url` via `<img>` tags but has zero awareness of `video_url`. The Ad Library tab (`AdLibrary.tsx`) already has full video support: `<video>` elements with hover-to-play on thumbnails, controls on expanded view, download buttons, copy-only fallback with film emoji, and conditional `video_scores` display. This ticket reuses those patterns in the curation workflow, extends the backend ZIP export to include video files alongside images, and adds the same content-type filter (All | Copy | Image | Video) from PD-02 so curators can focus on one media type at a time.
 
 ### Why It Matters
 
@@ -22,6 +22,7 @@ PD-05 ports video rendering support from the Ad Library tab into the Curated Set
 ## What Was Already Done
 
 - PD-04: Canonical video score structure (`video_scores` with composite, attribute %, coherence) is in place
+- PD-02: ContentTypeFilter component created and wired into session-level and global dashboards — reuse here
 - PA-09: Ad Library tab has full video rendering (`<video>` elements, hover play, download, fallback)
 - PA-10: Curated Set tab has full image curation workflow (reorder, annotate, edit copy, export ZIP)
 - `app/api/routes/curation.py` `export_curated_zip` function bundles image files into per-ad folders (lines 267-354)
@@ -45,6 +46,8 @@ Enable video ads to be rendered, scored, and exported in the Curated Set tab, ma
 - [ ] Show `video_scores` (composite, attribute %, coherence) instead of 5-dimension quality scores when the ad is a video ad
 - [ ] Add "Download MP4" link for video ads in the card actions area
 - [ ] Reuse styles from `AdLibrary.tsx` (`adVideo`, `adVideoExpanded`, `noVideoThumb`, `noVideoPlaceholder`, `downloadBtn`)
+- [ ] Add `ContentTypeFilter` (from PD-02) above the curated ads list to filter by All | Copy | Image | Video
+- [ ] Filter curated ads display based on selected content type (match the ad's media type against filter)
 
 #### B. Backend — ZIP Export (`app/api/routes/curation.py`)
 

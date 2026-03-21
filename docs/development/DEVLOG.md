@@ -7,6 +7,39 @@
 
 ---
 
+## Copy-only session mode (✅)
+
+### Plain-English Summary
+- Users can now choose **Copy Only** when creating a session, alongside Image Ads and Video Ads.
+- Copy-only sessions reuse the text pipeline and explicitly skip image generation.
+- Session detail and Ad Library now show copy-only sessions clearly instead of assuming every non-video session has an image.
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 21, 2026  |  **Branch:** `final-submission`
+- **Tests:** `tests/test_app/test_sessions.py`, `tests/test_app/test_campaigns.py`, targeted worker routing tests for copy sessions
+
+### Files Changed
+- `app/api/schemas/session.py` — added `copy` session type and normalization to disable image-specific flags
+- `app/workers/tasks/pipeline_task.py` — documented copy-only routing via the text/image pipeline
+- `app/frontend/src/types/session.ts` — added frontend `copy` session type
+- `app/frontend/src/views/NewSessionForm.tsx` — added Copy Only option and hid image/video-only controls when selected
+- `app/frontend/src/views/SessionDetail.tsx` — surfaced copy-only metadata in the session header
+- `app/frontend/src/tabs/Overview.tsx` — adjusted labels and cost copy for copy-only sessions
+- `app/frontend/src/tabs/AdLibrary.tsx` — added copy-only placeholders in gallery cards
+- `tests/test_app/test_sessions.py` — added API coverage for creating copy-only sessions
+- `tests/test_pipeline/test_video_app_integration.py` — added worker routing coverage for copy-only sessions
+
+### Key Achievements
+- First-class `copy` session type now exists in both backend and frontend types.
+- Copy-only creation is normalized server-side, so sessions cannot accidentally request image generation.
+- Existing text pipeline was reused instead of duplicating orchestration logic, keeping the change low risk.
+
+### Learnings
+- The app already had most of the underlying support through `image_enabled`; the main missing piece was making that capability explicit in the product model and UI.
+- Treating copy-only as a routed variant of the text pipeline is simpler and safer than creating a third independent pipeline path.
+
+---
+
 ## Phase PD: Pipeline Debt — Consistency, Integrity & Honest Architecture (⏳)
 
 ### Plain-English Summary
@@ -15,10 +48,10 @@ Comprehensive audit of the codebase revealed 23 inconsistencies across evaluatio
 | Ticket | Title | Priority | Est. |
 |--------|-------|----------|------|
 | PD-01 | Critical Bug Fixes (tokens_estimate, hardcoded avg_score) | P0 | 30m |
-| PD-02 | Dashboard Video Session Support (5 broken tabs) | P1 | 2h |
+| PD-02 | Unified Dashboard with Content-Type Filter (All/Copy/Image/Video) | P1 | 3h |
 | PD-03 | Dead Config Cleanup (model_tier, budget_cap, dim weights) | P2 | 1h |
 | PD-04 | Video Evaluation Consolidation (2 conflicting impls) | P1 | 1h |
-| PD-05 | Curated Set Video Support | P2 | 30m |
+| PD-05 | Curated Set Video Support + Content-Type Filter | P2 | 45m |
 | PD-06 | Pipeline Iteration Wiring (ratchet, Pareto, routing) | P1 | 3-4h |
 | PD-07 | Cost Tracking Completion (backfill, validation) | P2 | 2h |
 | PD-08 | Honest Architecture Documentation | P3 | 1h |

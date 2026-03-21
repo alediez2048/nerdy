@@ -14,13 +14,15 @@ After completing P0–P5 and the application layer (PA/PB/PC), a comprehensive a
 - Propagate real `current_score_avg` in progress events (currently hardcoded to 7.0)
 - **AC:** No hardcoded 7.0 in pipeline results or progress events; evaluator doesn't crash on log
 
-### PD-02: Dashboard Video Session Support
-- `export_dashboard.py` Pipeline Summary: count `VideoSelected`/`VideoBlocked` alongside `AdPublished`/`AdDiscarded`
-- Quality Trends, Iteration Cycles, Dimension Deep-Dive: show video-appropriate banner + video-specific metrics when session is video-only
+### PD-02: Unified Dashboard with Content-Type Filter
+- Add content-type filter/toggle to session-level and global dashboards: **All | Copy | Image | Video**
+- Each `_build_*` function in `export_dashboard.py` accepts an optional `content_type` filter and returns type-appropriate data
+- Pipeline Summary counts `VideoSelected`/`VideoBlocked` alongside `AdPublished`/`AdDiscarded`
+- Quality Trends, Iteration Cycles, Dimension Deep-Dive: adapt columns and metrics based on active filter (5 text dimensions for copy/image, composite + attribute % + coherence for video)
 - System Health: handle missing per-dimension confidence for video sessions
 - Add `video_scores` to TypeScript `Ad` interface in `GlobalDashboard.tsx`
-- Video score columns (composite, attribute %, coherence) in Ad Library for video ads
-- **AC:** No empty/broken panels for video-only sessions; video metrics display correctly
+- Frontend panels render type-appropriate columns based on active filter — no empty panels, no "N/A" banners
+- **AC:** Dashboard shows relevant, complete data for any content-type filter selection; mixed sessions aggregate correctly under "All"
 
 ### PD-03: Dead Config Cleanup
 - Remove or disable `model_tier`, `budget_cap_usd`, `dimension_weights` from `NewSessionForm.tsx` (pipeline ignores them)
@@ -34,10 +36,11 @@ After completing P0–P5 and the application layer (PA/PB/PC), a comprehensive a
 - Fix composite score normalization: `attr_pct * 0.4 + (coherence_avg / 10) * 0.6` (currently mixing 0–1 and 1–10 scales)
 - **AC:** Single canonical video evaluation with consistent thresholds and normalized scoring
 
-### PD-05: Curated Set Video Support
+### PD-05: Curated Set Video Support + Content-Type Filter
 - Add `<video>` rendering to `CuratedSet.tsx` tab (reuse pattern from `AdLibrary.tsx`)
 - Include video preview in curated export ZIP
-- **AC:** Video ads display and export correctly in curation workflow
+- Add content-type filter to curated set view (consistent with PD-02 dashboard filter)
+- **AC:** Video ads display and export correctly in curation workflow; filter matches dashboard UX
 
 ### PD-06: Pipeline Iteration Wiring
 - Wire `quality_ratchet.py` into `batch_processor.py` (replace hardcoded `batch_average: 7.0`)
@@ -85,7 +88,7 @@ PD-01 (Critical Bugs)
 
 1. **PD-01** — Critical bugs, 30 min, unblocks everything
 2. **PD-04** — Video eval consolidation, 1 hr, unblocks PD-02
-3. **PD-02** — Dashboard video support, 2 hrs
+3. **PD-02** — Unified dashboard with content-type filter, 3 hrs
 4. **PD-03** — Dead config cleanup, 1 hr (independent)
 5. **PD-05** — Curated set video, 30 min
 6. **PD-06** — Pipeline iteration wiring, 3-4 hrs (largest ticket)

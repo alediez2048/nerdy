@@ -1,110 +1,155 @@
-# PD-02 Primer: Dashboard Video Session Support
+# PD-02 Primer: Unified Dashboard with Content-Type Filter
 
 **For:** New Cursor Agent session
 **Project:** Ad-Ops-Autopilot — Autonomous Content Generation System for FB/IG
 **Date:** March 2026
-**Previous work:** P5-01 (dashboard export), PC-01 through PC-05 (video pipeline), PD-01 (bug fixes). See `docs/DEVLOG.md`.
+**Previous work:** P5-01 (dashboard export), PC-01 through PC-05 (video pipeline), PD-01 (bug fixes), PD-04 (video eval consolidation). See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-The 8-panel HTML dashboard was designed for image sessions that use a 5-dimension text scoring model (clarity, value_proposition, cta, brand_voice, emotional_resonance). Video sessions use a completely different scoring structure: binary attribute checks (hook_timing, ugc_authenticity, pacing, text_legibility, no_artifacts) plus a coherence score. This mismatch causes 5 of 7 dashboard tabs to show empty or broken data for video-only sessions.
+The dashboard was designed for image sessions with 5-dimension text scoring. Video sessions use a completely different scoring structure (binary attributes + coherence), causing 5 of 7 tabs to show empty or broken data. Rather than bolting "N/A" banners onto panels that don't apply, PD-02 adds a **content-type filter** to both session-level and global dashboards. When the user selects a content type (All | Copy | Image | Video), every panel adapts its columns, metrics, and visualizations to show complete, relevant data for that type.
 
-The backend already emits `VideoSelected` and `VideoBlocked` events and the `AdLibrary` tab partially handles them, but the aggregation functions in `export_dashboard.py` and the TypeScript types in `GlobalDashboard.tsx` do not account for video scoring. This ticket bridges that gap so the dashboard renders meaningful data for both session types.
+This follows the same pattern as `SessionFilters` (which already filters by status, type, audience, goal) — extending it to the dashboard level so every panel is always showing meaningful data instead of empty grids.
 
 ### Why It Matters
-- Users running video sessions see a dashboard with mostly empty panels — it looks broken.
+- Users running video sessions currently see a dashboard with mostly empty panels — it looks broken and erodes trust.
 - Pipeline Summary undercounts published/discarded ads because it ignores `VideoSelected`/`VideoBlocked` events.
-- Quality Trends and Dimension Deep-Dive panels show zero data since videos produce no `AdEvaluated` events with 5-dimension scores.
-- Violates Pillar 8 (The Reviewer Is a User, Too) — the dashboard must be useful regardless of session type.
-- Violates Pillar 9 (The Tool Is the Product) — broken panels erode trust.
+- Quality Trends, Dimension Deep-Dive, and System Health show zero data for video sessions.
+- A unified filter is cleaner than per-panel conditionals or separate dashboards per type.
+- Violates Pillar 8 (The Reviewer Is a User, Too) and Pillar 9 (The Tool Is the Product).
 
 ---
 
 ## What Was Already Done
 
-- `_build_ad_library()` in `export_dashboard.py` (lines 387-394) already handles `VideoSelected` as published and `VideoBlocked` as discarded for status determination.
-- `AdLibrary.tsx` (line 18-19) already has `video_url` and `video_scores` optional fields in its local `Ad` interface.
-- `app/workers/progress.py` defines video-specific event types: `VIDEO_PIPELINE_START`, `VIDEO_AD_START`, `VIDEO_GENERATING`, `VIDEO_EVALUATING`, `VIDEO_AD_COMPLETE`, `VIDEO_PIPELINE_COMPLETE`.
-- `evaluate/video_evaluator.py` defines the canonical video score structures: `VideoEvalResult` (5 binary attributes + `attribute_pass_pct`) and `VideoCoherenceResult` (dimension scores + `avg_score`).
-- Pipeline task emits `VideoSelected` and `VideoBlocked` events with video scores embedded.
+- `_build_ad_library()` in `export_dashboard.py` already handles `VideoSelected` as published and `VideoBlocked` as discarded.
+- `AdLibrary.tsx` already renders `<video>` elements and `video_scores` for video ads.
+- `SessionFilters.tsx` already implements a filter pattern (status chips, type chips, dropdown filters) that can be extended.
+- `Overview.tsx` already switches metrics based on `sessionType === 'video'`.
+- `evaluate/video_evaluator.py` defines the canonical video score structures after PD-04.
 
 ---
 
 ## What This Ticket Must Accomplish
 
 ### Goal
-Make all dashboard panels render meaningful data for video sessions by recognizing video event types and video score structures.
+
+Add a content-type filter (All | Copy | Image | Video) to session-level and global dashboards so every panel renders type-appropriate, complete data based on the active filter.
 
 ### Deliverables Checklist
 
-#### A. Implementation
+#### A. Backend — `output/export_dashboard.py`
 
-**Backend — `output/export_dashboard.py`:**
-- [ ] **Panel 1 — Pipeline Summary (`_build_pipeline_summary`):** Count `VideoSelected` events as published and `VideoBlocked` events as discarded, in addition to existing `AdPublished`/`AdDiscarded` counts. Include video composite scores in `avg_score` computation.
-- [ ] **Panel 2 — Iteration Cycles (`_build_iteration_cycles`):** Videos do not produce multi-cycle `AdEvaluated` events. For video ads, either show a single-cycle entry with attribute pass percentage and coherence score, or display an honest "N/A — video ads are single-pass" indicator.
-- [ ] **Panel 3 — Quality Trends (`_build_quality_trends`):** Include video composite scores (derived from `attribute_pass_pct` and coherence `avg_score`) in the `all_eval_scores` distribution histogram so video sessions have populated score buckets.
-- [ ] **Panel 4 — Dimension Deep-Dive (`_build_dimension_deep_dive`):** The correlation matrix requires exactly 5 dimensions and uses `DIMENSIONS` tuple. For video sessions, either show video-specific metrics (attribute_pass_pct, coherence_avg, per-attribute pass rates) in a separate structure, or return an explicit `"video_mode": true` flag so the frontend can show an appropriate banner.
-- [ ] **Panel 6 — System Health (`_build_system_health` if it exists):** Handle missing per-dimension confidence scores for video sessions. Avoid showing 0% across the board — show "N/A" or video-appropriate health metrics.
+- [ ] Add `content_type: str | None = None` parameter to `build_dashboard_data()` and `build_dashboard_data_from_events()`
+- [ ] Add `_filter_events_by_content_type(events, content_type)` helper that filters events:
+  - `"copy"` → `AdGenerated`, `AdEvaluated`, `AdPublished`, `AdDiscarded` (text-only events)
+  - `"image"` → above + `ImageGenerated`, `ImageEvaluated`, `AspectRatioGenerated`
+  - `"video"` → `VideoGenerated`, `VideoEvaluated`, `VideoSelected`, `VideoBlocked`, `VideoCoherenceChecked`
+  - `None` / `"all"` → all events (no filter)
+- [ ] **Pipeline Summary (`_build_pipeline_summary`):** Count `VideoSelected` as published, `VideoBlocked` as discarded. When filtered to video, show video-specific KPIs (videos_generated, videos_selected, videos_blocked, avg composite score). When "all", aggregate across types.
+- [ ] **Iteration Cycles (`_build_iteration_cycles`):** When filtered to video, show per-ad video evaluation data (attribute pass %, coherence score) instead of multi-cycle 5-dimension iteration. Videos are single-pass — show the evaluation result, not an empty iteration table.
+- [ ] **Quality Trends (`_build_quality_trends`):** When filtered to video, use video composite scores in the score distribution histogram. When "all", merge both score types into the distribution.
+- [ ] **Dimension Deep-Dive (`_build_dimension_deep_dive`):** When filtered to video, return video-specific dimension data: per-attribute pass rates (hook_timing, ugc_authenticity, pacing, text_legibility, no_artifacts) and per-coherence-dimension averages (message_alignment, audience_match, emotional_consistency, narrative_flow). Skip the 5-dimension correlation matrix. When "all", return both structures.
+- [ ] **System Health (`_build_system_health`):** When filtered to video, skip per-dimension confidence routing (videos don't have it). Show video-specific health: attribute pass rate trend, coherence score trend, video generation failure rate.
+- [ ] **Token Economics (`_build_token_economics`):** Already content-type agnostic (groups by model). No changes needed — filter just reduces the events fed in.
 
-**Frontend — `app/frontend/src/views/GlobalDashboard.tsx`:**
-- [ ] **Ad interface (lines 40-55):** Add optional `video_scores` field (`Record<string, number> | null`) and optional `video_url` field (`string | null`) to the `Ad` interface.
-- [ ] **Ad Library score grid (lines 567-573):** When `ad.video_scores` is present, render video-specific score columns (composite_score, attribute_pass_pct, coherence_avg) instead of the 5-dimension image grid. Use `gridTemplateColumns: 'repeat(3, 1fr)'` for video ads.
+#### B. Backend — API Routes
 
-**Frontend — `app/frontend/src/tabs/AdLibrary.tsx`:**
-- [ ] Verify the existing `video_scores` field in the local `Ad` interface is used in the score rendering section. If the expanded ad detail still renders a 5-column grid unconditionally, add a conditional branch for video ads.
+- [ ] `app/api/routes/dashboard.py` — Add `content_type` query parameter to session-level dashboard endpoints (`get_summary`, `get_cycles`, `get_dimensions`, `get_costs`, `get_ads`, `get_spc`) and pass through to `build_dashboard_data()`.
+- [ ] `app/api/routes/dashboard.py` — Add `content_type` query parameter to `get_global_dashboard()` and pass through to `build_dashboard_data_from_events()`.
 
-#### B. Tests
-- [ ] Add test for `_build_pipeline_summary` with mixed image + video events verifying correct published/discarded counts.
-- [ ] Add test for `_build_quality_trends` with video-only events verifying non-empty score distribution.
-- [ ] Add test for `_build_dimension_deep_dive` with video-only events verifying it does not crash and returns a meaningful structure (even if `"video_mode": true`).
-- [ ] Verify existing dashboard tests in `tests/test_output/test_export_dashboard.py` still pass (they already contain `VideoSelected`/`VideoBlocked` fixtures at lines 237 and 266).
+#### C. Frontend — Filter Component
 
-#### C. Integration Expectations
-- [ ] A video-only session produces a dashboard with non-empty data in all 7 tabs.
-- [ ] A mixed image+video session produces correct aggregated data across both types.
-- [ ] No regressions in image-only session dashboards.
+- [ ] Create `ContentTypeFilter` component (or extend existing `SessionFilters`): row of chips — All | Copy | Image | Video. Active chip highlighted. Callback `onFilterChange(type: string)`.
+- [ ] Add `ContentTypeFilter` to `SessionDetail.tsx` above the tab bar. Pass selected type as query param to all dashboard API calls.
+- [ ] Add `ContentTypeFilter` to `GlobalDashboard.tsx` alongside existing timeframe selector. Pass selected type to `fetchGlobalDashboard()`.
+- [ ] Update `api/dashboard.ts` — all fetch functions accept optional `contentType` parameter, append `?content_type=<value>` to URL.
 
-#### D. Documentation
+#### D. Frontend — Panel Adaptations
+
+- [ ] **GlobalDashboard.tsx `Ad` interface:** Add `video_scores?: { composite_score: number; attribute_pass_pct: number; coherence_avg: number } | null` and `video_url?: string | null`.
+- [ ] **Pipeline Summary panel:** When backend returns video KPIs, render video-specific metric cards (Videos Generated, Videos Selected, Videos Blocked, Avg Composite) instead of the 5-dimension text metrics.
+- [ ] **Quality Trends panel:** Score distribution histogram works with any numeric scores — just needs data from backend. No structural change needed.
+- [ ] **Dimension Deep-Dive panel:** When backend returns `video_dimensions` instead of `dimension_trends`, render video attribute pass rates as a bar chart and coherence dimension averages as a separate bar chart. Skip correlation matrix.
+- [ ] **Ad Library score grid:** When `ad.video_scores` is present, render 3-column grid (Composite, Attr%, Coherence) instead of 5-column grid. Already partially done in `AdLibrary.tsx`.
+- [ ] **System Health panel:** When backend returns video health data, render attribute trend and coherence trend instead of confidence routing pie chart.
+
+#### E. Tests
+
+- [ ] Test `_filter_events_by_content_type()` with mixed events — verify correct filtering for each type.
+- [ ] Test `_build_pipeline_summary` with `content_type="video"` — verify VideoSelected/VideoBlocked counted correctly.
+- [ ] Test `_build_quality_trends` with `content_type="video"` — verify non-empty score distribution.
+- [ ] Test `_build_dimension_deep_dive` with `content_type="video"` — verify video dimensions returned, no crash.
+- [ ] Test `content_type="all"` aggregates across both types.
+- [ ] Verify existing dashboard tests still pass (no regressions for image-only).
+
+#### F. Documentation
+
 - [ ] Add PD-02 entry to `docs/development/DEVLOG.md`.
 
 ---
 
 ## Important Context
 
+### Files to Create
+
+| File | Why |
+|------|-----|
+| `app/frontend/src/components/ContentTypeFilter.tsx` | Reusable filter component for dashboard content-type selection |
+
 ### Files to Modify
 
 | File | Action |
 |------|--------|
-| `output/export_dashboard.py` | Update `_build_pipeline_summary`, `_build_iteration_cycles`, `_build_quality_trends`, `_build_dimension_deep_dive`, and system health to handle video events and scores |
-| `app/frontend/src/views/GlobalDashboard.tsx` | Add `video_scores` and `video_url` to `Ad` interface; conditionally render video score grid |
-| `app/frontend/src/tabs/AdLibrary.tsx` | Ensure expanded ad detail renders video scores when present |
+| `output/export_dashboard.py` | Add `content_type` parameter to all `_build_*` functions; add `_filter_events_by_content_type()` helper; adapt each panel for video data |
+| `app/api/routes/dashboard.py` | Add `content_type` query parameter to all dashboard endpoints |
+| `app/frontend/src/views/GlobalDashboard.tsx` | Add ContentTypeFilter; update Ad interface; adapt panels for video data |
+| `app/frontend/src/views/SessionDetail.tsx` | Add ContentTypeFilter above tab bar; pass content_type to dashboard API calls |
+| `app/frontend/src/api/dashboard.ts` | Add `contentType` parameter to all fetch functions |
+| `app/frontend/src/tabs/AdLibrary.tsx` | Verify video score grid rendering in expanded view |
+| `tests/test_output/test_export_dashboard.py` | Add content-type filter tests |
 
 ### Files You Should READ for Context
 
 | File | Why |
 |------|-----|
-| `evaluate/video_evaluator.py` | Canonical video score structures: `VideoEvalResult` (5 binary attributes, `attribute_pass_pct`) and `VideoCoherenceResult` (dimensions, `avg_score`, `is_coherent`) |
-| `app/workers/tasks/pipeline_task.py` | Video event emission — see `VideoSelected` (~line 459) and `VideoBlocked` (~line 483) event payloads to know what fields are available |
-| `app/workers/progress.py` | Video-specific progress event type constants (lines 30-36) |
-| `tests/test_output/test_export_dashboard.py` | Existing test fixtures with `VideoSelected`/`VideoBlocked` events (lines 237, 266) — extend these |
-| `output/export_dashboard.py` lines 332-420 | `_build_ad_library` already handles video status — reference this pattern |
+| `evaluate/video_evaluator.py` | Canonical video score structures after PD-04 |
+| `app/workers/tasks/pipeline_task.py` | Video event payloads — `VideoSelected` (~line 459), `VideoBlocked` (~line 483) |
+| `app/frontend/src/components/SessionFilters.tsx` | Existing filter pattern to follow for ContentTypeFilter |
+| `app/frontend/src/tabs/Overview.tsx` | Already handles `sessionType === 'video'` — reference for conditional rendering |
+| `output/export_dashboard.py` lines 332-420 | `_build_ad_library` already handles video events — reference pattern |
 
 ### Dependencies
-- **PD-01** must be completed first (bug fixes — real scores must flow before dashboard can aggregate them).
-- **PD-04** (video eval consolidation) provides the canonical score structure. If PD-04 is not done yet, use the existing `VideoEvalResult`/`VideoCoherenceResult` structures from `evaluate/video_evaluator.py` as the source of truth.
+
+- **PD-01** must be completed first (real scores must flow before dashboard can aggregate them).
+- **PD-04** (video eval consolidation) provides the canonical score structure. If PD-04 is not done yet, use existing `VideoEvalResult`/`VideoCoherenceResult` from `evaluate/video_evaluator.py`.
+
+---
+
+## Architectural Decision: Why a Unified Filter Over Separate Dashboards
+
+**Options considered:**
+- **A. Per-panel "N/A" banners** — Least work, but panels that say "not applicable" are useless UI real estate.
+- **B. Separate dashboards per content type** — Clean per-type views, but 3 UIs to maintain and a fragmented experience.
+- **C. Unified dashboard with content-type filter (chosen)** — Single view, filter adapts all panels. Follows existing filter pattern (`SessionFilters`). Each panel is always showing complete, relevant data for the selected type.
+
+**Why C wins:** It's the natural extension of how the app already works. SessionList has filters. GlobalDashboard has a timeframe selector. Adding a content-type filter is the same UX pattern. Users don't need to navigate to a different page to see video vs image metrics — they toggle a filter.
 
 ---
 
 ## Definition of Done
 
-- [ ] Pipeline Summary counts `VideoSelected` as published and `VideoBlocked` as discarded.
-- [ ] Quality Trends score histogram includes video composite scores.
-- [ ] Dimension Deep-Dive does not crash for video-only sessions; shows video metrics or N/A banner.
-- [ ] `GlobalDashboard.tsx` `Ad` interface includes `video_scores` and `video_url` fields.
-- [ ] Ad Library score grid conditionally renders 3-column video scores vs 5-column image scores.
-- [ ] All existing dashboard tests pass; new tests cover video-specific panel logic.
+- [ ] Content-type filter (All | Copy | Image | Video) appears on session-level and global dashboards.
+- [ ] Selecting "Video" shows video-specific metrics in all panels — no empty grids, no "N/A".
+- [ ] Selecting "All" aggregates across content types correctly.
+- [ ] Pipeline Summary counts `VideoSelected` as published, `VideoBlocked` as discarded.
+- [ ] Quality Trends histogram includes video composite scores when "Video" or "All" selected.
+- [ ] Dimension Deep-Dive shows video attribute/coherence data when "Video" selected.
+- [ ] Ad Library renders 3-column video score grid for video ads.
+- [ ] `GlobalDashboard.tsx` `Ad` interface includes `video_scores` and `video_url`.
+- [ ] All existing dashboard tests pass; new tests cover content-type filtering.
 - [ ] DEVLOG updated.
 
 ---
@@ -113,12 +158,18 @@ Make all dashboard panels render meaningful data for video sessions by recognizi
 
 | Task | Estimate |
 |------|----------|
-| Pipeline Summary — add video event counting | 15 min |
-| Iteration Cycles — video-aware logic or N/A banner | 15 min |
-| Quality Trends — include video composite scores | 15 min |
-| Dimension Deep-Dive — video metrics or N/A flag | 20 min |
-| System Health — handle missing confidence scores | 10 min |
-| GlobalDashboard.tsx — type updates + conditional grid | 15 min |
-| AdLibrary.tsx — verify/fix score rendering | 10 min |
-| Tests | 20 min |
-| **Total** | **2 hours** |
+| Backend: `_filter_events_by_content_type()` + wire to all `_build_*` | 45 min |
+| Backend: API route query params | 15 min |
+| Frontend: ContentTypeFilter component | 15 min |
+| Frontend: Wire filter to SessionDetail + GlobalDashboard | 15 min |
+| Frontend: Panel adaptations (Pipeline Summary, Dim Deep-Dive, System Health) | 45 min |
+| Frontend: Ad interface + score grid | 15 min |
+| Tests | 30 min |
+| **Total** | **~3 hours** |
+
+---
+
+## After This Ticket: What Comes Next
+
+- **PD-05** (Curated Set Video + Filter) — extends the same content-type filter pattern to the curation workflow.
+- With PD-02 complete, every dashboard view shows relevant data regardless of session type.
