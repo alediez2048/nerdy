@@ -69,11 +69,11 @@ export default function CuratedSetPage() {
         }),
       )
 
-      // Sort by session name
+      // Sort by most recently created first
       results.sort((a, b) => {
-        const nameA = a.session.name || a.session.session_id
-        const nameB = b.session.name || b.session.session_id
-        return nameA.localeCompare(nameB)
+        const dateA = new Date(a.session.created_at).getTime()
+        const dateB = new Date(b.session.created_at).getTime()
+        return dateB - dateA
       })
 
       setGroups(results)
