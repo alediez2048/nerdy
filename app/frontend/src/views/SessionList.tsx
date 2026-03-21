@@ -15,6 +15,7 @@ export default function SessionList() {
   const [sessions, setSessions] = useState<SessionSummary[]>([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
+  const [showHowItWorks, setShowHowItWorks] = useState(false)
   const [filters, setFilters] = useState<Filters>({
     session_type: '',
     audience: '',
@@ -100,6 +101,76 @@ export default function SessionList() {
 
         </div>
 
+        {/* How It Works toggle */}
+        <button
+          onClick={() => setShowHowItWorks(!showHowItWorks)}
+          style={s.howToggle}
+        >
+          {showHowItWorks ? '▼' : '▶'} How the pipeline works
+        </button>
+
+        {showHowItWorks && (
+          <div style={s.howPanel}>
+            <div style={s.howSteps}>
+              <div style={s.howStep}>
+                <span style={s.howNum}>1</span>
+                <div>
+                  <strong style={{ color: colors.white }}>Brief Expansion</strong>
+                  <p style={s.howText}>
+                    Your session config (audience, persona, key message) is expanded into a full creative brief using
+                    Gemini Flash. Brand knowledge, competitive landscape context, and audience pain points are injected
+                    automatically from the knowledge base.
+                  </p>
+                </div>
+              </div>
+              <div style={s.howStep}>
+                <span style={s.howNum}>2</span>
+                <div>
+                  <strong style={{ color: colors.white }}>Ad Copy Generation</strong>
+                  <p style={s.howText}>
+                    Each ad is generated using the Reference-Decompose-Recombine approach. Structural atoms (hook type,
+                    body pattern, CTA style) are selected from the competitive pattern database and recombined with
+                    the Varsity Tutors brand voice. Each ad gets a deterministic seed for reproducibility.
+                  </p>
+                </div>
+              </div>
+              <div style={s.howStep}>
+                <span style={s.howNum}>3</span>
+                <div>
+                  <strong style={{ color: colors.white }}>5-Dimension Evaluation</strong>
+                  <p style={s.howText}>
+                    Every ad is scored across Clarity, Value Proposition, CTA, Brand Voice, and Emotional Resonance
+                    using chain-of-thought evaluation. Each dimension gets a contrastive rationale explaining the score.
+                    Ads scoring 7.0+ are published; below 5.5 are discarded; 5.5–7.0 enter regeneration.
+                  </p>
+                </div>
+              </div>
+              <div style={s.howStep}>
+                <span style={s.howNum}>4</span>
+                <div>
+                  <strong style={{ color: colors.white }}>Image / Video Generation</strong>
+                  <p style={s.howText}>
+                    For image sessions, 3 image variants are generated per ad using the shared semantic brief, then
+                    evaluated for visual attributes and text-image coherence. For video sessions, UGC-style video
+                    variants are generated via Fal.ai using the 8-part prompt framework.
+                  </p>
+                </div>
+              </div>
+              <div style={s.howStep}>
+                <span style={s.howNum}>5</span>
+                <div>
+                  <strong style={{ color: colors.white }}>Publish & Curate</strong>
+                  <p style={s.howText}>
+                    Ads that pass all quality gates are published to the session&apos;s ad library. From there, you can
+                    browse results, add your best ads to the Curated Set for export, and download ZIP packages
+                    ready for Meta Ads Manager.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <SessionFilters filters={filters} onChange={setFilters} />
 
@@ -154,6 +225,56 @@ export default function SessionList() {
 }
 
 const s: Record<string, React.CSSProperties> = {
+  howToggle: {
+    background: 'transparent',
+    border: 'none',
+    color: colors.cyan,
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 600,
+    fontFamily: font.family,
+    padding: '8px 0',
+    marginBottom: '8px',
+  },
+  howPanel: {
+    background: colors.surface,
+    borderRadius: radii.card,
+    padding: '24px 28px',
+    marginBottom: '20px',
+    borderLeft: `3px solid ${colors.cyan}`,
+  },
+  howSteps: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '16px',
+  },
+  howStep: {
+    display: 'flex',
+    gap: '14px',
+    alignItems: 'flex-start',
+  },
+  howNum: {
+    width: '26px',
+    height: '26px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
+    color: colors.ink,
+    fontWeight: 700,
+    fontSize: '13px',
+    flexShrink: 0,
+    marginTop: '2px',
+    fontFamily: font.family,
+  },
+  howText: {
+    fontSize: '13px',
+    color: colors.muted,
+    margin: '4px 0 0',
+    lineHeight: 1.5,
+    fontFamily: font.family,
+  },
   pageBg: {
     minHeight: '100vh',
     width: '100%',
