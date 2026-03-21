@@ -12,22 +12,14 @@ import type { CampaignSummary } from '../types/campaign'
 
 import Overview from '../tabs/Overview'
 import Quality from '../tabs/Quality'
-import AdLibrary from '../tabs/AdLibrary'
-import CompetitiveIntel from '../tabs/CompetitiveIntel'
 import TokenEconomics from '../tabs/TokenEconomics'
-import CuratedSet from '../tabs/CuratedSet'
-import SystemHealth from '../tabs/SystemHealth'
 import ExpandedBriefPanel from '../tabs/ExpandedBrief'
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'brief', label: 'Expanded Brief' },
   { key: 'quality', label: 'Quality' },
-  { key: 'ads', label: 'Ad Library' },
-  { key: 'competitive', label: 'Competitive' },
   { key: 'costs', label: 'Token Economics' },
-  { key: 'curated', label: 'Curated Set' },
-  { key: 'health', label: 'System Health' },
 ] as const
 
 type TabKey = typeof TABS[number]['key']
@@ -309,11 +301,7 @@ export default function SessionDetail() {
             <ExpandedBriefPanel sessionId={sessionId!} sessionConfig={config} />
           )}
           {activeTab === 'quality' && <Quality sessionId={sessionId!} />}
-          {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} />}
-          {activeTab === 'competitive' && <CompetitiveIntel />}
           {activeTab === 'costs' && <TokenEconomics sessionId={sessionId!} />}
-          {activeTab === 'curated' && <CuratedSet sessionId={sessionId!} />}
-          {activeTab === 'health' && <SystemHealth sessionId={sessionId!} />}
         </div>
       </div>
     </div>
