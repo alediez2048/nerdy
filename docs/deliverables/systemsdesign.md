@@ -889,3 +889,83 @@ PHASE 5 — Dashboard, Docs & Submission (P5-01 → P5-11)
 ---
 
 *This document describes the target architecture. Implementation status is tracked in [DEVLOG.md](../development/DEVLOG.md). Design rationale is documented in [decisionlog.md](decisionlog.md).*
+
+---
+
+## Appendix A: Implementation Status (PD-08 Audit, March 21 2026)
+
+This section annotates every major component described above with its actual implementation state as of the PD-08 audit. Labels:
+
+- **Integrated** — module implemented, tested, and called by the pipeline task during a real session run.
+- **Implemented** — module exists with tests and correct logic, but is NOT imported or called by the pipeline task or batch processor. Could be wired in with minimal glue code.
+- **Designed** — documented in the PRD and this systems design but no source file exists yet.
+
+### A.1 Generation Layer (`generate/`)
+
+| Component | Section | Status | Notes |
+|-----------|---------|--------|-------|
+| Brief expansion (`brief_expansion.py`) | 4.1 | **Integrated** | Called by `batch_processor.process_batch()` and `_run_video_pipeline()`. Real Gemini Flash API calls with brand KB + competitive patterns. |
+| Ad generator (`ad_generator.py`) | 4.1 | **Integrated** | Called by batch processor and video pipeline. Reference-decompose-recombine with structural atoms. |
+| Brand voice (`brand_voice.py`) | 4.1 | **Integrated** | Audience-specific profiles loaded during generation. |
+| Model router (`model_router.py`) | 4.1 | **Implemented (partial)** | `route_ad()` IS called by `batch_processor.process_batch()` and produces correct discard/escalate/publish decisions. However, the "escalate" path does NOT actually re-generate with Gemini Pro. Escalated ads are logged as `regenerated` but no Pro-model regeneration occurs. The routing decision is recorded; the follow-through is not wired. |
+| Seeds (`seeds.py`) | 4.1 | **Integrated** | Identity-derived seed chain used throughout pipeline. |
+| Compliance filter (`compliance.py`) | 4.1 | **Implemented** | Module exists with tests. Not called inline by batch processor before publishing. |
+
+### A.2 Evaluation Layer (`evaluate/`)
+
+| Component | Section | Status | Notes |
+|-----------|---------|--------|-------|
+| Text evaluator — 5-dim CoT (`evaluator.py`) | 4.2 | **Integrated** | Called by `batch_processor.process_batch()`. Real Gemini Flash API calls. 5 dimensions with contrastive rationales, confidence flags, and floor constraints. |
+| Dimension weights (`dimensions.py`) | 4.2 | **Integrated** | Campaign-goal-adaptive weights (awareness/conversion) with Clarity >= 6.0 and Brand Voice >= 5.0 floors. |
+| Calibration (`calibration.py`) | 4.2 | **Integrated** | Cold-start calibration against 42 real reference ads completed during P0-06. |
+| Golden set (`golden_set.py`) | 4.2 | **Integrated** | Regression tests against known-quality ads. |
+| SPC drift detection (`drift_detection.py`) | 4.2 | **Designed** | File does NOT exist. Control chart logic, canary injection, and recalibration are described in the PRD but not built. |
+| Image attribute evaluation | 4.4 | **Integrated** | `evaluate/image_evaluator.py` called by `batch_processor._generate_and_select_image()`. Real Gemini Flash multimodal API calls against image files. |
+| Image coherence check | 4.4 | **Integrated** | `evaluate/coherence_checker.py` called by batch processor. Real Gemini Flash multimodal 4-dimension scoring. |
+| Video evaluation (`evaluate/video_evaluator.py`) | 4.5 | **Integrated** | Called by `_run_video_pipeline()` in pipeline_task.py. Real Gemini Flash multimodal API calls — sends actual video bytes for 5-attribute binary scoring and 4-dimension coherence. This is the version the pipeline uses. |
+| Video attributes (`evaluate/video_attributes.py`) | 4.5 | **Implemented (placeholder)** | 10-attribute checklist structure exists, but `evaluate_video_attributes()` returns hardcoded `passed=True` for all attributes. NOT called by the pipeline. This is the P3-08 design stub, superseded by `video_evaluator.py` for the live pipeline. |
+| Video coherence (`evaluate/video_coherence.py`) | 4.5 | **Implemented (placeholder)** | 4-dimension structure exists, but `check_video_coherence()` returns hardcoded `score=7.0` for all dimensions. NOT called by the pipeline. Superseded by `video_evaluator.py`. |
+| Cost tracking (`evaluate/cost_reporter.py`) | 8.2 | **Integrated** | `sum_session_display_cost_usd()` computes per-session costs from ledger events. Works correctly for individual sessions. Global dashboard uses a hardcoded `HISTORICAL_SPEND_USD` baseline (~$84.68) as a workaround because early sessions logged `tokens_consumed: 0`. This baseline will drift as new sessions run. |
+
+### A.3 Iteration Layer (`iterate/`)
+
+| Component | Section | Status | Notes |
+|-----------|---------|--------|-------|
+| Feedback loop (`feedback_loop.py`) | 4.3 | **Designed** | File does NOT exist. The core generate-evaluate-regen cycle described in Section 4.3 is not implemented as a standalone module. The pipeline task orchestrates a single-pass flow (generate once, evaluate once, route, done). |
+| Pareto selection (`pareto_selection.py`) | 4.3 | **Implemented** | Module exists with correct Pareto dominance logic, regression filtering, and weighted-average tiebreaking. Has tests. NOT imported or called by `batch_processor.py` or `pipeline_task.py`. |
+| Brief mutation (`brief_mutation.py`) | 4.3 | **Implemented** | Module exists. NOT called by the pipeline. No brief mutation occurs on persistent failure — ads are simply logged as escalated. |
+| Quality ratchet (`quality_ratchet.py`) | 4.3 | **Implemented** | Module exists with correct monotonic threshold logic, rolling window, and ledger reconstruction. Has tests. NOT imported or called by `batch_processor.py` or `pipeline_task.py`. The pipeline uses a fixed 7.0 threshold. |
+| Context distiller (`context_distiller.py`) | 4.3 | **Implemented** | Module exists. NOT called by the pipeline (no multi-cycle iteration to distill). |
+| Batch processor (`batch_processor.py`) | 4.3 | **Integrated** | Called by `_run_image_pipeline()`. Orchestrates: expand -> generate -> evaluate -> route -> publish/discard. Single-pass per brief (no regeneration cycles). `write_batch_checkpoint()` uses hardcoded `batch_avg = 7.0` placeholder. |
+| Token tracker (`token_tracker.py`) | 4.3 | **Implemented** | Module exists. Per-call cost attribution logic present but not wired into every pipeline stage. Ledger events record `tokens_consumed` from Gemini responses when available. |
+| Cache (`cache.py`) | 4.3 | **Implemented** | Module exists. Result-level cache with version TTL. Not confirmed as active in the pipeline hot path. |
+| Ledger (`ledger.py`) | 4.8 | **Integrated** | Append-only JSONL read/write used throughout the pipeline. All generation, evaluation, routing, and publishing events are logged. |
+| Snapshots (`snapshots.py`) | 4.8 | **Integrated** | API call I/O capture. |
+
+### A.4 Pipeline Integration Summary
+
+**What the pipeline actually does (image sessions):**
+
+For each brief in a batch:
+1. Expand brief (Gemini Flash) -- real API call
+2. Generate ad copy (Gemini Flash) -- real API call, structural atoms
+3. Evaluate text (Gemini Flash, 5-dim CoT) -- real API call, real scores
+4. Route (discard < 5.5 / escalate 5.5-7.0 / publish >= 7.0) -- real routing decision
+5. If publish or escalate AND image_enabled: generate 3 image variants, evaluate attributes + coherence, select best -- real API calls
+6. Log AdPublished, AdDiscarded, or "escalated" (logged as regenerated, but no actual regeneration occurs)
+
+There is NO multi-cycle regeneration. No Pareto variant generation. No brief mutation. No quality ratchet update. The pipeline is single-pass: generate once, evaluate once, route, done.
+
+**What the pipeline actually does (video sessions):**
+
+For each brief:
+1. Expand brief + generate ad copy -- real API calls
+2. Build video spec from brief + copy
+3. Generate 2 video variants via Fal.ai (anchor + alt) -- real API calls
+4. Evaluate each variant: video attributes (5 binary, real Gemini multimodal) + coherence (4 dimensions, real Gemini multimodal)
+5. Select best variant by composite score, or block if no variants pass
+6. Log VideoSelected or VideoBlocked
+
+Video evaluation is fully integrated with real API calls. The video pipeline does NOT use the placeholder modules (`evaluate/video_attributes.py`, `evaluate/video_coherence.py`).
+
+**Why the gap exists:** The 14-day timeline forced parallel development. The iterate/ modules were built as standalone, testable components (correct behavior verified by unit tests). The pipeline task (`pipeline_task.py`) and batch processor grew independently, implementing a simpler single-pass flow that met the immediate deliverable (50+ ads). The glue code to wire ratchet, Pareto, and brief mutation into the batch processor's inner loop was scoped as PD-06 but not yet completed.

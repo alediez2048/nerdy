@@ -7,6 +7,27 @@
 
 ---
 
+## Phase PD: Pipeline Debt — Completed Tickets (✅ partial)
+
+### Plain-English Summary
+Phase PD is an honest audit and remediation of pipeline integration gaps. Two tickets completed so far:
+
+- **PD-01 (Critical Bug Fixes):** Fixed hardcoded `avg_score = 7.0` in pipeline_task.py and `batch_avg = 7.0` placeholder in batch_processor.py. Replaced with `_compute_avg_score()` which reads AdPublished events from the session ledger and computes real weighted averages. Progress events sent to the frontend now show actual scores instead of a constant 7.0.
+
+- **PD-08 (Honest Architecture Documentation):** Audited every major component described in systemsdesign.md against the actual codebase. Added Appendix A to systemsdesign.md with per-component implementation status (Integrated / Implemented / Designed). Added Phase PD entry to decisionlog.md documenting what the pipeline actually does vs. what the architecture describes.
+
+### Key Findings from the PD-08 Audit
+- **Fully integrated:** text evaluation (5-dim CoT), image evaluation (attributes + coherence), video evaluation (`video_evaluator.py` with real Gemini multimodal), model routing (routing decision made but escalation not followed through), brief expansion, ad generation, cost tracking (per-session).
+- **Implemented but not wired:** quality ratchet, Pareto selection, brief mutation, context distiller, compliance filter, token tracker. These modules exist with correct logic and passing tests but are not imported or called by the pipeline task or batch processor.
+- **Designed but not built:** feedback loop (`iterate/feedback_loop.py` does not exist), SPC drift detection (`evaluate/drift_detection.py` does not exist).
+- **Placeholder:** `evaluate/video_attributes.py` and `evaluate/video_coherence.py` return hardcoded pass values. These are superseded by the real implementation in `evaluate/video_evaluator.py` which the pipeline actually uses.
+
+### Metadata
+- **Status:** PD-01 + PD-08 complete; PD-02 through PD-07 pending  |  **Date:** March 21, 2026  |  **Branch:** `video-implementation-2.0`
+- **Files changed (PD-08, docs only):** `docs/deliverables/systemsdesign.md`, `docs/deliverables/decisionlog.md`, `docs/development/DEVLOG.md`
+
+---
+
 ## Copy-only session mode (✅)
 
 ### Plain-English Summary

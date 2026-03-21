@@ -64,6 +64,12 @@ export default function NavBar() {
           Sessions
         </button>
         <button
+          onClick={() => navigate('/competitive')}
+          style={isActive('/competitive') ? s.navLinkActive : s.navLink}
+        >
+          Competitive
+        </button>
+        <button
           onClick={() => navigate('/dashboard?tab=ads')}
           style={location.pathname === '/dashboard' && location.search.includes('tab=ads') ? s.navLinkActive : s.navLink}
         >

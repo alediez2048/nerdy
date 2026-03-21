@@ -749,4 +749,45 @@ The test suite (560 tests, 559 passing) provides high confidence in module behav
 
 ---
 
-*This is a living document. Last major update: P5-07 (March 15, 2026) — added formal ADRs for the 5 ambiguous elements, P1-P4 architectural decisions, and narrative reflections.*
+---
+
+## Phase PD — Pipeline Debt Remediation
+
+**Status:** In Progress
+**Date:** March 21, 2026
+
+### Context
+
+A comprehensive audit of the codebase (PD-00) revealed 23 inconsistencies across evaluation, dashboard, config, and pipeline integration. The root cause is structural: the 14-day timeline forced parallel development of the iterate/ modules (quality ratchet, Pareto selection, brief mutation, context distiller) as standalone, testable components, while the pipeline task and batch processor grew separately as a simpler single-pass flow.
+
+The iterate/ modules are correctly implemented with passing tests. They just aren't called by the pipeline.
+
+### What PD-01 Fixed
+
+The most critical bug: `avg_score` was hardcoded to `7.0` in pipeline_task.py's result dict, and `write_batch_checkpoint()` in batch_processor.py used a hardcoded `batch_avg = 7.0` placeholder. PD-01 replaced these with real computed values — `_compute_avg_score()` now reads AdPublished events from the session ledger and computes the actual weighted average. Progress events sent to the frontend now reflect real scores.
+
+### What the Pipeline Actually Does
+
+**Image sessions:** Single-pass per brief. For each brief: expand (Gemini Flash) -> generate copy (Gemini Flash) -> evaluate text (5-dim CoT, real scores) -> route (discard/escalate/publish) -> if not discarded, generate 3 image variants + evaluate attributes + coherence -> publish or log as escalated. There is no multi-cycle regeneration, no Pareto variant generation, no brief mutation, and no quality ratchet adjustment. The routing decision is made and recorded, but the "escalate" path does not re-generate with Gemini Pro — it logs the ad as regenerated and moves on.
+
+**Video sessions:** For each brief: expand + generate copy -> build video spec -> generate 2 variants via Fal.ai -> evaluate each variant with real Gemini Flash multimodal (5 binary attributes + 4-dimension coherence) -> select best or block. Video evaluation uses `evaluate/video_evaluator.py` which makes real API calls sending actual video bytes. The placeholder modules (`evaluate/video_attributes.py`, `evaluate/video_coherence.py`) exist from the P3 design phase but are not called by the pipeline.
+
+### Honest Assessment
+
+The system generates, evaluates, and publishes ads with real 5-dimension scoring backed by real Gemini API calls. Image evaluation (attribute checklist + coherence check) is fully integrated with real multimodal API calls. Video evaluation is likewise real — not placeholder. Cost tracking works per-session via ledger events, though the global dashboard relies on a hardcoded `HISTORICAL_SPEND_USD` baseline because early sessions logged `tokens_consumed: 0`.
+
+The architectural gap is in the iteration layer. The modules that would make the pipeline self-improving — quality ratchet (monotonically rising threshold), Pareto selection (multi-variant regeneration without dimension collapse), brief mutation (diagnosing and fixing persistently failing briefs), and context distillation (compact iteration summaries) — all exist as correct, tested code. They are not wired into the pipeline's inner loop. The feedback loop module (`iterate/feedback_loop.py`) that would orchestrate the generate-evaluate-regen cycle does not exist as a file. SPC drift detection (`evaluate/drift_detection.py`) is designed in the PRD but not built.
+
+This means the pipeline produces good ads on the first pass (most score above 7.0 thanks to calibrated evaluation and structural atom diversity), but it cannot improve borderline ads through iteration. The "improvable range" (5.5-7.0) identified by model routing results in a log entry, not an improvement action.
+
+### Why the Gaps Exist
+
+The 14-day timeline required a prioritization choice: build the iterate/ modules as standalone testable components (proving the algorithms work) or wire them into the pipeline (proving the integration works). The project chose standalone implementation first, which was the right call for demonstrating architectural thinking and testability. The wiring was scoped as PD-06 but not completed before the documentation audit.
+
+### PD Tickets Completed
+- **PD-01:** Fixed hardcoded `avg_score` and progress scores — real computed values from ledger
+- **PD-08:** Honest architecture documentation (this entry + systemsdesign.md annotations)
+
+---
+
+*This is a living document. Last major update: PD-08 (March 21, 2026) — added Phase PD pipeline debt remediation entry with honest architecture assessment.*
