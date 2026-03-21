@@ -36,10 +36,47 @@ const ARROW_COLOR: Record<string, string> = { rising: colors.mint, falling: colo
 export default function CompetitiveIntelPage() {
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadCompetitor, setUploadCompetitor] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [uploadResult, setUploadResult] = useState<Record<string, unknown> | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
+  const reload = () => {
+    fetchCompetitive().then(setData).catch((e) => setError(e.message))
+  }
 
   useEffect(() => {
-    fetchCompetitive().then(setData).catch((e) => setError(e.message))
+    reload()
   }, [])
+
+  const handleUpload = async () => {
+    if (!uploadFile || !uploadCompetitor.trim()) return
+    setUploading(true)
+    setUploadError(null)
+    setUploadResult(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', uploadFile)
+      formData.append('competitor_name', uploadCompetitor.trim())
+      const token = localStorage.getItem('token')
+      const headers: HeadersInit = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch('/api/competitive/upload', { method: 'POST', headers, body: formData })
+      if (!res.ok) throw new Error(await res.text())
+      const result = await res.json()
+      if (result.error) { setUploadError(result.error); return }
+      setUploadResult(result)
+      setUploadFile(null)
+      setUploadCompetitor('')
+      reload()
+    } catch (e: unknown) {
+      setUploadError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setUploading(false)
+    }
+  }
 
   if (error)
     return (
@@ -68,8 +105,46 @@ export default function CompetitiveIntelPage() {
 
   return (
     <div style={s.page}>
-      {/* Page title + metadata bar */}
-      <h1 style={s.pageTitle}>Competitive Intelligence</h1>
+      {/* Upload section */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h1 style={{ ...s.pageTitle, marginBottom: 0 }}>Competitive Intelligence</h1>
+        <button onClick={() => setShowUpload(!showUpload)}
+          style={{ padding: '8px 16px', borderRadius: radii.button, border: `1px solid ${colors.cyan}40`,
+            background: 'transparent', color: colors.cyan, cursor: 'pointer', fontSize: '13px', fontFamily: font.family }}>
+          {showUpload ? 'Close Upload' : 'Upload Competitor Data'}
+        </button>
+      </div>
+      {showUpload && (
+        <div style={{ background: colors.surface, borderRadius: radii.card, padding: '20px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' as const }}>
+            <div style={{ flex: '1 1 200px' }}>
+              <label style={{ fontSize: '12px', color: colors.muted, display: 'block', marginBottom: '4px', fontFamily: font.family }}>Competitor Name</label>
+              <input type="text" value={uploadCompetitor} onChange={(e) => setUploadCompetitor(e.target.value)}
+                placeholder="e.g. Princeton Review" style={{ width: '100%', padding: '8px 12px', borderRadius: '8px',
+                  border: `1px solid ${colors.muted}30`, background: colors.ink, color: colors.white,
+                  fontSize: '14px', fontFamily: font.family, boxSizing: 'border-box' as const }} />
+            </div>
+            <div style={{ flex: '1 1 200px' }}>
+              <label style={{ fontSize: '12px', color: colors.muted, display: 'block', marginBottom: '4px', fontFamily: font.family }}>JSON File (Meta Ad Library export)</label>
+              <input type="file" accept=".json" onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                style={{ fontSize: '13px', color: colors.muted, fontFamily: font.family }} />
+            </div>
+            <button onClick={handleUpload} disabled={uploading || !uploadFile || !uploadCompetitor.trim()}
+              style={{ padding: '8px 20px', borderRadius: radii.button, border: 'none',
+                background: uploading || !uploadFile || !uploadCompetitor.trim() ? colors.muted + '40' : `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
+                color: colors.ink, fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: font.family }}>
+              {uploading ? 'Uploading...' : 'Upload & Classify'}
+            </button>
+          </div>
+          {uploadError && <p style={{ color: colors.red, fontSize: '13px', marginTop: '8px', fontFamily: font.family }}>{uploadError}</p>}
+          {uploadResult && (
+            <div style={{ marginTop: '12px', padding: '12px', background: colors.ink, borderRadius: '8px', fontSize: '13px', color: colors.mint, fontFamily: font.family }}>
+              Added <strong>{uploadResult.ads_new as number}</strong> new ads ({uploadResult.ads_duplicate as number} duplicates skipped),{' '}
+              <strong>{uploadResult.patterns_added as number}</strong> patterns classified for <strong>{uploadResult.competitor as string}</strong>
+            </div>
+          )}
+        </div>
+      )}
       <div style={s.metaBar}>
         <span style={s.metaItem}>{metadata.total_ads_scraped || '200+'} ads scraped</span>
         <span style={s.metaDot}>&middot;</span>

@@ -22,3 +22,6 @@ python-jose[cryptography]>=3.3.0,<4.0.0
 
 # SSE
 sse-starlette>=1.8.0,<2.0.0
+
+# File upload (PD-11)
+python-multipart>=0.0.6
