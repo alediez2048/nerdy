@@ -1,5 +1,5 @@
 # Ad-Ops-Autopilot — Pipeline Celery task (PA-04, PC-03)
-# Routes to image or video pipeline based on session_type.
+# Routes to image, copy-only, or video pipeline based on session_type.
 import json
 import logging
 import math
@@ -128,7 +128,23 @@ def _run_image_pipeline(
     total_regenerated = 0
     cost_so_far = 0.0
 
+    def _compute_avg_score() -> float:
+        """Compute real average score from AdPublished events in session ledger."""
+        try:
+            from iterate.ledger import read_events as _read
+            events = _read(ledger_path)
+            scores = [
+                e.get("outputs", {}).get("aggregate_score", 0.0)
+                for e in events
+                if e.get("event_type") == "AdPublished"
+                and isinstance(e.get("outputs", {}).get("aggregate_score"), (int, float))
+            ]
+            return round(sum(scores) / len(scores), 2) if scores else 0.0
+        except Exception:
+            return 0.0
+
     for batch_num, batch_briefs in enumerate(batches, 1):
+        current_score_avg = _compute_avg_score()
         publish_progress(session_id, {
             "type": BATCH_START,
             "cycle": 1,
@@ -136,7 +152,7 @@ def _run_image_pipeline(
             "ads_generated": total_generated,
             "ads_evaluated": total_generated,
             "ads_published": total_published,
-            "current_score_avg": 7.0,
+            "current_score_avg": current_score_avg,
             "cost_so_far": cost_so_far,
         })
 
@@ -161,6 +177,7 @@ def _run_image_pipeline(
         except Exception:
             cost_so_far += batch_result.generated * 0.2
 
+        current_score_avg = _compute_avg_score()
         publish_progress(session_id, {
             "type": BATCH_COMPLETE,
             "cycle": 1,
@@ -168,7 +185,7 @@ def _run_image_pipeline(
             "ads_generated": total_generated,
             "ads_evaluated": total_generated,
             "ads_published": total_published,
-            "current_score_avg": 7.0,
+            "current_score_avg": current_score_avg,
             "cost_so_far": cost_so_far,
         })
 
@@ -178,6 +195,7 @@ def _run_image_pipeline(
             batch_result.generated, batch_result.published,
         )
 
+    final_avg_score = _compute_avg_score()
     publish_progress(session_id, {
         "type": PIPELINE_COMPLETE,
         "cycle": 1,
@@ -185,7 +203,7 @@ def _run_image_pipeline(
         "ads_generated": total_generated,
         "ads_evaluated": total_generated,
         "ads_published": total_published,
-        "current_score_avg": 7.0,
+        "current_score_avg": final_avg_score,
         "cost_so_far": cost_so_far,
     })
 
@@ -194,7 +212,7 @@ def _run_image_pipeline(
         "ads_published": total_published,
         "ads_discarded": total_discarded,
         "ads_regenerated": total_regenerated,
-        "avg_score": 7.0,
+        "avg_score": final_avg_score,
         "cost_so_far": cost_so_far,
     }
 
