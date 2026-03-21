@@ -37,8 +37,17 @@ export default function CuratedSetPage() {
     setLoading(true)
     setError(null)
     try {
-      const resp = await listSessions({ limit: 200 })
-      const sessions = resp.sessions
+      // Fetch all sessions (API limit is 100 per page)
+      const allSessions: SessionSummary[] = []
+      let offset = 0
+      const pageSize = 100
+      while (true) {
+        const resp = await listSessions({ limit: pageSize, offset })
+        allSessions.push(...resp.sessions)
+        if (allSessions.length >= (resp.total || resp.sessions.length) || resp.sessions.length < pageSize) break
+        offset += pageSize
+      }
+      const sessions = allSessions
 
       const results: SessionGroup[] = []
 
@@ -69,7 +78,7 @@ export default function CuratedSetPage() {
 
       setGroups(results)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load sessions')
+      setError(e instanceof Error ? e.message : typeof e === 'string' ? e : 'Failed to load sessions')
     }
     setLoading(false)
   }
