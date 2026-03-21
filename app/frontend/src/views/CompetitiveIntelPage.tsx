@@ -42,6 +42,7 @@ export default function CompetitiveIntelPage() {
   const [uploading, setUploading] = useState(false)
   const [uploadResult, setUploadResult] = useState<Record<string, unknown> | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [showHowItWorks, setShowHowItWorks] = useState(false)
 
   const reload = () => {
     fetchCompetitive().then(setData).catch((e) => setError(e.message))
@@ -160,8 +161,14 @@ export default function CompetitiveIntelPage() {
       </div>
 
       {/* How competitive data flows into ad generation */}
+      <button
+        onClick={() => setShowHowItWorks(!showHowItWorks)}
+        style={s.howToggle}
+      >
+        {showHowItWorks ? '▼' : '▶'} How this data powers ad generation
+      </button>
+      {showHowItWorks && (
       <div style={s.explainer}>
-        <h3 style={s.explainerTitle}>How this data powers ad generation</h3>
         <div style={s.explainerSteps}>
           <div style={s.explainerStep}>
             <span style={s.stepNum}>1</span>
@@ -208,6 +215,7 @@ export default function CompetitiveIntelPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Section 1 — Competitor Profiles */}
       {Object.keys(summaries).length > 0 && (
@@ -332,6 +340,17 @@ function HookBarChart({ data }: { data: Record<string, number> }) {
 
 /* ---- Styles ---- */
 const s: Record<string, React.CSSProperties> = {
+  howToggle: {
+    background: 'transparent',
+    border: 'none',
+    color: colors.cyan,
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 600,
+    fontFamily: font.family,
+    padding: '8px 0',
+    marginBottom: '8px',
+  },
   explainer: {
     background: colors.surface,
     borderRadius: radii.card,
