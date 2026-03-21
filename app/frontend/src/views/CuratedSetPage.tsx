@@ -266,7 +266,7 @@ function AdCard({
               <span style={s.adId}>{cad.ad_id}</span>
               {ad && (
                 <Badge
-                  label={ad.aggregate_score.toFixed(1)}
+                  label={`Copy: ${ad.aggregate_score.toFixed(1)}`}
                   color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow}
                 />
               )}

@@ -108,7 +108,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
                         <span style={s.adId}>{ad.ad_id}</span>
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                           <StatusBadge status={ad.status} />
-                          <Badge label={ad.aggregate_score.toFixed(1)} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                          <Badge label={`Copy: ${ad.aggregate_score.toFixed(1)}`} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
                         </div>
                       </div>
                       <p style={s.copyFull}>
@@ -119,24 +119,15 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
                         {ad.copy?.description && <p style={{ margin: '4px 0' }}><strong>Description:</strong> {ad.copy.description}</p>}
                         {ad.copy?.cta_button && <p style={{ margin: '4px 0' }}><strong>CTA:</strong> {ad.copy.cta_button}</p>}
                       </div>
-                      {isVideo && ad.video_scores ? (
-                        <div style={s.scoreGrid}>
-                          {Object.entries(ad.video_scores).map(([dim, score]) => (
-                            <div key={dim} style={s.scoreItem}>
-                              <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace('_', ' ')}</span>
-                              <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(2) : '—'}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div style={s.scoreGrid}>
-                          {Object.entries(ad.scores).map(([dim, score]) => (
-                            <div key={dim} style={s.scoreItem}>
-                              <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace('_', ' ')}</span>
-                              <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '—'}</span>
-                            </div>
-                          ))}
-                        </div>
+                      <p style={{ color: colors.muted, fontSize: '11px', margin: '8px 0 4px' }}>Copy Scores (text evaluation only)</p>
+                      <div style={s.scoreGrid}>
+                        {Object.entries(ad.scores).map(([dim, score]) => (
+                          <div key={dim} style={s.scoreItem}>
+                            <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace('_', ' ')}</span>
+                            <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '—'}</span>
+                          </div>
+                        ))}
+                      </div>
                       )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', padding: '0 14px' }}>
                         {!isVideo && <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>}
@@ -203,7 +194,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
                   <span style={s.adId}>{ad.ad_id}</span>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <StatusBadge status={ad.status} />
-                    <Badge label={ad.aggregate_score.toFixed(1)} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                    <Badge label={`Copy: ${ad.aggregate_score.toFixed(1)}`} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
                   </div>
                 </div>
                 <p style={s.copy}>
