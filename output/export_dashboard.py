@@ -302,15 +302,42 @@ def _build_quality_trends(events: list[dict]) -> dict:
         })
 
     # Score distribution histogram (buckets: 1-2, 2-3, ..., 9-10)
-    distribution: list[int] = [0] * 10
-    for s in all_eval_scores:
-        bucket = min(int(s), 9)
-        distribution[bucket] += 1
+    def _build_distribution(score_list: list[float]) -> list[int]:
+        dist: list[int] = [0] * 10
+        for s in score_list:
+            bucket = min(int(s), 9)
+            dist[bucket] += 1
+        return dist
+
+    # PD-15: Collect image, video, and adherence scores for distributions
+    image_scores: list[float] = []
+    video_scores: list[float] = []
+    adherence_scores: list[float] = []
+    for e in all_events:
+        et = e.get("event_type")
+        if et == "ImageScored":
+            v = e.get("outputs", {}).get("image_avg_score")
+            if isinstance(v, (int, float)) and v > 0:
+                image_scores.append(float(v))
+        elif et == "VideoScored":
+            v = e.get("outputs", {}).get("video_avg_score")
+            if isinstance(v, (int, float)) and v > 0:
+                video_scores.append(float(v))
+        elif et == "BriefAdherenceScored":
+            v = e.get("outputs", {}).get("avg_score")
+            if isinstance(v, (int, float)) and v > 0:
+                adherence_scores.append(float(v))
 
     return {
         "batch_scores": batch_scores,
         "ratchet_history": ratchet_history,
-        "score_distribution": distribution,
+        "score_distribution": _build_distribution(all_eval_scores),
+        "image_score_distribution": _build_distribution(image_scores),
+        "video_score_distribution": _build_distribution(video_scores),
+        "adherence_score_distribution": _build_distribution(adherence_scores),
+        "image_score_avg": round(sum(image_scores) / len(image_scores), 1) if image_scores else None,
+        "video_score_avg": round(sum(video_scores) / len(video_scores), 1) if video_scores else None,
+        "adherence_score_avg": round(sum(adherence_scores) / len(adherence_scores), 1) if adherence_scores else None,
     }
 
 

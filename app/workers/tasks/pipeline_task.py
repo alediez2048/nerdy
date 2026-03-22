@@ -374,6 +374,37 @@ def _run_video_pipeline(
             ad_id = ad.ad_id
             ad_copy = ad.to_evaluator_input()
 
+            # Evaluate copy quality (was missing in video pipeline)
+            try:
+                from evaluate.evaluator import evaluate_ad
+                copy_eval = evaluate_ad(
+                    ad_copy,
+                    campaign_goal=config.get("campaign_goal", "conversion"),
+                    audience=config.get("audience", "parents"),
+                    ledger_path=ledger_path,
+                    persona=persona,
+                )
+                log_event(ledger_path, {
+                    "event_type": "AdEvaluated",
+                    "ad_id": ad_id,
+                    "brief_id": brief.get("brief_id", str(i + 1).zfill(3)),
+                    "cycle_number": 0,
+                    "action": "evaluation",
+                    "tokens_consumed": copy_eval.tokens_consumed,
+                    "model_used": "gemini-2.0-flash",
+                    "seed": str(seed),
+                    "inputs": {},
+                    "outputs": {
+                        "aggregate_score": copy_eval.aggregate_score,
+                        "scores": {
+                            dim: {"score": copy_eval.dimension_scores.get(dim, 0), "rationale": copy_eval.rationales.get(dim, "")}
+                            for dim in copy_eval.dimension_scores
+                        },
+                    },
+                })
+            except Exception as e:
+                logger.warning("Copy evaluation failed for video ad %s: %s", ad_id, e)
+
             spec = build_video_spec(
                 expanded_brief=brief,
                 session_config=config,

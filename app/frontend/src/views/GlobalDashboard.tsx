@@ -47,6 +47,7 @@ interface BatchScore {
 
 const TABS = [
   { key: 'summary', label: 'Pipeline Summary' },
+  { key: 'scoring', label: 'Scoring Methodology' },
   { key: 'iterations', label: 'Iteration Cycles' },
   { key: 'quality', label: 'Quality Trends' },
   { key: 'dimensions', label: 'Dimension Deep-Dive' },
@@ -157,6 +158,7 @@ export default function GlobalDashboard() {
           {activeTab === 'dimensions' && <DimensionDeepDiveTab data={data} />}
           {activeTab === 'costs' && <TokenEconomicsTab data={data} />}
           {activeTab === 'health' && <SystemHealthTab data={data} />}
+          {activeTab === 'scoring' && <ScoringMethodologyTab />}
         </div>
       </div>
     </div>
@@ -275,10 +277,41 @@ function IterationCyclesTab({ data }: { data: Record<string, unknown> }) {
 
 // ── Tab 3: Quality Trends ──────────────────────────────────────────
 
+function ScoreDistribution({ title, distribution, color }: { title: string; distribution: number[]; color: string }) {
+  const total = distribution.reduce((a, b) => a + b, 0)
+  if (total === 0) return null
+  const max = Math.max(...distribution, 1)
+
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <h4 style={{ fontSize: '13px', fontWeight: 600, color: colors.white, margin: '0 0 8px', fontFamily: font.family }}>{title} <span style={{ color: colors.muted, fontWeight: 400 }}>({total} scored)</span></h4>
+      <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '80px' }}>
+        {distribution.map((count, i) => (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', textAlign: 'center' }}>
+            <div
+              style={{
+                height: `${Math.round((count / max) * 70)}px`,
+                width: '100%',
+                background: count > 0 ? color : `${colors.muted}20`,
+                borderRadius: '4px 4px 0 0',
+                minHeight: count > 0 ? '4px' : '0px',
+              }}
+            />
+            <div style={{ fontSize: '10px', color: colors.muted, marginTop: '2px' }}>{i}-{i + 1}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function QualityTrendsTab({ data }: { data: Record<string, unknown> }) {
   const trends = (data.quality_trends || {}) as Record<string, unknown>
   const batchScores = (trends.batch_scores || []) as BatchScore[]
   const distribution = (trends.score_distribution || []) as number[]
+  const imageDistribution = (trends.image_score_distribution || []) as number[]
+  const videoDistribution = (trends.video_score_distribution || []) as number[]
+  const adherenceDistribution = (trends.adherence_score_distribution || []) as number[]
 
   return (
     <div>
@@ -322,24 +355,17 @@ function QualityTrendsTab({ data }: { data: Record<string, unknown> }) {
         )}
       </div>
 
-      {/* Score distribution */}
+      {/* Score distributions — all content types */}
       <div style={s.section}>
-        <h3 style={s.heading}>Score Distribution</h3>
-        <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '120px' }}>
-          {distribution.map((count, i) => (
-            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', textAlign: 'center' }}>
-              <div
-                style={{
-                  height: `${Math.min(count * 8, 100)}px`,
-                  width: '100%',
-                  background: i >= 7 ? colors.mint : i >= 5 ? colors.yellow : colors.red,
-                  borderRadius: '4px 4px 0 0',
-                }}
-              />
-              <div style={{ fontSize: '10px', color: colors.muted, marginTop: '2px' }}>{i}-{i + 1}</div>
-            </div>
-          ))}
-        </div>
+        <h3 style={s.heading}>Score Distributions</h3>
+        <p style={s.sectionDescription}>
+          How scores are distributed across all scored content. Each bar represents a score bucket (e.g., 7-8).
+          Taller bars mean more ads scored in that range. Compare across content types to see where each type lands.
+        </p>
+        <ScoreDistribution title="Copy Quality" distribution={distribution} color={colors.cyan} />
+        <ScoreDistribution title="Brief Adherence" distribution={adherenceDistribution} color={colors.mint} />
+        <ScoreDistribution title="Image Quality" distribution={imageDistribution} color={colors.yellow} />
+        <ScoreDistribution title="Video Quality" distribution={videoDistribution} color={colors.white} />
       </div>
     </div>
   )
@@ -644,6 +670,204 @@ function StatBox({ label, value, color }: { label: string; value: string; color?
     <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: '20px', fontWeight: 700, color: color || colors.white, fontFamily: font.family }}>{value}</div>
       <div style={{ fontSize: '11px', color: colors.muted, fontFamily: font.family }}>{label}</div>
+    </div>
+  )
+}
+
+// ── Tab: Scoring Methodology ──────────────────────────────────────
+
+function ScoringCategory({ title, color, description, dimensions }: {
+  title: string
+  color: string
+  description: string
+  dimensions: { name: string; low: string; mid: string; high: string }[]
+}) {
+  return (
+    <div style={{ ...s.section, background: colors.surface, borderRadius: radii.card, padding: '20px 24px' }}>
+      <h3 style={{ ...s.heading, color, margin: '0 0 4px' }}>{title}</h3>
+      <p style={{ ...s.sectionDescription, margin: '0 0 16px' }}>{description}</p>
+      <table style={{ ...s.table, background: 'transparent' }}>
+        <thead>
+          <tr>
+            <th style={{ ...s.th, width: '160px' }}>Dimension</th>
+            <th style={{ ...s.th, color: colors.red }}>Low (1-3)</th>
+            <th style={{ ...s.th, color: colors.yellow }}>Mid (4-6)</th>
+            <th style={{ ...s.th, color: colors.mint }}>High (7-10)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {dimensions.map((d) => (
+            <tr key={d.name}>
+              <td style={{ ...s.td, fontWeight: 600, color: colors.white }}>{d.name}</td>
+              <td style={{ ...s.td, fontSize: '12px' }}>{d.low}</td>
+              <td style={{ ...s.td, fontSize: '12px' }}>{d.mid}</td>
+              <td style={{ ...s.td, fontSize: '12px' }}>{d.high}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function ScoringMethodologyTab() {
+  return (
+    <div>
+      <h3 style={s.heading}>Scoring Methodology</h3>
+      <p style={s.sectionDescription}>
+        Every ad is evaluated across up to 4 scoring categories, each with 5 dimensions scored 1-10 by Gemini Flash.
+        Copy quality and brief adherence are scored for all ads. Image and video quality are scored only when media is present.
+        Scores are <strong>not gates</strong> — they measure quality for analytics and comparison, not for publish decisions.
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <ScoringCategory
+          title="Copy Quality"
+          color={colors.cyan}
+          description="Is this a good ad? Evaluates the text independent of the brief — pure ad copy quality."
+          dimensions={[
+            { name: 'Clarity', low: 'Confusing message, unclear value', mid: 'Understandable but generic', high: 'Instantly clear, compelling' },
+            { name: 'Value Proposition', low: 'No benefit stated', mid: 'Benefit mentioned but weak', high: 'Specific, differentiated benefit' },
+            { name: 'Call to Action', low: 'No CTA or wrong action', mid: 'Generic CTA (Learn More)', high: 'Urgent, specific, conversion-driving' },
+            { name: 'Brand Voice', low: 'Wrong tone for Varsity Tutors', mid: 'Generic education tone', high: 'Unmistakably Varsity Tutors voice' },
+            { name: 'Emotional Resonance', low: 'Flat, no emotional hook', mid: 'Mild engagement', high: 'Deeply connects with audience pain/aspiration' },
+          ]}
+        />
+
+        <ScoringCategory
+          title="Brief Adherence"
+          color={colors.mint}
+          description="Did the ad do what I asked? Measures compliance with the session's creative brief — audience, persona, key message, format."
+          dimensions={[
+            { name: 'Audience Match', low: 'Wrong audience entirely', mid: 'Ambiguous targeting', high: 'Speaks directly to configured audience' },
+            { name: 'Goal Alignment', low: 'Wrong campaign goal', mid: 'Partially aligned', high: 'Perfectly serves the goal' },
+            { name: 'Persona Fit', low: 'Generic tone, ignores persona', mid: 'Partially matches persona', high: 'Nails the persona voice and emotional state' },
+            { name: 'Message Delivery', low: 'Key message absent', mid: 'Vaguely implied', high: 'Key message is central to the ad' },
+            { name: 'Format Adherence', low: 'Wrong format entirely', mid: 'Partially matches brief style', high: 'Perfect format match (UGC, testimonial, etc.)' },
+          ]}
+        />
+
+        <ScoringCategory
+          title="Image Quality"
+          color={colors.yellow}
+          description="How good is the image as a social ad creative? Evaluated strictly — AI-generated images are held to high standards. Average scores of 5-7 are expected."
+          dimensions={[
+            { name: 'Visual Clarity', low: 'Cluttered, confusing subject', mid: 'Subject identifiable but generic', high: 'Striking composition, instant focal point' },
+            { name: 'Brand Consistency', low: 'Could be any brand', mid: 'Generic education imagery', high: 'Unmistakably Varsity Tutors aesthetic' },
+            { name: 'Emotional Impact', low: 'Flat stock-photo energy', mid: 'Mildly pleasant but forgettable', high: 'Emotionally compelling, stops the scroll' },
+            { name: 'Copy-Image Coherence', low: 'Image unrelated to copy', mid: 'Loosely related theme', high: 'Image and copy tell the exact same story' },
+            { name: 'Platform Fit', low: 'Bad on mobile, tiny details', mid: 'Acceptable but not scroll-stopping', high: 'Designed for thumb-zone, high contrast' },
+          ]}
+        />
+
+        <ScoringCategory
+          title="Video Quality"
+          color={colors.white}
+          description="How good is the video as a social ad creative? Uses Gemini's native video understanding to analyze motion, pacing, and authenticity."
+          dimensions={[
+            { name: 'Hook Strength', low: 'Slow start, nothing compelling', mid: 'Acceptable but skippable', high: 'First 2s stop the scroll immediately' },
+            { name: 'Visual Quality', low: 'Glitchy, artifacts, uncanny', mid: 'Passable but obvious AI', high: 'Smooth, natural lighting, professional' },
+            { name: 'Narrative Flow', low: 'Disjointed, random scenes', mid: 'Basic progression, no arc', high: 'Compelling mini-story with clear CTA' },
+            { name: 'Copy-Video Coherence', low: 'Video ignores ad text', mid: 'Loosely related', high: 'Video perfectly amplifies the message' },
+            { name: 'UGC Authenticity', low: 'Obviously corporate/AI', mid: 'Neutral — neither real nor fake', high: 'Feels like genuine user content' },
+          ]}
+        />
+      </div>
+
+      <div style={{ ...s.section, marginTop: '24px' }}>
+        <h3 style={s.heading}>How Scores Are Used</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ background: colors.surface, borderRadius: radii.card, padding: '16px' }}>
+            <h4 style={{ color: colors.mint, fontSize: '14px', margin: '0 0 8px', fontFamily: font.family }}>Publish Gate (existing)</h4>
+            <p style={{ color: colors.muted, fontSize: '13px', margin: 0, lineHeight: 1.5, fontFamily: font.family }}>
+              Copy quality score of 7.0+ required to publish. Binary image/video attribute checks must pass.
+              These gates decide <strong>if</strong> an ad ships.
+            </p>
+          </div>
+          <div style={{ background: colors.surface, borderRadius: radii.card, padding: '16px' }}>
+            <h4 style={{ color: colors.cyan, fontSize: '14px', margin: '0 0 8px', fontFamily: font.family }}>Quality Analytics (new)</h4>
+            <p style={{ color: colors.muted, fontSize: '13px', margin: 0, lineHeight: 1.5, fontFamily: font.family }}>
+              20-dimension scoring (copy + adherence + image + video) runs after publish. Measures <strong>how good</strong> the ad is
+              for dashboards, trend tracking, and cross-session comparison. Does not block publishing.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...s.section, marginTop: '24px' }}>
+        <h3 style={s.heading}>How Gemini Scores Each Content Type</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          <div style={{ background: colors.surface, borderRadius: radii.card, padding: '20px 24px' }}>
+            <h4 style={{ color: colors.cyan, fontSize: '14px', margin: '0 0 8px', fontFamily: font.family }}>Copy Scoring — Text-Only</h4>
+            <p style={{ color: colors.muted, fontSize: '13px', margin: '0 0 8px', lineHeight: 1.6, fontFamily: font.family }}>
+              Uses <strong>Gemini 2.0 Flash</strong> with a text-only prompt. The ad copy (headline, primary text, CTA) is sent alongside
+              the evaluation rubric. The LLM reads the text and scores each dimension with a chain-of-thought rationale.
+            </p>
+            <p style={{ color: colors.muted, fontSize: '12px', margin: 0, fontFamily: font.family }}>
+              Cost: ~500-800 tokens per ad (~$0.0001)
+            </p>
+          </div>
+
+          <div style={{ background: colors.surface, borderRadius: radii.card, padding: '20px 24px' }}>
+            <h4 style={{ color: colors.yellow, fontSize: '14px', margin: '0 0 8px', fontFamily: font.family }}>Image Scoring — Multimodal</h4>
+            <p style={{ color: colors.muted, fontSize: '13px', margin: '0 0 8px', lineHeight: 1.6, fontFamily: font.family }}>
+              Uses <strong>Gemini 2.0 Flash multimodal</strong>. The image file is uploaded to Google's servers, then sent alongside
+              the text prompt in a single API call. Gemini processes the actual pixel data — it can identify subjects, composition,
+              colors, text overlays, facial expressions, lighting quality, and aspect ratio usage. It does <em>not</em> receive a
+              text description of the image — it sees the raw pixels the same way a human reviewer would.
+            </p>
+            <p style={{ color: colors.muted, fontSize: '12px', margin: 0, fontFamily: font.family }}>
+              Cost: ~2,000-3,000 tokens per image (~$0.0004) — image pixels are tokenized (~1,500 tokens) + text prompt (~500 tokens)
+            </p>
+          </div>
+
+          <div style={{ background: colors.surface, borderRadius: radii.card, padding: '20px 24px' }}>
+            <h4 style={{ color: colors.white, fontSize: '14px', margin: '0 0 8px', fontFamily: font.family }}>Video Scoring — Native Video Understanding</h4>
+            <p style={{ color: colors.muted, fontSize: '13px', margin: '0 0 8px', lineHeight: 1.6, fontFamily: font.family }}>
+              Uses <strong>Gemini 2.0 Flash with native video understanding</strong>. The video file (MP4, 4-8 seconds) is uploaded
+              and processed by Google's backend (frame extraction + audio analysis). Gemini analyzes:
+            </p>
+            <ul style={{ color: colors.muted, fontSize: '13px', margin: '0 0 8px', lineHeight: 1.6, fontFamily: font.family, paddingLeft: '20px' }}>
+              <li><strong>Visual frames</strong> — Sampled throughout the video (~1fps), understands subjects, motion, transitions, lighting changes</li>
+              <li><strong>Temporal reasoning</strong> — Understands sequence and pacing: "what happens in the first 2 seconds?" vs "how does it end?" — this is how hook strength is evaluated</li>
+              <li><strong>Motion quality</strong> — Detects artifacts, flickering, unnatural physics, jerky motion that only exist in video</li>
+              <li><strong>Audio</strong> (if present) — Hears dialogue, music, sound effects and evaluates whether they match the visual content</li>
+            </ul>
+            <p style={{ color: colors.muted, fontSize: '12px', margin: 0, fontFamily: font.family }}>
+              Cost: ~4,000-8,000 tokens per video (~$0.001) — multiple video frames tokenized (~3,000-6,000) + audio + text prompt
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <div style={{ ...s.section, marginTop: '24px' }}>
+        <h3 style={s.heading}>Why Scores May Cluster</h3>
+        <p style={{ color: colors.muted, fontSize: '13px', lineHeight: 1.6, fontFamily: font.family, margin: '0 0 12px' }}>
+          You may notice image and video scores clustering in a narrow range (e.g., most images scoring 6-7). This is expected for three reasons:
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+          <div style={{ background: colors.surface, borderRadius: radii.card, padding: '16px' }}>
+            <h4 style={{ color: colors.white, fontSize: '13px', margin: '0 0 6px', fontFamily: font.family }}>Same Pipeline</h4>
+            <p style={{ color: colors.muted, fontSize: '12px', margin: 0, lineHeight: 1.5, fontFamily: font.family }}>
+              All images come from the same generation model with similar prompts and brand constraints. There's limited natural variation to differentiate.
+            </p>
+          </div>
+          <div style={{ background: colors.surface, borderRadius: radii.card, padding: '16px' }}>
+            <h4 style={{ color: colors.white, fontSize: '13px', margin: '0 0 6px', fontFamily: font.family }}>LLM Anchoring</h4>
+            <p style={{ color: colors.muted, fontSize: '12px', margin: 0, lineHeight: 1.5, fontFamily: font.family }}>
+              LLMs naturally gravitate toward the center of whatever range the prompt emphasizes. The rubric calibrates for a 5-6 average, but some anchoring remains.
+            </p>
+          </div>
+          <div style={{ background: colors.surface, borderRadius: radii.card, padding: '16px' }}>
+            <h4 style={{ color: colors.white, fontSize: '13px', margin: '0 0 6px', fontFamily: font.family }}>No Visual Reference</h4>
+            <p style={{ color: colors.muted, fontSize: '12px', margin: 0, lineHeight: 1.5, fontFamily: font.family }}>
+              Gemini scores each image in isolation — it can't see "here's what a 3 looks like vs a 9." Few-shot scoring with reference images would improve differentiation but at higher token cost.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

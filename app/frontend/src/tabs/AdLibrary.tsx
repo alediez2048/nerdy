@@ -17,6 +17,12 @@ interface Ad {
   image_url: string | null
   video_url?: string | null
   video_scores?: Record<string, number> | null
+  image_detail_scores?: Record<string, number> | null
+  image_avg?: number | null
+  video_detail_scores?: Record<string, number> | null
+  video_avg?: number | null
+  adherence_scores?: Record<string, number> | null
+  adherence_avg?: number | null
 }
 
 function logVideoRenderDebug(adId: string, src: string, el: HTMLVideoElement) {
@@ -106,9 +112,18 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
                     <div style={s.expandedDetails}>
                       <div style={s.cardHeader}>
                         <span style={s.adId}>{ad.ad_id}</span>
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
                           <StatusBadge status={ad.status} />
                           <Badge label={`Copy: ${ad.aggregate_score.toFixed(1)}`} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                          {ad.adherence_avg != null && ad.adherence_avg > 0 && (
+                            <Badge label={`Brief: ${ad.adherence_avg.toFixed(1)}`} color={ad.adherence_avg >= 7 ? colors.mint : colors.yellow} />
+                          )}
+                          {ad.image_avg != null && ad.image_avg > 0 && (
+                            <Badge label={`Img: ${ad.image_avg.toFixed(1)}`} color={ad.image_avg >= 7 ? colors.mint : colors.yellow} />
+                          )}
+                          {ad.video_avg != null && ad.video_avg > 0 && (
+                            <Badge label={`Vid: ${ad.video_avg.toFixed(1)}`} color={ad.video_avg >= 7 ? colors.mint : colors.yellow} />
+                          )}
                         </div>
                       </div>
                       <p style={s.copyFull}>
@@ -191,9 +206,15 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
                 ) : null}
                 <div style={s.cardHeader}>
                   <span style={s.adId}>{ad.ad_id}</span>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <StatusBadge status={ad.status} />
                     <Badge label={`Copy: ${ad.aggregate_score.toFixed(1)}`} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                    {ad.image_avg != null && ad.image_avg > 0 && (
+                      <Badge label={`Img: ${ad.image_avg.toFixed(1)}`} color={ad.image_avg >= 7 ? colors.mint : colors.yellow} />
+                    )}
+                    {ad.video_avg != null && ad.video_avg > 0 && (
+                      <Badge label={`Vid: ${ad.video_avg.toFixed(1)}`} color={ad.video_avg >= 7 ? colors.mint : colors.yellow} />
+                    )}
                   </div>
                 </div>
                 <p style={s.copy}>

@@ -56,9 +56,11 @@ def _build_prompt(ad_copy: dict[str, Any], session_config: dict[str, Any] | None
     audience_context = f"\nTarget audience: {audience}" if audience else ""
     persona_context = f"\nPersona: {persona}" if persona else ""
 
-    return f"""You are a visual ad quality evaluator for Varsity Tutors SAT test prep campaigns.
+    return f"""You are a strict visual ad quality evaluator for Varsity Tutors SAT test prep campaigns.
 
-Evaluate this ad image on 5 dimensions. Score each 1-10 with a one-sentence rationale.
+You are scoring AI-GENERATED images, not human photography. Be critical. Most AI-generated ad images are mediocre — generic compositions, flat emotions, stock-photo aesthetics. A score of 7 should be genuinely good. A score of 9-10 should be exceptional and rare.
+
+CALIBRATION: Your scores should average around 5-6 across a batch. If you find yourself scoring everything 8+, you are being too lenient. Push yourself to differentiate — find specific flaws.
 
 BRAND CONTEXT:
 - Brand: Varsity Tutors (Nerdy)
@@ -71,27 +73,40 @@ AD COPY (for coherence evaluation):
 - Primary Text: {primary_text or "(none)"}
 - CTA: {cta_button or "(none)"}
 
-SCORING DIMENSIONS:
+SCORING DIMENSIONS (be strict — use the full 1-10 range):
 
 1. visual_clarity — Is the subject immediately identifiable within 1 second?
-   Clean composition, clear focal point, no visual clutter.
-   Score 1 if confusing/cluttered, 5 if acceptable, 10 if instant recognition.
+   1-3: Multiple competing focal points, confusing layout, unclear subject
+   4-5: Subject identifiable but composition is generic or cluttered
+   6-7: Clear focal point, clean composition, minor issues
+   8-10: Striking composition that commands attention — RARE for AI images
 
-2. brand_consistency — Does the image feel like Varsity Tutors?
-   On-brand colors, professional but approachable tone, education context.
-   Score 1 if off-brand, 5 if generic, 10 if unmistakably on-brand.
+2. brand_consistency — Does this look like a Varsity Tutors ad specifically?
+   1-3: Could be any brand — no education context, wrong colors, wrong tone
+   4-5: Generic education imagery — looks like stock photo, not brand-specific
+   6-7: Appropriate education context but missing brand-specific elements (teal palette, tutoring setting)
+   8-10: Unmistakably Varsity Tutors — would recognize without the logo. VERY rare.
+   PENALTY: AI-generated faces with uncanny valley features → max 5
 
-3. emotional_impact — Does the image evoke the intended emotion?
-   For test prep ads: aspiration, confidence, relief, parental pride.
-   Score 1 if flat/stock-photo, 5 if mildly engaging, 10 if emotionally compelling.
+3. emotional_impact — Does the image make you FEEL something specific?
+   1-3: Flat, lifeless, generic stock-photo energy — no emotional response
+   4-5: Mildly pleasant but forgettable — "nice image" but won't stop a scroll
+   6-7: Evokes a recognizable emotion (aspiration, determination, warmth)
+   8-10: Emotionally compelling — you can feel the student's journey. EXCEPTIONAL.
+   PENALTY: Generic smiling person with no context → max 4
 
-4. copy_image_coherence — Does the visual reinforce the ad text message?
-   Image and copy should tell the same story. Contradictions score low.
-   Score 1 if contradicts copy, 5 if loosely related, 10 if perfectly amplifies.
+4. copy_image_coherence — Does the visual SPECIFICALLY reinforce the ad text?
+   1-3: Image has nothing to do with the copy message — random visual
+   4-5: Loosely related (both about education) but image doesn't amplify the specific message
+   6-7: Image supports the copy's theme and emotional register
+   8-10: Image and copy tell the exact same story — removing either would lose meaning
+   PENALTY: Generic student image paired with specific copy about score improvement → max 5
 
-5. platform_fit — Is this optimized for a mobile social media feed?
-   Readable at small size, good use of space for the aspect ratio, no tiny text.
-   Score 1 if unusable on mobile, 5 if acceptable, 10 if perfectly optimized.
+5. platform_fit — Would this ACTUALLY perform well in a mobile Instagram/Facebook feed?
+   1-3: Would get scrolled past — boring thumbnail, bad aspect ratio usage, tiny details
+   4-5: Acceptable but wouldn't stop a scroll — no visual hook in the first 0.5s
+   6-7: Good mobile composition, readable at small size, decent use of space
+   8-10: Scroll-stopping — designed for thumb-zone, high contrast, immediate impact
 
 Return ONLY valid JSON (no markdown, no code fences):
 {{

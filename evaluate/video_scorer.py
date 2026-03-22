@@ -59,9 +59,11 @@ def _build_prompt(ad_copy: dict[str, Any], session_config: dict[str, Any] | None
     audience_context = f"\nTarget audience: {audience}" if audience else ""
     persona_context = f"\nPersona: {persona}" if persona else ""
 
-    return f"""You are a video ad quality evaluator for Varsity Tutors SAT test prep campaigns.
+    return f"""You are a strict video ad quality evaluator for Varsity Tutors SAT test prep campaigns.
 
-Evaluate this ad video on 5 dimensions. Score each 1-10 with a one-sentence rationale.
+You are scoring AI-GENERATED videos, not human-shot footage. Be critical. Most AI-generated video ads have obvious tells — uncanny motion, generic scenes, no real narrative arc. A score of 7 should be genuinely impressive. A score of 9-10 should be exceptional and rare.
+
+CALIBRATION: Your scores should average around 5-6 across a batch. If you find yourself scoring everything 7+, you are being too lenient. AI-generated video is NOT as good as real footage — score accordingly.
 
 BRAND CONTEXT:
 - Brand: Varsity Tutors (Nerdy)
@@ -74,27 +76,40 @@ AD COPY (for coherence evaluation):
 - Primary Text: {primary_text or "(none)"}
 - CTA: {cta_button or "(none)"}
 
-SCORING DIMENSIONS:
+SCORING DIMENSIONS (be strict — use the full 1-10 range):
 
 1. hook_strength — Do the first 2 seconds grab attention and stop the scroll?
-   Look for: immediate visual interest, motion, emotion, or curiosity trigger.
-   Score 1 if slow/boring start, 5 if acceptable, 10 if impossible to scroll past.
+   1-3: Slow start, static scene, nothing compelling — would get scrolled past
+   4-5: Some motion but no emotional or visual hook — forgettable opening
+   6-7: Decent opening with movement or interesting subject — might pause a scroller
+   8-10: Impossible to scroll past — immediate curiosity, emotion, or visual surprise. RARE for AI video.
 
 2. visual_quality — Smooth motion, good lighting, no artifacts or glitches?
-   Look for: flickering, distortion, unnatural physics, blurriness, uncanny valley.
-   Score 1 if glitchy/unwatchable, 5 if passable, 10 if polished and natural.
+   1-3: Obvious glitches, flickering, warping, unnatural physics, unwatchable
+   4-5: Passable but clearly AI-generated — stiff motion, flat lighting, minor artifacts
+   6-7: Good quality, natural-looking motion and lighting, only subtle AI tells
+   8-10: Indistinguishable from real footage — exceptional motion and lighting. VERY rare.
+   PENALTY: Morphing faces, extra fingers, physics violations → max 4
 
 3. narrative_flow — Clear beginning-middle-end? Pacing appropriate for a short social ad?
-   Look for: logical scene progression, builds toward CTA, doesn't feel rushed or dragging.
-   Score 1 if disjointed/random, 5 if basic progression, 10 if compelling mini-story.
+   1-3: Random scene with no progression — just "stuff happening"
+   4-5: Basic scene but no arc — starts and ends at the same energy level
+   6-7: Some progression — builds toward something, appropriate pacing for 4-8s
+   8-10: Compelling mini-story that builds to a natural conclusion. EXCEPTIONAL.
+   PENALTY: Abrupt cuts, frozen endings, looping motion → max 5
 
-4. copy_video_coherence — Does the video reinforce the ad text and CTA?
-   The visual content should amplify the written message, not contradict or ignore it.
-   Score 1 if contradicts copy, 5 if loosely related, 10 if perfectly amplifies the message.
+4. copy_video_coherence — Does the video SPECIFICALLY reinforce the ad text?
+   1-3: Video has nothing to do with the copy — random visual paired with specific text
+   4-5: Loosely related (both about education) but video doesn't amplify the specific message
+   6-7: Video supports the copy's theme — shows a relevant scene that matches the text's emotion
+   8-10: Video and copy are inseparable — the visual literally illustrates the text's promise
+   PENALTY: Generic "student at desk" paired with specific copy about score improvement → max 5
 
 5. ugc_authenticity — Does it feel genuine and relatable, not corporate or uncanny?
-   UGC-style ads outperform polished corporate creative on social platforms.
-   Score 1 if obviously AI-generated/corporate, 5 if neutral, 10 if feels like real user content.
+   1-3: Obviously AI-generated — uncanny motion, perfect lighting, no human imperfection
+   4-5: Neutral — not obviously fake but not convincingly real either
+   6-7: Has some authentic qualities — natural setting, relatable subject, minor imperfections
+   8-10: Genuinely feels like someone filmed this on their phone. NEARLY IMPOSSIBLE for current AI video.
 
 Return ONLY valid JSON (no markdown, no code fences):
 {{
