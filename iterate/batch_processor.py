@@ -209,6 +209,33 @@ def process_batch(
                         "winning_image": winning_image,
                     },
                 })
+
+                # PD-12: Brief adherence scoring
+                try:
+                    from evaluate.brief_adherence import score_brief_adherence
+                    adherence = score_brief_adherence(
+                        ad_copy=ad.to_evaluator_input(),
+                        session_config=config,
+                        ad_id=ad.ad_id,
+                        image_path=winning_image,
+                    )
+                    log_event(ledger_path, {
+                        "event_type": "BriefAdherenceScored",
+                        "ad_id": ad.ad_id,
+                        "brief_id": brief_id,
+                        "cycle_number": 1,
+                        "action": "brief_adherence",
+                        "tokens_consumed": adherence.tokens_consumed,
+                        "model_used": "gemini-2.0-flash",
+                        "seed": "0",
+                        "outputs": {
+                            "scores": adherence.scores,
+                            "avg_score": adherence.avg_score,
+                            "rationales": adherence.rationales,
+                        },
+                    })
+                except Exception as e:
+                    logger.warning("Brief adherence scoring failed for %s: %s", ad.ad_id, e)
             elif routing.decision == "discard":
                 result.discarded += 1
                 log_event(ledger_path, {

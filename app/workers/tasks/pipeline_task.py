@@ -491,6 +491,33 @@ def _run_video_pipeline(
                     },
                 })
                 videos_selected += 1
+
+                # PD-12: Brief adherence scoring for video ads
+                try:
+                    from evaluate.brief_adherence import score_brief_adherence
+                    adherence = score_brief_adherence(
+                        ad_copy=ad_copy,
+                        session_config=config,
+                        ad_id=ad_id,
+                        video_path=winner.video_path,
+                    )
+                    log_event(ledger_path, {
+                        "event_type": "BriefAdherenceScored",
+                        "ad_id": ad_id,
+                        "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                        "cycle_number": 0,
+                        "action": "brief_adherence",
+                        "tokens_consumed": adherence.tokens_consumed,
+                        "model_used": "gemini-2.0-flash",
+                        "seed": "0",
+                        "outputs": {
+                            "scores": adherence.scores,
+                            "avg_score": adherence.avg_score,
+                            "rationales": adherence.rationales,
+                        },
+                    })
+                except Exception as e:
+                    logger.warning("Brief adherence scoring failed for %s: %s", ad_id, e)
             else:
                 block_reason = (
                     "no_variants_generated"
