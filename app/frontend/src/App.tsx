@@ -76,7 +76,7 @@ export default function App() {
       <AuthGate>
         <NavBar />
         <Routes>
-          <Route path="/" element={<Navigate to="/campaigns" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/sessions" element={<SessionList />} />
           <Route path="/sessions/new" element={<NewSessionForm />} />
           <Route path="/sessions/:sessionId" element={<SessionDetail />} />

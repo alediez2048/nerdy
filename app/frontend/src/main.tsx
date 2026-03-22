@@ -23,7 +23,36 @@ function ClerkTokenRegistrar() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {CLERK_KEY ? (
-      <ClerkProvider publishableKey={CLERK_KEY}>
+      <ClerkProvider
+        publishableKey={CLERK_KEY}
+        appearance={{
+          layout: {
+            unsafe_disableDevelopmentModeWarnings: true,
+          },
+          variables: {
+            colorPrimary: '#17e2ea',
+            colorBackground: '#0a0f1a',
+            colorText: '#ffffff',
+            colorTextSecondary: '#8892a4',
+            colorInputBackground: '#141a2a',
+            colorInputText: '#ffffff',
+            borderRadius: '10px',
+          },
+          elements: {
+            footerAction: { display: 'none' },
+            footer: { display: 'none' },
+            card: { backgroundColor: '#0a0f1a', border: '1px solid rgba(136,146,164,0.15)' },
+            headerTitle: { color: '#ffffff' },
+            headerSubtitle: { color: '#8892a4' },
+            socialButtonsBlockButton: { borderColor: 'rgba(136,146,164,0.3)' },
+            formFieldInput: { borderColor: 'rgba(136,146,164,0.3)' },
+            userButtonPopoverCard: { backgroundColor: '#0a0f1a', border: '1px solid rgba(136,146,164,0.15)' },
+            userButtonPopoverActionButton: { color: '#ffffff' },
+            userButtonPopoverActionButtonText: { color: '#ffffff' },
+            userButtonPopoverFooter: { display: 'none' },
+          },
+        }}
+      >
         <ClerkTokenRegistrar />
         <App />
       </ClerkProvider>
