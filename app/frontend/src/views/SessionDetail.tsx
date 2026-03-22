@@ -12,6 +12,7 @@ import type { CampaignSummary } from '../types/campaign'
 
 import Overview from '../tabs/Overview'
 import Quality from '../tabs/Quality'
+import AdLibrary from '../tabs/AdLibrary'
 import TokenEconomics from '../tabs/TokenEconomics'
 import ExpandedBriefPanel from '../tabs/ExpandedBrief'
 
@@ -19,6 +20,7 @@ const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'brief', label: 'Expanded Brief' },
   { key: 'quality', label: 'Quality' },
+  { key: 'ads', label: 'Ad Library' },
   { key: 'costs', label: 'Token Economics' },
 ] as const
 
@@ -301,6 +303,7 @@ export default function SessionDetail() {
             <ExpandedBriefPanel sessionId={sessionId!} sessionConfig={config} />
           )}
           {activeTab === 'quality' && <Quality sessionId={sessionId!} />}
+          {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} />}
           {activeTab === 'costs' && <TokenEconomics sessionId={sessionId!} />}
         </div>
       </div>
