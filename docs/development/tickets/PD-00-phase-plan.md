@@ -6,7 +6,7 @@ After completing P0–P5 and the application layer (PA/PB/PC), a comprehensive a
 
 **North star:** The system should never lie about what it does. If a config field isn't used, don't collect it. If a dashboard tab has no data for a session type, say so. If a module is implemented but not integrated, document it.
 
-## Tickets (8)
+## Tickets (14)
 
 ### PD-01: Critical Bug Fixes
 - Fix `tokens_estimate` undefined variable in `evaluate/evaluator.py:561` (→ `tokens_actual`)
