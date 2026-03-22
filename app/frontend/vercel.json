@@ -1,9 +1,9 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://YOUR-RAILWAY-URL.up.railway.app/:path*" },
-    { "source": "/health", "destination": "https://YOUR-RAILWAY-URL.up.railway.app/health" },
-    { "source": "/images/:path*", "destination": "https://YOUR-RAILWAY-URL.up.railway.app/images/:path*" },
-    { "source": "/videos/:path*", "destination": "https://YOUR-RAILWAY-URL.up.railway.app/videos/:path*" },
+    { "source": "/api/:path*", "destination": "https://nerdy-production-290d.up.railway.app/:path*" },
+    { "source": "/health", "destination": "https://nerdy-production-290d.up.railway.app/health" },
+    { "source": "/images/:path*", "destination": "https://nerdy-production-290d.up.railway.app/images/:path*" },
+    { "source": "/videos/:path*", "destination": "https://nerdy-production-290d.up.railway.app/videos/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
