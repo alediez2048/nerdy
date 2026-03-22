@@ -179,7 +179,7 @@ function BriefEventCard({ event, index }: { event: BriefEvent; index: number }) 
         <strong>Persona:</strong> {persona}
       </p>
 
-      {(briefIn.audience || briefIn.campaign_goal || briefIn.key_message) && (
+      {!!(briefIn.audience || briefIn.campaign_goal || briefIn.key_message) && (
         <div style={s.block}>
           <h4 style={s.h4}>Session / brief inputs</h4>
           <ul style={s.ul}>

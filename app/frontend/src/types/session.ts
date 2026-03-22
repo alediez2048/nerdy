@@ -156,6 +156,9 @@ export interface ProgressSummary {
   ads_published: number
   current_score_avg: number
   cost_so_far: number
+  ad_count?: number
+  batch?: number
+  num_batches?: number
 }
 
 export interface SessionAdPreview {
@@ -197,6 +200,7 @@ export interface SessionDetail {
   completed_at: string | null
   campaign_id?: string | null
   campaign_name?: string | null
+  progress_summary?: ProgressSummary | null
 }
 
 export interface SessionListResponse {
