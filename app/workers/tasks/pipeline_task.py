@@ -518,6 +518,34 @@ def _run_video_pipeline(
                     })
                 except Exception as e:
                     logger.warning("Brief adherence scoring failed for %s: %s", ad_id, e)
+
+                # PD-14: Video quality scoring
+                try:
+                    from evaluate.video_scorer import score_video
+                    vid_scores = score_video(
+                        video_path=winner.video_path,
+                        ad_copy=ad_copy,
+                        ad_id=ad_id,
+                        session_config=config,
+                    )
+                    log_event(ledger_path, {
+                        "event_type": "VideoScored",
+                        "ad_id": ad_id,
+                        "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                        "cycle_number": 0,
+                        "action": "video_scored",
+                        "tokens_consumed": vid_scores.tokens_consumed,
+                        "model_used": "gemini-2.0-flash",
+                        "seed": "0",
+                        "outputs": {
+                            "video_path": winner.video_path,
+                            "video_scores": vid_scores.scores,
+                            "video_avg_score": vid_scores.avg_score,
+                            "rationales": vid_scores.rationales,
+                        },
+                    })
+                except Exception as e:
+                    logger.warning("Video scoring failed for %s: %s", ad_id, e)
             else:
                 block_reason = (
                     "no_variants_generated"
