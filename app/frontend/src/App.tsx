@@ -29,9 +29,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         <div style={authStyles.page}>
           <div style={authStyles.card}>
             <img src="/nerdy-logo.png" alt="Nerdy" style={authStyles.logo} />
-            <h1 style={authStyles.title}>Ad-Ops Autopilot</h1>
-            <p style={authStyles.subtitle}>
-              Autonomous ad generation for Facebook & Instagram
+            <p style={authStyles.tagline}>
+              Generate, evaluate, and curate high-performing<br />
+              Facebook & Instagram ads — powered by AI.
             </p>
             <SignIn routing="hash" />
           </div>
@@ -44,35 +44,29 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 const authStyles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
-    background: colors.ink,
+    background: `linear-gradient(135deg, ${colors.ink} 0%, #0d1b2a 50%, ${colors.ink} 100%)`,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: font.family,
+    padding: '20px',
   },
   card: {
     textAlign: 'center',
     padding: '48px 32px',
-    maxWidth: '460px',
+    maxWidth: '420px',
     width: '100%',
   },
   logo: {
-    width: '120px',
+    width: '140px',
     height: 'auto',
-    marginBottom: '24px',
+    marginBottom: '20px',
   },
-  title: {
-    fontSize: '28px',
-    fontWeight: 700,
-    margin: '0 0 8px',
-    background: `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-  },
-  subtitle: {
+  tagline: {
     color: colors.muted,
-    fontSize: '14px',
-    margin: '0 0 32px',
+    fontSize: '15px',
+    lineHeight: 1.6,
+    margin: '0 0 36px',
   },
 }
 
