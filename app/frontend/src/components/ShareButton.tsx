@@ -2,11 +2,13 @@
 import { useState } from 'react'
 import { colors, radii, font } from '../design/tokens'
 
+import { getAuthTokenSync } from '../api/auth'
+
 const BASE = '/api/sessions'
 
 function getHeaders(): HeadersInit {
   const headers: HeadersInit = { 'Content-Type': 'application/json' }
-  const token = localStorage.getItem('token')
+  const token = getAuthTokenSync()
   if (token) headers['Authorization'] = `Bearer ${token}`
   return headers
 }

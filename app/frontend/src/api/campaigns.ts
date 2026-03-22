@@ -7,13 +7,14 @@ import type {
   CampaignUpdate,
 } from '../types/campaign'
 import type { SessionListResponse } from '../types/session'
+import { getAuthTokenSync } from './auth'
 
 const API_ORIGIN = import.meta.env.DEV ? 'http://localhost:8000' : ''
 const BASE = `${API_ORIGIN}/api/campaigns`
 
 function getHeaders(): HeadersInit {
   const headers: HeadersInit = { 'Content-Type': 'application/json' }
-  const token = localStorage.getItem('token')
+  const token = getAuthTokenSync()
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }

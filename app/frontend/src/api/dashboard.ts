@@ -1,10 +1,12 @@
 // Ad-Ops-Autopilot — Dashboard API client
 
+import { getAuthTokenSync } from './auth'
+
 const BASE = '/api/sessions'
 
 function getHeaders(): HeadersInit {
   const headers: HeadersInit = { 'Content-Type': 'application/json' }
-  const token = localStorage.getItem('token')
+  const token = getAuthTokenSync()
   if (token) headers['Authorization'] = `Bearer ${token}`
   return headers
 }

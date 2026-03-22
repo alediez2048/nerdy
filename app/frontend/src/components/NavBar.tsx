@@ -1,7 +1,8 @@
-// PC-10: Persistent navigation bar
+// PC-10: Persistent navigation bar + Clerk auth
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { colors, font } from '../design/tokens'
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 
 function ThemeToggle() {
   const [light, setLight] = useState(() => localStorage.getItem('theme') === 'light')
@@ -84,6 +85,14 @@ export default function NavBar() {
       </div>
       <div style={s.right}>
         <ThemeToggle />
+        <SignedIn>
+          <UserButton />
+        </SignedIn>
+        <SignedOut>
+          <SignInButton mode="modal">
+            <button style={s.signInBtn}>Sign In</button>
+          </SignInButton>
+        </SignedOut>
       </div>
     </nav>
   )
@@ -152,6 +161,18 @@ const s: Record<string, React.CSSProperties> = {
   right: {
     display: 'flex',
     alignItems: 'center',
+    gap: '12px',
+  },
+  signInBtn: {
+    padding: '8px 16px',
+    borderRadius: '100px',
+    border: `1px solid ${colors.cyan}`,
+    background: 'transparent',
+    color: colors.cyan,
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontFamily: font.family,
+    fontWeight: 600,
   },
   themeToggle: {
     padding: '8px 16px',

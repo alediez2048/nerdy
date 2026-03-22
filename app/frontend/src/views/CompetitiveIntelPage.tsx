@@ -61,7 +61,8 @@ export default function CompetitiveIntelPage() {
       const formData = new FormData()
       formData.append('file', uploadFile)
       formData.append('competitor_name', uploadCompetitor.trim())
-      const token = localStorage.getItem('token')
+      const { getAuthTokenSync } = await import('../api/auth')
+      const token = getAuthTokenSync()
       const headers: HeadersInit = {}
       if (token) headers['Authorization'] = `Bearer ${token}`
       const res = await fetch('/api/competitive/upload', { method: 'POST', headers, body: formData })

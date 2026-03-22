@@ -1,39 +1,52 @@
-// Ad-Ops-Autopilot — Auth API client
+// Ad-Ops-Autopilot — Auth (Clerk + legacy fallback)
 
-const BASE = '/api/auth'
+// Clerk token getter — registered from App.tsx via useAuth()
+let _clerkGetToken: (() => Promise<string | null>) | null = null
+let _cachedClerkToken: string | null = null
 
-export interface AuthUser {
-  id: number
-  email: string
-  name: string
-  picture_url: string | null
+/** Called once from App.tsx to register Clerk's getToken. */
+export function registerClerkTokenGetter(fn: () => Promise<string | null>) {
+  _clerkGetToken = fn
+  // Refresh cached token periodically
+  const refresh = () => fn().then((t) => { _cachedClerkToken = t })
+  refresh()
+  setInterval(refresh, 30_000) // refresh every 30s
 }
 
-export interface LoginResponse {
-  access_token: string
-  token_type: string
-  user: AuthUser
+/** Get auth token synchronously — uses cached Clerk token or localStorage. */
+export function getAuthTokenSync(): string | null {
+  return _cachedClerkToken || localStorage.getItem('token')
 }
 
-export async function googleLogin(idToken: string): Promise<LoginResponse> {
-  const resp = await fetch(`${BASE}/google`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id_token: idToken }),
-  })
-  if (!resp.ok) {
-    const body = await resp.json().catch(() => ({ detail: resp.statusText }))
-    throw new Error(body.detail || `HTTP ${resp.status}`)
+/** Get auth token — tries Clerk first, falls back to localStorage. */
+export async function getAuthToken(): Promise<string | null> {
+  if (_clerkGetToken) {
+    const token = await _clerkGetToken()
+    if (token) {
+      _cachedClerkToken = token
+      return token
+    }
   }
-  return resp.json()
+  return localStorage.getItem('token')
+}
+
+/** Build headers with auth token (async — use in API calls). */
+export async function getAuthHeaders(): Promise<HeadersInit> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' }
+  const token = await getAuthToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
+}
+
+// Legacy helpers (still used by some code paths)
+export function getToken(): string | null {
+  return localStorage.getItem('token')
 }
 
 export function saveToken(token: string) {
   localStorage.setItem('token', token)
-}
-
-export function getToken(): string | null {
-  return localStorage.getItem('token')
 }
 
 export function clearToken() {

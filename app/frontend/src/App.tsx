@@ -1,6 +1,9 @@
 // Ad-Ops-Autopilot — App router
 // PC-10: Navigation update — campaigns as home, persistent NavBar
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from '@clerk/clerk-react'
+import { registerClerkTokenGetter } from './api/auth'
 import SessionList from './views/SessionList'
 import NewSessionForm from './views/NewSessionForm'
 import SessionDetail from './views/SessionDetail'
@@ -15,9 +18,18 @@ import CuratedSetPage from './views/CuratedSetPage'
 import GlobalAdLibrary from './views/GlobalAdLibrary'
 import NavBar from './components/NavBar'
 
+function ClerkTokenRegistrar() {
+  const { getToken } = useAuth()
+  useEffect(() => {
+    registerClerkTokenGetter(() => getToken())
+  }, [getToken])
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <ClerkTokenRegistrar />
       <NavBar />
       <Routes>
         <Route path="/" element={<Navigate to="/campaigns" replace />} />
