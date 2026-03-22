@@ -40,17 +40,17 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(campaigns.router, prefix="/api/campaigns", tags=["campaigns"])
-app.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
-app.include_router(progress.router, prefix="/sessions", tags=["progress"])
-app.include_router(dashboard.router, prefix="/sessions", tags=["dashboard"])
-app.include_router(curation.router, prefix="/sessions", tags=["curation"])
-app.include_router(share.router, prefix="/sessions", tags=["share"])
-app.include_router(share.shared_router, prefix="/shared", tags=["shared"])
-app.include_router(dashboard.competitive_router, prefix="/competitive", tags=["competitive"])
+app.include_router(sessions.router, prefix="/api/sessions", tags=["sessions"])
+app.include_router(progress.router, prefix="/api/sessions", tags=["progress"])
+app.include_router(dashboard.router, prefix="/api/sessions", tags=["dashboard"])
+app.include_router(curation.router, prefix="/api/sessions", tags=["curation"])
+app.include_router(share.router, prefix="/api/sessions", tags=["share"])
+app.include_router(share.shared_router, prefix="/api/shared", tags=["shared"])
+app.include_router(dashboard.competitive_router, prefix="/api/competitive", tags=["competitive"])
 app.include_router(competitive.router)
-app.include_router(dashboard.global_dashboard_router, prefix="/dashboard", tags=["global-dashboard"])
+app.include_router(dashboard.global_dashboard_router, prefix="/api/dashboard", tags=["global-dashboard"])
 
 # Serve generated images as static files
 _images_dir = Path("output/images")
