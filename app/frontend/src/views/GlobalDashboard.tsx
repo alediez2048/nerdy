@@ -16,6 +16,12 @@ interface PipelineSummary {
   total_tokens: number
   total_cost_usd: number
   avg_score: number
+  image_avg_score?: number
+  image_scored_count?: number
+  video_avg_score?: number
+  video_scored_count?: number
+  adherence_avg_score?: number
+  adherence_scored_count?: number
 }
 
 interface IterationCycle {
@@ -180,6 +186,12 @@ function PipelineSummaryTab({ data }: { data: Record<string, unknown> }) {
       tip: 'Estimated spend across app sessions, based on the session summaries stored for each pipeline run.' },
     { label: 'Ads Discarded', value: ps.total_ads_discarded ?? 0, color: colors.red,
       tip: 'Ads that failed to meet the quality threshold after all regeneration cycles, or were rejected by compliance filters.' },
+    { label: 'Image Avg', value: ps.image_avg_score ? ps.image_avg_score.toFixed(1) : '—', color: colors.cyan,
+      tip: `Average image quality score across ${ps.image_scored_count ?? 0} scored images (visual clarity, brand consistency, emotional impact, coherence, platform fit).` },
+    { label: 'Video Avg', value: ps.video_avg_score ? ps.video_avg_score.toFixed(1) : '—', color: colors.cyan,
+      tip: `Average video quality score across ${ps.video_scored_count ?? 0} scored videos (hook strength, visual quality, narrative flow, coherence, UGC authenticity).` },
+    { label: 'Adherence Avg', value: ps.adherence_avg_score ? ps.adherence_avg_score.toFixed(1) : '—', color: colors.mint,
+      tip: `Average brief adherence score across ${ps.adherence_scored_count ?? 0} scored ads (audience match, goal alignment, persona fit, message delivery, format adherence).` },
   ]
 
   return (
@@ -335,22 +347,44 @@ function QualityTrendsTab({ data }: { data: Record<string, unknown> }) {
 
 // ── Tab 4: Dimension Deep-Dive ─────────────────────────────────────
 
+function DimensionGrid({ title, description, trends }: { title: string; description: string; trends: Record<string, number[]> }) {
+  const entries = Object.entries(trends).filter(([, vals]) => (vals as number[]).length > 0)
+  if (entries.length === 0) return null
+
+  const avgs = entries.map(([dim, vals]) => {
+    const arr = vals as number[]
+    return { dim, avg: arr.reduce((a, b) => a + b, 0) / arr.length, count: arr.length }
+  })
+
+  return (
+    <div style={s.section}>
+      <h3 style={s.heading}>{title}</h3>
+      <p style={s.sectionDescription}>{description}</p>
+      <div style={s.dimensionAvgGrid}>
+        {avgs.map(({ dim, avg, count }) => (
+          <div key={dim} style={s.dimensionAvgCard}>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: avg >= 7 ? colors.mint : avg >= 5 ? colors.yellow : colors.red, fontFamily: font.family }}>
+              {avg.toFixed(1)}
+            </div>
+            <div style={{ fontSize: '12px', color: colors.muted, marginTop: '4px', fontFamily: font.family }}>
+              {dim.replace(/_/g, ' ')}
+            </div>
+            <div style={{ fontSize: '10px', color: colors.muted, fontFamily: font.family }}>n={count}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function DimensionDeepDiveTab({ data }: { data: Record<string, unknown> }) {
   const dd = (data.dimension_deep_dive || {}) as Record<string, unknown>
   const dimTrends = (dd.dimension_trends || {}) as Record<string, number[]>
+  const imageTrends = (dd.image_dimension_trends || {}) as Record<string, number[]>
+  const videoTrends = (dd.video_dimension_trends || {}) as Record<string, number[]>
+  const adherenceTrends = (dd.adherence_dimension_trends || {}) as Record<string, number[]>
   const corrMatrix = (dd.correlation_matrix || {}) as Record<string, Record<string, number>>
-
   const dimensions = Object.keys(dimTrends)
-
-  // Compute averages
-  const dimAvgs: Record<string, { avg: number; count: number }> = {}
-  for (const [dim, vals] of Object.entries(dimTrends)) {
-    const arr = vals as number[]
-    dimAvgs[dim] = {
-      avg: arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0,
-      count: arr.length,
-    }
-  }
 
   const corrColor = (r: number) => {
     const abs = Math.abs(r)
@@ -361,35 +395,31 @@ function DimensionDeepDiveTab({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div>
-      {/* Dimension averages */}
-      <div style={s.section}>
-        <h3 style={s.heading}>Dimension Averages</h3>
-        <p style={s.sectionDescription}>
-          This section shows the average score for each of the five evaluation dimensions across all scored ads in
-          the global ledger. It helps you see where the system is consistently strong or weak at a glance.
-          The small <strong>n</strong> value under each card is the number of scored examples used to compute that average.
-        </p>
-        <div style={s.dimensionAvgGrid}>
-          {Object.entries(dimAvgs).map(([dim, { avg, count }]) => (
-            <div key={dim} style={s.dimensionAvgCard}>
-              <div style={{ fontSize: '22px', fontWeight: 700, color: avg >= 7 ? colors.mint : avg >= 5 ? colors.yellow : colors.red, fontFamily: font.family }}>
-                {avg.toFixed(1)}
-              </div>
-              <div style={{ fontSize: '12px', color: colors.muted, marginTop: '4px', fontFamily: font.family }}>
-                {dim.replace(/_/g, ' ')}
-              </div>
-              <div style={{ fontSize: '10px', color: colors.muted, fontFamily: font.family }}>
-                n={count}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <DimensionGrid
+        title="Copy Quality"
+        description="Average score for each of the five copy evaluation dimensions across all scored ads."
+        trends={dimTrends}
+      />
+      <DimensionGrid
+        title="Brief Adherence"
+        description="How well ads follow the creative brief — audience targeting, persona tone, key message delivery, and format compliance."
+        trends={adherenceTrends}
+      />
+      <DimensionGrid
+        title="Image Quality"
+        description="Visual quality scores for generated ad images — clarity, brand consistency, emotional impact, copy coherence, and platform fit."
+        trends={imageTrends}
+      />
+      <DimensionGrid
+        title="Video Quality"
+        description="Video quality scores — hook strength, visual quality, narrative flow, copy coherence, and UGC authenticity."
+        trends={videoTrends}
+      />
 
-      {/* Correlation matrix */}
+      {/* Correlation matrix (copy dimensions only — others will have too few data points initially) */}
       {dimensions.length > 0 && Object.keys(corrMatrix).length > 0 && (
         <div style={s.section}>
-          <h3 style={s.heading}>Correlation Matrix</h3>
+          <h3 style={s.heading}>Copy Correlation Matrix</h3>
           <div style={{ overflowX: 'auto' }}>
             <table style={s.table}>
               <thead>

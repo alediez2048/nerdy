@@ -17,6 +17,9 @@ from iterate.ledger import read_events
 logger = logging.getLogger(__name__)
 
 DIMENSIONS = ("clarity", "value_proposition", "cta", "brand_voice", "emotional_resonance")
+IMAGE_DIMENSIONS = ("visual_clarity", "brand_consistency", "emotional_impact", "copy_image_coherence", "platform_fit")
+VIDEO_DIMENSIONS = ("hook_strength", "visual_quality", "narrative_flow", "copy_video_coherence", "ugc_authenticity")
+ADHERENCE_DIMENSIONS = ("audience_match", "goal_alignment", "persona_fit", "message_delivery", "format_adherence")
 _TIME_WINDOWS: dict[str, timedelta] = {
     "day": timedelta(days=1),
     "month": timedelta(days=30),
@@ -156,6 +159,20 @@ def _build_pipeline_summary(
     except ImportError:
         pass
 
+    # PD-15: Compute averages for image, video, and adherence scores
+    def _avg_from_events(event_type: str, score_key: str) -> tuple[float, int]:
+        vals = []
+        for e in events:
+            if e.get("event_type") == event_type:
+                v = e.get("outputs", {}).get(score_key)
+                if isinstance(v, (int, float)) and v > 0:
+                    vals.append(float(v))
+        return (round(sum(vals) / len(vals), 2) if vals else 0.0, len(vals))
+
+    image_avg, image_count = _avg_from_events("ImageScored", "image_avg_score")
+    video_avg, video_count = _avg_from_events("VideoScored", "video_avg_score")
+    adherence_avg, adherence_count = _avg_from_events("BriefAdherenceScored", "avg_score")
+
     return {
         "total_ads_generated": generated,
         "total_ads_published": published,
@@ -166,6 +183,12 @@ def _build_pipeline_summary(
         "total_cost_usd": total_cost_usd,
         "cost_source": cost_source,
         "avg_score": avg_score,
+        "image_avg_score": image_avg,
+        "image_scored_count": image_count,
+        "video_avg_score": video_avg,
+        "video_scored_count": video_count,
+        "adherence_avg_score": adherence_avg,
+        "adherence_scored_count": adherence_count,
     }
 
 
@@ -330,9 +353,33 @@ def _build_dimension_deep_dive(events: list[dict]) -> dict:
     except ImportError:
         pass
 
+    # PD-15: Build dimension trends for image, video, and adherence scores
+    def _extract_dim_trends(event_type: str, dims: tuple[str, ...], score_key: str) -> dict[str, list[float]]:
+        trends: dict[str, list[float]] = {d: [] for d in dims}
+        for e in events:
+            if e.get("event_type") != event_type:
+                continue
+            scores = e.get("outputs", {}).get(score_key, {})
+            if not isinstance(scores, dict):
+                continue
+            for dim in dims:
+                val = scores.get(dim)
+                if isinstance(val, dict):
+                    val = val.get("score")
+                if isinstance(val, (int, float)):
+                    trends[dim].append(float(val))
+        return trends
+
+    image_trends = _extract_dim_trends("ImageScored", IMAGE_DIMENSIONS, "image_scores")
+    video_trends = _extract_dim_trends("VideoScored", VIDEO_DIMENSIONS, "video_scores")
+    adherence_trends = _extract_dim_trends("BriefAdherenceScored", ADHERENCE_DIMENSIONS, "scores")
+
     return {
         "dimension_trends": dim_trends,
         "correlation_matrix": correlation,
+        "image_dimension_trends": image_trends,
+        "video_dimension_trends": video_trends,
+        "adherence_dimension_trends": adherence_trends,
     }
 
 
@@ -461,6 +508,33 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
                     image_path = str(matches[0])
                     image_url = f"/images/{matches[0].name}"
 
+            # PD-15: Extract image, video, and adherence scores from ledger events
+            image_scored_events = [e for e in all_ad_events if e.get("event_type") == "ImageScored"]
+            image_detail_scores = None
+            image_avg = None
+            if image_scored_events:
+                latest_img = image_scored_events[-1]
+                image_detail_scores = latest_img.get("outputs", {}).get("image_scores")
+                image_avg = latest_img.get("outputs", {}).get("image_avg_score")
+
+            video_scored_events = [e for e in all_ad_events if e.get("event_type") == "VideoScored"]
+            video_detail_scores = None
+            video_avg = None
+            if video_scored_events:
+                latest_vid = video_scored_events[-1]
+                video_detail_scores = latest_vid.get("outputs", {}).get("video_scores")
+                video_avg = latest_vid.get("outputs", {}).get("video_avg_score")
+
+            adherence_events = [e for e in all_ad_events if e.get("event_type") == "BriefAdherenceScored"]
+            adherence_scores_data = None
+            adherence_avg = None
+            adherence_rationales = None
+            if adherence_events:
+                latest_adh = adherence_events[-1]
+                adherence_scores_data = latest_adh.get("outputs", {}).get("scores")
+                adherence_avg = latest_adh.get("outputs", {}).get("avg_score")
+                adherence_rationales = latest_adh.get("outputs", {}).get("rationales")
+
             has_copy = copy_data.get("primary_text") or copy_data.get("headline")
             has_scores = bool(scores)
             if not has_copy and not has_scores:
@@ -484,6 +558,13 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
                 "video_path": video_path,
                 "video_url": video_url,
                 "video_scores": video_scores,
+                "image_detail_scores": image_detail_scores,
+                "image_avg": image_avg,
+                "video_detail_scores": video_detail_scores,
+                "video_avg": video_avg,
+                "adherence_scores": adherence_scores_data,
+                "adherence_avg": adherence_avg,
+                "adherence_rationales": adherence_rationales,
             })
 
     library.sort(key=lambda item: item.get("created_at", ""), reverse=True)

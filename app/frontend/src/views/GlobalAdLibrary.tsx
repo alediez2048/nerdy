@@ -21,6 +21,12 @@ interface Ad {
   image_url: string | null
   video_url?: string | null
   video_scores?: Record<string, number> | null
+  image_detail_scores?: Record<string, number> | null
+  image_avg?: number | null
+  video_detail_scores?: Record<string, number> | null
+  video_avg?: number | null
+  adherence_scores?: Record<string, number> | null
+  adherence_avg?: number | null
 }
 
 export default function GlobalAdLibrary() {
@@ -168,9 +174,18 @@ export default function GlobalAdLibrary() {
                       </span>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <StatusBadge status={ad.status} />
-                    <Badge label={ad.aggregate_score.toFixed(1)} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                    <Badge label={`Copy ${ad.aggregate_score.toFixed(1)}`} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                    {ad.adherence_avg != null && ad.adherence_avg > 0 && (
+                      <Badge label={`Brief ${ad.adherence_avg.toFixed(1)}`} color={ad.adherence_avg >= 7 ? colors.mint : colors.yellow} />
+                    )}
+                    {ad.image_avg != null && ad.image_avg > 0 && (
+                      <Badge label={`Img ${ad.image_avg.toFixed(1)}`} color={ad.image_avg >= 7 ? colors.mint : colors.yellow} />
+                    )}
+                    {ad.video_avg != null && ad.video_avg > 0 && (
+                      <Badge label={`Vid ${ad.video_avg.toFixed(1)}`} color={ad.video_avg >= 7 ? colors.mint : colors.yellow} />
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleArchive(ad.instance_id) }}
                       style={s.archiveBtn}
@@ -210,30 +225,74 @@ export default function GlobalAdLibrary() {
                     {ad.copy?.headline && <p><strong>Headline:</strong> {ad.copy.headline}</p>}
                     {ad.copy?.description && <p><strong>Description:</strong> {ad.copy.description}</p>}
                     {ad.copy?.cta_button && <p><strong>CTA:</strong> {ad.copy.cta_button}</p>}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginTop: '8px' }}>
-                      {Object.entries(ad.scores).map(([dim, score]) => (
-                        <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
-                          <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '-'}</span>
+
+                    {/* Copy scores */}
+                    {Object.keys(ad.scores).length > 0 && (
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{ fontSize: '11px', color: colors.cyan, fontWeight: 600, marginBottom: '4px' }}>Copy Quality</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                          {Object.entries(ad.scores).map(([dim, score]) => (
+                            <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                              <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
+                              <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '-'}</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
+
+                    {/* Brief adherence scores */}
+                    {ad.adherence_scores && Object.values(ad.adherence_scores).some((v) => typeof v === 'number' && v > 0) && (
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{ fontSize: '11px', color: colors.mint, fontWeight: 600, marginBottom: '4px' }}>Brief Adherence</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                          {Object.entries(ad.adherence_scores).map(([dim, score]) => (
+                            <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                              <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
+                              <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '-'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Image scores */}
+                    {ad.image_detail_scores && Object.values(ad.image_detail_scores).some((v) => typeof v === 'number' && v > 0) && (
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{ fontSize: '11px', color: colors.cyan, fontWeight: 600, marginBottom: '4px' }}>Image Quality</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                          {Object.entries(ad.image_detail_scores).map(([dim, score]) => (
+                            <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                              <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
+                              <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '-'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Video scores */}
+                    {ad.video_detail_scores && Object.values(ad.video_detail_scores).some((v) => typeof v === 'number' && v > 0) && (
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{ fontSize: '11px', color: colors.cyan, fontWeight: 600, marginBottom: '4px' }}>Video Quality</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                          {Object.entries(ad.video_detail_scores).map(([dim, score]) => (
+                            <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                              <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
+                              <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(1) : '-'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Copy rationales */}
                     {Object.keys(ad.rationale).length > 0 && (
                       <div style={{ marginTop: '10px' }}>
                         {Object.entries(ad.rationale).map(([dim, text]) => text && (
                           <p key={dim} style={{ fontSize: '12px', color: colors.muted, margin: '4px 0' }}>
                             <strong style={{ color: colors.white }}>{dim.replace(/_/g, ' ')}:</strong> {text}
                           </p>
-                        ))}
-                      </div>
-                    )}
-                    {ad.video_scores && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px', padding: '8px', background: `${colors.muted}10`, borderRadius: radii.input }}>
-                        {Object.entries(ad.video_scores).map(([dim, score]) => (
-                          <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                            <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
-                            <span style={{ color: colors.white, fontWeight: 600 }}>{typeof score === 'number' ? score.toFixed(2) : '-'}</span>
-                          </div>
                         ))}
                       </div>
                     )}
