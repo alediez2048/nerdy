@@ -162,38 +162,41 @@ export default function GlobalAdLibrary() {
                 style={s.card}
               >
                 {/* Header */}
-                <div style={s.cardHeader}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '12px', color: colors.muted }}>{ad.ad_id}</span>
-                    <span style={{ fontSize: '11px', color: colors.cyan }}>
-                      {ad.session_label || ad.session_id || 'global'}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <StatusBadge status={ad.status} />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleArchive(ad.instance_id) }}
+                    style={s.archiveBtn}
+                    title={archived.has(ad.instance_id) ? 'Unarchive' : 'Archive'}
+                  >
+                    {archived.has(ad.instance_id) ? 'Restore' : 'Archive'}
+                  </button>
+                </div>
+
+                {/* Score badges */}
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  <Badge label={`Copy ${ad.aggregate_score.toFixed(1)}`} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
+                  {ad.adherence_avg != null && ad.adherence_avg > 0 && (
+                    <Badge label={`Brief ${ad.adherence_avg.toFixed(1)}`} color={ad.adherence_avg >= 7 ? colors.mint : colors.yellow} />
+                  )}
+                  {ad.image_avg != null && ad.image_avg > 0 && (
+                    <Badge label={`Img ${ad.image_avg.toFixed(1)}`} color={ad.image_avg >= 7 ? colors.mint : colors.yellow} />
+                  )}
+                  {ad.video_avg != null && ad.video_avg > 0 && (
+                    <Badge label={`Vid ${ad.video_avg.toFixed(1)}`} color={ad.video_avg >= 7 ? colors.mint : colors.yellow} />
+                  )}
+                </div>
+
+                {/* Ad info */}
+                <div style={{ marginBottom: '6px' }}>
+                  <span style={{ fontSize: '11px', color: colors.cyan }}>
+                    {ad.session_label || ad.session_id || 'global'}
+                  </span>
+                  {ad.created_at && (
+                    <span style={{ fontSize: '11px', color: colors.muted, marginLeft: '8px' }}>
+                      {new Date(ad.created_at).toLocaleString()}
                     </span>
-                    {ad.created_at && (
-                      <span style={{ fontSize: '11px', color: colors.muted }}>
-                        {new Date(ad.created_at).toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <StatusBadge status={ad.status} />
-                    <Badge label={`Copy ${ad.aggregate_score.toFixed(1)}`} color={ad.aggregate_score >= 7 ? colors.mint : colors.yellow} />
-                    {ad.adherence_avg != null && ad.adherence_avg > 0 && (
-                      <Badge label={`Brief ${ad.adherence_avg.toFixed(1)}`} color={ad.adherence_avg >= 7 ? colors.mint : colors.yellow} />
-                    )}
-                    {ad.image_avg != null && ad.image_avg > 0 && (
-                      <Badge label={`Img ${ad.image_avg.toFixed(1)}`} color={ad.image_avg >= 7 ? colors.mint : colors.yellow} />
-                    )}
-                    {ad.video_avg != null && ad.video_avg > 0 && (
-                      <Badge label={`Vid ${ad.video_avg.toFixed(1)}`} color={ad.video_avg >= 7 ? colors.mint : colors.yellow} />
-                    )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleArchive(ad.instance_id) }}
-                      style={s.archiveBtn}
-                      title={archived.has(ad.instance_id) ? 'Unarchive' : 'Archive'}
-                    >
-                      {archived.has(ad.instance_id) ? 'Restore' : 'Archive'}
-                    </button>
-                  </div>
+                  )}
                 </div>
 
                 {/* Copy preview */}
