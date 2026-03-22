@@ -55,9 +55,9 @@ app.include_router(dashboard.global_dashboard_router, prefix="/api/dashboard", t
 # Serve generated images as static files
 _images_dir = Path("output/images")
 _images_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/images", StaticFiles(directory=str(_images_dir)), name="images")
+app.mount("/api/images", StaticFiles(directory=str(_images_dir)), name="images")
 
 # Serve generated videos as static files (PC-03)
 _videos_dir = Path("output/videos")
 _videos_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/videos", StaticFiles(directory=str(_videos_dir)), name="videos")
+app.mount("/api/videos", StaticFiles(directory=str(_videos_dir)), name="videos")
