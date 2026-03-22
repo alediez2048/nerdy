@@ -2,7 +2,10 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { colors, font } from '../design/tokens'
+
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
+
+const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 function ThemeToggle() {
   const [light, setLight] = useState(() => localStorage.getItem('theme') === 'light')
@@ -85,14 +88,18 @@ export default function NavBar() {
       </div>
       <div style={s.right}>
         <ThemeToggle />
-        <SignedIn>
-          <UserButton />
-        </SignedIn>
-        <SignedOut>
-          <SignInButton mode="modal">
-            <button style={s.signInBtn}>Sign In</button>
-          </SignInButton>
-        </SignedOut>
+        {CLERK_ENABLED && (
+          <>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button style={s.signInBtn}>Sign In</button>
+              </SignInButton>
+            </SignedOut>
+          </>
+        )}
       </div>
     </nav>
   )
