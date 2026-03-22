@@ -339,11 +339,10 @@ const s: Record<string, React.CSSProperties> = {
     padding: '8px 12px', borderRadius: radii.button, border: `1px solid ${colors.muted}40`,
     background: colors.surface, color: colors.white, fontSize: '12px', fontFamily: font.family, outline: 'none',
   },
-  grid: { columnCount: 3, columnGap: '12px' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' },
   card: {
     background: colors.surface, borderRadius: radii.input, padding: '14px 18px',
     cursor: 'pointer', fontFamily: font.family, overflow: 'hidden',
-    marginBottom: '12px', breakInside: 'avoid' as const,
   },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' },
   video: { width: '100%', maxHeight: '480px', borderRadius: radii.input, marginTop: '10px', background: '#000' },
