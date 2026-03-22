@@ -23,6 +23,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "https://nerdy-three.vercel.app",
         "https://*.vercel.app",
         "https://nerdy-production-290d.up.railway.app",
         "https://*.up.railway.app",
