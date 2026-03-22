@@ -1,6 +1,8 @@
 // Ad-Ops-Autopilot — App router
 // PC-10: Navigation update — campaigns as home, persistent NavBar
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { SignedIn, SignedOut, SignIn } from '@clerk/clerk-react'
+import { colors, font } from './design/tokens'
 import SessionList from './views/SessionList'
 import NewSessionForm from './views/NewSessionForm'
 import SessionDetail from './views/SessionDetail'
@@ -15,26 +17,87 @@ import CuratedSetPage from './views/CuratedSetPage'
 import GlobalAdLibrary from './views/GlobalAdLibrary'
 import NavBar from './components/NavBar'
 
+const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  if (!CLERK_ENABLED) return <>{children}</>
+
+  return (
+    <>
+      <SignedIn>{children}</SignedIn>
+      <SignedOut>
+        <div style={authStyles.page}>
+          <div style={authStyles.card}>
+            <img src="/nerdy-logo.png" alt="Nerdy" style={authStyles.logo} />
+            <h1 style={authStyles.title}>Ad-Ops Autopilot</h1>
+            <p style={authStyles.subtitle}>
+              Autonomous ad generation for Facebook & Instagram
+            </p>
+            <SignIn routing="hash" />
+          </div>
+        </div>
+      </SignedOut>
+    </>
+  )
+}
+
+const authStyles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: '100vh',
+    background: colors.ink,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: font.family,
+  },
+  card: {
+    textAlign: 'center',
+    padding: '48px 32px',
+    maxWidth: '460px',
+    width: '100%',
+  },
+  logo: {
+    width: '120px',
+    height: 'auto',
+    marginBottom: '24px',
+  },
+  title: {
+    fontSize: '28px',
+    fontWeight: 700,
+    margin: '0 0 8px',
+    background: `linear-gradient(135deg, ${colors.cyan}, ${colors.mint})`,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  },
+  subtitle: {
+    color: colors.muted,
+    fontSize: '14px',
+    margin: '0 0 32px',
+  },
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <NavBar />
-      <Routes>
-        <Route path="/" element={<Navigate to="/campaigns" replace />} />
-        <Route path="/sessions" element={<SessionList />} />
-        <Route path="/sessions/new" element={<NewSessionForm />} />
-        <Route path="/sessions/:sessionId" element={<SessionDetail />} />
-        <Route path="/sessions/:sessionId/live" element={<WatchLive />} />
-        <Route path="/shared/:token" element={<SharedSession />} />
-        <Route path="/dashboard" element={<GlobalDashboard />} />
-        <Route path="/campaigns" element={<CampaignList />} />
-        <Route path="/campaigns/new" element={<NewCampaignForm />} />
-        <Route path="/campaigns/:campaignId" element={<CampaignDetail />} />
-        <Route path="/campaigns/:campaignId/sessions/new" element={<NewSessionForm />} />
-        <Route path="/ads" element={<GlobalAdLibrary />} />
-        <Route path="/competitive" element={<CompetitiveIntelPage />} />
-        <Route path="/curated" element={<CuratedSetPage />} />
-      </Routes>
+      <AuthGate>
+        <NavBar />
+        <Routes>
+          <Route path="/" element={<Navigate to="/campaigns" replace />} />
+          <Route path="/sessions" element={<SessionList />} />
+          <Route path="/sessions/new" element={<NewSessionForm />} />
+          <Route path="/sessions/:sessionId" element={<SessionDetail />} />
+          <Route path="/sessions/:sessionId/live" element={<WatchLive />} />
+          <Route path="/shared/:token" element={<SharedSession />} />
+          <Route path="/dashboard" element={<GlobalDashboard />} />
+          <Route path="/campaigns" element={<CampaignList />} />
+          <Route path="/campaigns/new" element={<NewCampaignForm />} />
+          <Route path="/campaigns/:campaignId" element={<CampaignDetail />} />
+          <Route path="/campaigns/:campaignId/sessions/new" element={<NewSessionForm />} />
+          <Route path="/ads" element={<GlobalAdLibrary />} />
+          <Route path="/competitive" element={<CompetitiveIntelPage />} />
+          <Route path="/curated" element={<CuratedSetPage />} />
+        </Routes>
+      </AuthGate>
     </BrowserRouter>
   )
 }
