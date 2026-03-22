@@ -236,6 +236,35 @@ def process_batch(
                     })
                 except Exception as e:
                     logger.warning("Brief adherence scoring failed for %s: %s", ad.ad_id, e)
+
+                # PD-13: Image quality scoring
+                if winning_image and Path(winning_image).exists():
+                    try:
+                        from evaluate.image_scorer import score_image
+                        img_scores = score_image(
+                            image_path=winning_image,
+                            ad_copy=ad.to_evaluator_input(),
+                            ad_id=ad.ad_id,
+                            session_config=config,
+                        )
+                        log_event(ledger_path, {
+                            "event_type": "ImageScored",
+                            "ad_id": ad.ad_id,
+                            "brief_id": brief_id,
+                            "cycle_number": 1,
+                            "action": "image_scored",
+                            "tokens_consumed": img_scores.tokens_consumed,
+                            "model_used": "gemini-2.0-flash",
+                            "seed": "0",
+                            "outputs": {
+                                "image_path": winning_image,
+                                "image_scores": img_scores.scores,
+                                "image_avg_score": img_scores.avg_score,
+                                "rationales": img_scores.rationales,
+                            },
+                        })
+                    except Exception as e:
+                        logger.warning("Image scoring failed for %s: %s", ad.ad_id, e)
             elif routing.decision == "discard":
                 result.discarded += 1
                 log_event(ledger_path, {
