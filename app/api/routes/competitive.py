@@ -9,7 +9,7 @@ from fastapi import APIRouter, File, Form, Query, UploadFile
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/competitive", tags=["competitive"])
+router = APIRouter(prefix="/api/competitive", tags=["competitive"])
 
 RAW_ADS_DIR = Path("data/competitive/raw")
 COMPETITORS = ["chegg", "kaplan", "varsity_tutors", "wyzant"]

@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://nerdy-production-290d.up.railway.app/:path*" },
+    { "source": "/api/:path*", "destination": "https://nerdy-production-290d.up.railway.app/api/:path*" },
     { "source": "/health", "destination": "https://nerdy-production-290d.up.railway.app/health" },
     { "source": "/images/:path*", "destination": "https://nerdy-production-290d.up.railway.app/images/:path*" },
     { "source": "/videos/:path*", "destination": "https://nerdy-production-290d.up.railway.app/videos/:path*" },
