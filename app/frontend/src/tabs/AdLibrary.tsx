@@ -16,6 +16,7 @@ interface Ad {
   image_path: string | null
   image_url: string | null
   video_url?: string | null
+  video_remote_url?: string | null
   video_scores?: Record<string, number> | null
   image_detail_scores?: Record<string, number> | null
   image_avg?: number | null
@@ -78,7 +79,11 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
               return next
             })
             const isVideo = sessionType === 'video'
-            const hasVideo = isVideo && ad.video_url
+            const effectiveVideoUrl = ad.video_url || ad.video_remote_url
+            const hasVideo = isVideo && effectiveVideoUrl
+            const videoSrc = effectiveVideoUrl
+              ? effectiveVideoUrl.startsWith('http') ? effectiveVideoUrl : `/api${effectiveVideoUrl}`
+              : ''
 
             if (isExpanded) {
               return (
@@ -90,10 +95,10 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
                   <div style={s.expandedLayout}>
                     {hasVideo ? (
                       <video
-                        src={`/api${ad.video_url}`}
+                        src={videoSrc}
                         controls
                         style={s.adVideoExpanded}
-                        onLoadedData={(e) => logVideoRenderDebug(ad.ad_id, `/api${ad.video_url}`, e.currentTarget)}
+                        onLoadedData={(e) => logVideoRenderDebug(ad.ad_id, videoSrc, e.currentTarget)}
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : ad.image_url ? (
@@ -147,7 +152,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
                         {!isVideo && <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>}
                         {hasVideo && (
                           <a
-                            href={`/api${ad.video_url}`}
+                            href={videoSrc}
                             download
                             onClick={(e) => e.stopPropagation()}
                             style={s.downloadBtn}
@@ -183,10 +188,10 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
               >
                 {hasVideo ? (
                   <video
-                    src={`/api${ad.video_url}`}
+                    src={videoSrc}
                     muted
                     style={s.adVideo}
-                    onLoadedData={(e) => logVideoRenderDebug(ad.ad_id, `/api${ad.video_url}`, e.currentTarget)}
+                    onLoadedData={(e) => logVideoRenderDebug(ad.ad_id, videoSrc, e.currentTarget)}
                     onMouseEnter={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
                     onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0 }}
                     onClick={(e) => e.stopPropagation()}

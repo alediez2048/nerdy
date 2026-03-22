@@ -76,6 +76,7 @@ def _get_session_ad_preview(session_row: SessionModel) -> dict | None:
             "ad_id": first_ad.get("ad_id", ""),
             "image_url": first_ad.get("image_url"),
             "video_url": first_ad.get("video_url"),
+            "video_remote_url": first_ad.get("video_remote_url"),
             "primary_text": copy.get("primary_text", ""),
             "headline": copy.get("headline", ""),
             "cta_button": copy.get("cta_button"),

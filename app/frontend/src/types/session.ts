@@ -162,6 +162,7 @@ export interface SessionAdPreview {
   ad_id: string
   image_url: string | null
   video_url?: string | null
+  video_remote_url?: string | null
   primary_text: string
   headline: string
   cta_button: string | null

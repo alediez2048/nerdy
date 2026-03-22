@@ -20,6 +20,7 @@ interface Ad {
   image_path: string | null
   image_url: string | null
   video_url?: string | null
+  video_remote_url?: string | null
   video_scores?: Record<string, number> | null
   image_detail_scores?: Record<string, number> | null
   image_avg?: number | null
@@ -27,6 +28,12 @@ interface Ad {
   video_avg?: number | null
   adherence_scores?: Record<string, number> | null
   adherence_avg?: number | null
+}
+
+function getVideoSrc(ad: Ad): string | null {
+  const url = ad.video_url || ad.video_remote_url
+  if (!url) return null
+  return url.startsWith('http') ? url : `/api${url}`
 }
 
 export default function GlobalAdLibrary() {
@@ -82,9 +89,9 @@ export default function GlobalAdLibrary() {
     .filter((a) => showArchived ? archived.has(a.instance_id) : !archived.has(a.instance_id))
     .filter((a) => {
       if (!filter) return true
-      if (filter === 'video') return !!a.video_url
-      if (filter === 'image') return !!a.image_url && !a.video_url
-      if (filter === 'copy_only') return !a.image_url && !a.video_url
+      if (filter === 'video') return !!getVideoSrc(a)
+      if (filter === 'image') return !!a.image_url && !getVideoSrc(a)
+      if (filter === 'copy_only') return !a.image_url && !getVideoSrc(a)
       return a.status === filter
     })
     .filter((a) => !sessionFilter || (a.session_id || 'global') === sessionFilter)
@@ -114,19 +121,19 @@ export default function GlobalAdLibrary() {
               onClick={() => setFilter(filter === 'copy_only' ? '' : 'copy_only')}
               style={filter === 'copy_only' ? s.filterActive : s.filterBtn}
             >
-              Copy Only ({nonDiscarded.filter((a) => !a.video_url && !a.image_url).length})
+              Copy Only ({nonDiscarded.filter((a) => !getVideoSrc(a) && !a.image_url).length})
             </button>
             <button
               onClick={() => setFilter(filter === 'image' ? '' : 'image')}
               style={filter === 'image' ? s.filterActive : s.filterBtn}
             >
-              Image ({nonDiscarded.filter((a) => a.image_url && !a.video_url).length})
+              Image ({nonDiscarded.filter((a) => a.image_url && !getVideoSrc(a)).length})
             </button>
             <button
               onClick={() => setFilter(filter === 'video' ? '' : 'video')}
               style={filter === 'video' ? s.filterActive : s.filterBtn}
             >
-              Video ({nonDiscarded.filter((a) => a.video_url).length})
+              Video ({nonDiscarded.filter((a) => getVideoSrc(a)).length})
             </button>
             <button
               onClick={() => setShowArchived(!showArchived)}
@@ -205,15 +212,15 @@ export default function GlobalAdLibrary() {
                 </p>
 
                 {/* Media */}
-                {ad.video_url && (
+                {getVideoSrc(ad) && (
                   <video
-                    src={`/api${ad.video_url}`}
+                    src={getVideoSrc(ad)!}
                     controls muted playsInline
                     style={s.video}
                     onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none' }}
                   />
                 )}
-                {ad.image_url && !ad.video_url && (
+                {ad.image_url && !getVideoSrc(ad) && (
                   <img
                     src={`/api${ad.image_url}`}
                     alt={ad.ad_id}

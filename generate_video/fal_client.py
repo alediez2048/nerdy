@@ -70,6 +70,7 @@ class FalVideoClient:
         self.rpm = rpm
         self.timeout_seconds = timeout_seconds
         self._call_timestamps: deque[float] = deque()
+        self._last_remote_url: str | None = None
 
     def _rate_limit_wait(self) -> None:
         now = time.time()
@@ -146,6 +147,9 @@ class FalVideoClient:
 
             if not path.exists() or path.stat().st_size == 0:
                 raise RuntimeError(f"Downloaded Fal video missing or empty: {path}")
+
+            # Store remote URL on the instance for ledger persistence
+            self._last_remote_url = video_url
 
             return str(path)
 
