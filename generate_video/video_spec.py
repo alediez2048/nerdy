@@ -179,6 +179,9 @@ Output ONLY valid JSON with these exact keys:
             },
         )
         # endregion
+        if isinstance(result, list):
+            # Gemini sometimes wraps the JSON object in a list
+            result = next((item for item in result if isinstance(item, dict)), result)
         if not isinstance(result, dict):
             raise ValueError(f"Auto-derived video spec must be a dict, got {type(result).__name__}")
         return result, spec_tokens

@@ -22,6 +22,42 @@ from iterate.retry import retry_with_backoff
 logger = logging.getLogger(__name__)
 
 MODEL_FAL_DEFAULT = "fal-ai/veo3"
+
+# Per-model capabilities: durations (seconds), aspect ratios, and argument format
+_MODEL_PROFILES: dict[str, dict[str, Any]] = {
+    "fal-ai/veo3": {
+        "durations": {4, 6, 8},
+        "aspect_ratios": {"9:16", "16:9"},
+        "duration_format": "suffix_s",  # "8s"
+        "extra_args": {"resolution": "720p", "generate_audio": False},
+        "audio_key": "generate_audio",
+    },
+    "fal-ai/minimax/hailuo-02/standard/text-to-video": {
+        "durations": {6, 10},
+        "aspect_ratios": {"9:16", "16:9"},
+        "duration_format": "bare_str",  # "6"
+        "extra_args": {},
+        "audio_key": None,
+    },
+    "fal-ai/wan/v2.2-5b/text-to-video/distill": {
+        "durations": {4, 6, 8},
+        "aspect_ratios": {"9:16", "16:9"},
+        "duration_format": "bare_str",
+        "extra_args": {},
+        "audio_key": None,
+    },
+}
+
+# Fallback for unknown models
+_DEFAULT_PROFILE: dict[str, Any] = {
+    "durations": {4, 6, 8},
+    "aspect_ratios": {"9:16", "16:9"},
+    "duration_format": "bare_str",
+    "extra_args": {},
+    "audio_key": None,
+}
+
+# Legacy constants for backward compat
 SUPPORTED_DURATIONS_FAL = {4, 6, 8}
 SUPPORTED_ASPECT_RATIOS_FAL = {"9:16", "16:9"}
 
@@ -67,6 +103,7 @@ class FalVideoClient:
         os.environ["FAL_KEY"] = self.api_key
         self.model = model
         self.model_used = model
+        self._profile = _MODEL_PROFILES.get(model, _DEFAULT_PROFILE)
         self.rpm = rpm
         self.timeout_seconds = timeout_seconds
         self._call_timestamps: deque[float] = deque()
@@ -87,14 +124,24 @@ class FalVideoClient:
         self._call_timestamps.append(now)
 
     def normalize_duration(self, duration: int) -> int:
-        if duration in SUPPORTED_DURATIONS_FAL:
+        supported = self._profile["durations"]
+        if duration in supported:
             return duration
-        return 8
+        # Pick the closest supported duration
+        return min(supported, key=lambda d: abs(d - duration))
 
     def normalize_aspect_ratio(self, aspect_ratio: str) -> str:
-        if aspect_ratio in SUPPORTED_ASPECT_RATIOS_FAL:
+        supported = self._profile["aspect_ratios"]
+        if aspect_ratio in supported:
             return aspect_ratio
         return "9:16"
+
+    def _format_duration(self, duration: int) -> str:
+        """Format duration per model requirements."""
+        fmt = self._profile["duration_format"]
+        if fmt == "suffix_s":
+            return f"{duration}s"
+        return str(duration)
 
     def generate_video(
         self,
@@ -113,11 +160,15 @@ class FalVideoClient:
 
         arguments: dict[str, Any] = {
             "prompt": prompt,
-            "duration": f"{normalized_duration}s",
+            "duration": self._format_duration(normalized_duration),
             "aspect_ratio": normalized_aspect_ratio,
-            "resolution": "720p",
-            "generate_audio": audio,
         }
+        # Add model-specific extra args (resolution, etc.)
+        arguments.update(self._profile.get("extra_args", {}))
+        # Set audio flag if the model supports it
+        audio_key = self._profile.get("audio_key")
+        if audio_key:
+            arguments[audio_key] = audio
         if negative_prompt.strip():
             arguments["negative_prompt"] = negative_prompt.strip()
 

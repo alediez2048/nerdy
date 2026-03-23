@@ -324,7 +324,7 @@ export default function NewSessionForm() {
             />
           </div>
 
-          {/* ===== IMAGE-ONLY FIELDS ===== */}
+          {/* ===== COPY / IMAGE FIELDS ===== */}
           {config.session_type === 'image' && (
             <>
               <div style={s.field}>
@@ -354,18 +354,21 @@ export default function NewSessionForm() {
                 </select>
               </div>
 
-              <div style={s.field}>
-                <label style={s.checkLabel}>
-                  <input
-                    type="checkbox"
-                    checked={config.copy_on_image}
-                    onChange={(e) => update('copy_on_image', e.target.checked)}
-                  />
-                  Include headline text on generated images
-                </label>
-              </div>
+              {/* Image-specific fields — hidden for copy-only */}
+              {config.image_enabled && (
+                <div style={s.field}>
+                  <label style={s.checkLabel}>
+                    <input
+                      type="checkbox"
+                      checked={config.copy_on_image}
+                      onChange={(e) => update('copy_on_image', e.target.checked)}
+                    />
+                    Include headline text on generated images
+                  </label>
+                </div>
+              )}
 
-              {/* Image Advanced Settings */}
+              {/* Advanced Settings */}
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
@@ -412,19 +415,21 @@ export default function NewSessionForm() {
                       onChange={(e) => update('budget_cap_usd', e.target.value ? Number(e.target.value) : null)}
                       placeholder="No limit" style={s.input} />
                   </div>
-                  <div style={s.field}>
-                    <label style={s.label}>Aspect Ratio</label>
-                    <div style={s.checkGroup}>
-                      {(['1:1', '4:5', '9:16'] as AspectRatio[]).map((ratio) => (
-                        <label key={ratio} style={s.checkLabel}>
-                          <input type="radio" name="aspect_ratio"
-                            checked={config.aspect_ratio === ratio}
-                            onChange={() => update('aspect_ratio', ratio)} />
-                          {ratio}
-                        </label>
-                      ))}
+                  {config.image_enabled && (
+                    <div style={s.field}>
+                      <label style={s.label}>Aspect Ratio</label>
+                      <div style={s.checkGroup}>
+                        {(['1:1', '4:5', '9:16'] as AspectRatio[]).map((ratio) => (
+                          <label key={ratio} style={s.checkLabel}>
+                            <input type="radio" name="aspect_ratio"
+                              checked={config.aspect_ratio === ratio}
+                              onChange={() => update('aspect_ratio', ratio)} />
+                            {ratio}
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </>
