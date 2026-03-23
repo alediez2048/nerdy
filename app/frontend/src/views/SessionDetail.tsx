@@ -10,6 +10,7 @@ import ShareButton from '../components/ShareButton'
 import type { SessionDetail as SessionDetailType } from '../types/session'
 import type { CampaignSummary } from '../types/campaign'
 
+import useSessionProgress from '../hooks/useSessionProgress'
 import Overview from '../tabs/Overview'
 import Quality from '../tabs/Quality'
 import AdLibrary from '../tabs/AdLibrary'
@@ -43,6 +44,19 @@ export default function SessionDetail() {
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false)
 
   const activeTab = (searchParams.get('tab') as TabKey) || 'overview'
+  const isRunning = session?.status === 'running'
+
+  // SSE progress — only active while session is running
+  const { progress } = useSessionProgress(isRunning ? (sessionId || '') : '')
+
+  // Re-fetch session when pipeline completes so status updates
+  useEffect(() => {
+    if (progress?.type === 'pipeline_complete' || progress?.type === 'video_pipeline_complete') {
+      if (sessionId) {
+        getSession(sessionId).then((s) => setSession(s)).catch(() => {})
+      }
+    }
+  }, [progress?.type, sessionId])
 
   useEffect(() => {
     if (!sessionId) return
@@ -283,6 +297,43 @@ export default function SessionDetail() {
           </div>
         )}
 
+        {/* Progress bar — visible while pipeline is running */}
+        {isRunning && (() => {
+          const isVideo = (config.session_type as string) === 'video'
+          const totalTarget = isVideo
+            ? Number(config.video_count || 3)
+            : Number(config.ad_count || 50)
+          const published = isVideo
+            ? (progress?.videos_selected ?? 0)
+            : (progress?.ads_published ?? 0)
+          const generated = isVideo
+            ? (progress?.videos_generated ?? 0)
+            : (progress?.ads_generated ?? 0)
+          const pct = totalTarget > 0 ? Math.min(100, Math.round((published / totalTarget) * 100)) : 0
+          const avgScore = progress?.current_score_avg ?? 0
+          const cost = progress?.cost_so_far ?? 0
+          const stage = progress?.type
+            ? progress.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+            : 'Starting...'
+
+          return (
+            <div style={s.progressContainer}>
+              <div style={s.progressHeader}>
+                <span style={s.progressStage}>{stage}</span>
+                <span style={s.progressStats}>
+                  {published}/{totalTarget} published · {generated} generated
+                  {avgScore > 0 ? ` · Avg ${avgScore.toFixed(1)}` : ''}
+                  {cost > 0 ? ` · $${cost.toFixed(3)}` : ''}
+                </span>
+              </div>
+              <div style={s.progressTrack}>
+                <div style={{ ...s.progressFill, width: `${Math.max(pct, 2)}%` }} />
+              </div>
+              <div style={s.progressPct}>{pct}%</div>
+            </div>
+          )
+        })()}
+
         {/* Tab navigation */}
         <div style={s.tabBar}>
           {TABS.map((tab) => (
@@ -303,7 +354,7 @@ export default function SessionDetail() {
             <ExpandedBriefPanel sessionId={sessionId!} sessionConfig={config} />
           )}
           {activeTab === 'quality' && <Quality sessionId={sessionId!} />}
-          {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} />}
+          {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} sessionStatus={session.status} />}
           {activeTab === 'costs' && <TokenEconomics sessionId={sessionId!} />}
         </div>
       </div>
@@ -518,6 +569,49 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: '14px',
     cursor: 'pointer',
     fontFamily: font.family,
+  },
+  progressContainer: {
+    background: colors.surface,
+    borderRadius: radii.input,
+    padding: '16px 20px',
+    marginBottom: '20px',
+    border: `1px solid ${colors.cyan}30`,
+  },
+  progressHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '10px',
+    flexWrap: 'wrap',
+    gap: '8px',
+  },
+  progressStage: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: colors.cyan,
+  },
+  progressStats: {
+    fontSize: '12px',
+    color: colors.muted,
+  },
+  progressTrack: {
+    width: '100%',
+    height: '8px',
+    borderRadius: '4px',
+    background: `${colors.muted}20`,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: '4px',
+    background: `linear-gradient(90deg, ${colors.cyan}, ${colors.mint})`,
+    transition: 'width 0.5s ease',
+  },
+  progressPct: {
+    fontSize: '11px',
+    color: colors.muted,
+    textAlign: 'right' as const,
+    marginTop: '4px',
   },
   modalCreateBtn: {
     padding: '10px 20px',
