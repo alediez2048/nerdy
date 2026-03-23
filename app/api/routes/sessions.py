@@ -88,13 +88,16 @@ def _get_session_ad_preview(session_row: SessionModel) -> dict | None:
 
 
 @router.get("/{session_id}/ledger")
-def get_session_ledger(session_id: str, db: Annotated[Session, Depends(get_db)]) -> list:
+def get_session_ledger(session_id: str, db: Annotated[Session, Depends(get_db)]) -> Any:
     """Return raw ledger events for debugging."""
     row = _get_session_or_404(session_id, db)
-    if not row.ledger_path or not Path(row.ledger_path).exists():
-        return []
-    from iterate.ledger import read_events
-    return read_events(row.ledger_path)
+    lp = row.ledger_path
+    if not lp or not Path(lp).exists():
+        return {"events": [], "error": f"ledger not found: {lp}"}
+    import json as _json
+    with open(lp) as f:
+        events = [_json.loads(line) for line in f if line.strip()]
+    return {"count": len(events), "events": events}
 
 
 @router.post("", response_model=SessionDetail, status_code=201)
