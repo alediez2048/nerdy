@@ -33,7 +33,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
               Generate, evaluate, and curate high-performing<br />
               Facebook & Instagram ads — powered by AI.
             </p>
-            <SignIn routing="hash" />
+            <SignIn
+              routing="hash"
+              appearance={{
+                elements: {
+                  socialButtonsBlockButton: {
+                    backgroundColor: '#ffffff',
+                    color: '#1f1f1f',
+                    border: '1px solid #dadce0',
+                  },
+                  socialButtonsBlockButtonText: {
+                    color: '#1f1f1f',
+                    fontWeight: 500,
+                  },
+                },
+              }}
+            />
           </div>
         </div>
       </SignedOut>

@@ -34,7 +34,7 @@ export default function SessionCard({
   const goal = (config.campaign_goal as string) || ''
   const adCount = (config.ad_count as number) || 0
   const isVideoSession = config.session_type === 'video'
-  const previewVideoUrl = preview?.video_url || preview?.video_remote_url
+  const previewVideoUrl = preview?.video_remote_url || preview?.video_url
 
   return (
     <div

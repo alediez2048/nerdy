@@ -91,7 +91,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
               return next
             })
             const isVideo = sessionType === 'video'
-            const effectiveVideoUrl = ad.video_url || ad.video_remote_url
+            const effectiveVideoUrl = ad.video_remote_url || ad.video_url
             const hasVideo = isVideo && effectiveVideoUrl
             const videoSrc = effectiveVideoUrl
               ? effectiveVideoUrl.startsWith('http') ? effectiveVideoUrl : `/api${effectiveVideoUrl}`
