@@ -621,7 +621,23 @@ def _run_video_pipeline(
                 videos_blocked += 1
 
         except Exception as e:
-            logger.error("Video pipeline error for ad %s: %s", ad_id, e)
+            logger.error("Video pipeline error for ad %s: %s", ad_id, e, exc_info=True)
+            # Log the error to the ledger so it's visible in the UI
+            log_event(ledger_path, {
+                "event_type": "VideoBlocked",
+                "ad_id": ad_id,
+                "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                "cycle_number": 0,
+                "action": "video_blocked",
+                "tokens_consumed": 0,
+                "model_used": getattr(client, "model_used", "unknown"),
+                "seed": "0",
+                "outputs": {
+                    "reason": "exception",
+                    "error_type": type(e).__name__,
+                    "error": str(e),
+                },
+            })
             # region agent log
             _debug_log(
                 "H3",
