@@ -35,7 +35,7 @@ app.add_middleware(
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
+def health() -> dict:
     """Health check for load balancers and Docker."""
     import os
     return {
