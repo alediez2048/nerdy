@@ -50,7 +50,7 @@ export const FAL_VIDEO_MODEL_PRESETS: {
     hint: 'Strong all‑rounder on Fal; mid-tier cost vs Wan distill.',
   },
   {
-    value: 'fal-ai/wan-22',
+    value: 'fal-ai/wan/v2.2/text-to-video',
     label: 'Wan 2.2 · full',
     tier: 'balanced',
     hint: 'Full Wan 2.2 (not distil); better motion than 5B distill, more $ than distill.',
