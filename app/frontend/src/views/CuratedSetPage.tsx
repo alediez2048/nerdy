@@ -19,7 +19,7 @@ interface AdData {
 
 function getVideoSrc(ad: AdData | undefined): string | null {
   if (!ad) return null
-  const url = ad.video_url || ad.video_remote_url
+  const url = ad.video_remote_url || ad.video_url
   if (!url) return null
   return url.startsWith('http') ? url : `/api${url}`
 }
