@@ -250,21 +250,11 @@ def _run_video_pipeline(
     audience_raw = config.get("audience")
     campaign_goal_raw = config.get("campaign_goal")
 
-    # region agent log
-    _debug_log(
-        "H1",
-        "app/workers/tasks/pipeline_task.py:_run_video_pipeline:start",
-        "video pipeline start",
-        {
-            "session_id": session_id,
-            "video_count": video_count,
-            "persona": persona_raw,
-            "audience": audience_raw,
-            "campaign_goal": campaign_goal_raw,
-            "ledger_path": ledger_path,
-        },
+    logger.info(
+        "[VIDEO] Pipeline start session=%s video_count=%d provider=%s model=%s persona=%s",
+        session_id, video_count, config.get("video_provider"),
+        config.get("video_fal_model"), persona_raw,
     )
-    # endregion
 
     video_provider = config.get("video_provider")
     client_kwargs: dict = {}
@@ -273,18 +263,11 @@ def _run_video_pipeline(
         if fal_model:
             client_kwargs["model"] = fal_model
     client = build_video_client(provider=video_provider, **client_kwargs)
-    # region agent log
-    _debug_log(
-        "H7",
-        "app/workers/tasks/pipeline_task.py:_run_video_pipeline:client",
-        "video client built",
-        {
-            "session_id": session_id,
-            "resolved_provider": getattr(client, "model_used", "unknown"),
-            "requested_provider": video_provider,
-        },
+    logger.info(
+        "[VIDEO] Client built: resolved=%s requested=%s timeout=%ss",
+        getattr(client, "model_used", "unknown"), video_provider,
+        getattr(client, "timeout_seconds", "?"),
     )
-    # endregion
 
     output_dir = f"output/videos/session_{session_id}"
 
@@ -331,21 +314,7 @@ def _run_video_pipeline(
         seed = get_ad_seed(f"session_{session_id}", brief_id, 0)
         ad_id = f"ad_{brief_id}_c0_{seed}"
 
-        # region agent log
-        _debug_log(
-            "H2",
-            "app/workers/tasks/pipeline_task.py:_run_video_pipeline:brief",
-            "video brief before spec build",
-            {
-                "session_id": session_id,
-                "ad_id": ad_id,
-                "brief_id": brief.get("brief_id"),
-                "brief_keys": sorted(list(brief.keys())),
-                "has_copy": bool(brief.get("copy")),
-                "copy_keys": sorted(list((brief.get("copy") or {}).keys())),
-            },
-        )
-        # endregion
+        logger.info("[VIDEO] Ad %d/%d: ad_id=%s brief_id=%s", i + 1, video_count, ad_id, brief.get("brief_id"))
 
         if should_skip_video_ad(ad_id, ledger_path):
             logger.info("Skipping already-processed video ad %s", ad_id)
@@ -363,7 +332,9 @@ def _run_video_pipeline(
         })
 
         try:
+            logger.info("[VIDEO]   Expanding brief...")
             expanded = expand_brief(brief, persona=persona, ledger_path=ledger_path)
+            logger.info("[VIDEO]   Generating ad copy...")
             ad = generate_ad(
                 expanded,
                 seed=seed,
@@ -373,6 +344,7 @@ def _run_video_pipeline(
             )
             ad_id = ad.ad_id
             ad_copy = ad.to_evaluator_input()
+            logger.info("[VIDEO]   Copy generated: ad_id=%s headline=%s", ad_id, ad_copy.get("headline", "")[:60])
 
             # Evaluate copy quality (was missing in video pipeline)
             copy_eval = None
@@ -406,11 +378,13 @@ def _run_video_pipeline(
             except Exception as e:
                 logger.warning("Copy evaluation failed for video ad %s: %s", ad_id, e)
 
+            logger.info("[VIDEO]   Building video spec...")
             spec = build_video_spec(
                 expanded_brief=brief,
                 session_config=config,
                 ad_copy=ad_copy,
             )
+            logger.info("[VIDEO]   Spec built: scene=%s duration=%ds aspect=%s", spec.scene[:60], spec.duration, spec.aspect_ratio)
 
             if getattr(spec, "spec_extraction_tokens", 0) > 0:
                 log_event(ledger_path, {
@@ -436,6 +410,8 @@ def _run_video_pipeline(
                 "cost_so_far": cost_so_far,
             })
 
+            logger.info("[VIDEO]   Generating video variants (anchor + alt)...")
+            t_gen_start = time.time()
             variants = generate_video_variants(
                 spec=spec,
                 ad_id=ad_id,
@@ -444,6 +420,10 @@ def _run_video_pipeline(
                 ledger_path=ledger_path,
                 veo_client=client,
             )
+            t_gen_elapsed = time.time() - t_gen_start
+            logger.info("[VIDEO]   Variants generated: %d in %.1fs", len(variants), t_gen_elapsed)
+            for v in variants:
+                logger.info("[VIDEO]     variant=%s path=%s remote=%s", v.variant_type, v.video_path, v.remote_url)
             video_variants_generated += len(variants)
             if variants:
                 videos_generated += 1
@@ -500,6 +480,7 @@ def _run_video_pipeline(
                 })
 
             winner = select_best_video(variants, eval_results, coherence_results)
+            logger.info("[VIDEO]   Winner selected: %s", winner.variant_type if winner else "NONE")
 
             if winner:
                 ev = eval_results[winner.variant_type]
@@ -621,7 +602,7 @@ def _run_video_pipeline(
                 videos_blocked += 1
 
         except Exception as e:
-            logger.error("Video pipeline error for ad %s: %s", ad_id, e, exc_info=True)
+            logger.error("[VIDEO] EXCEPTION for ad %s: %s: %s", ad_id, type(e).__name__, e, exc_info=True)
             # Log the error to the ledger so it's visible in the UI
             log_event(ledger_path, {
                 "event_type": "VideoBlocked",
@@ -672,6 +653,11 @@ def _run_video_pipeline(
             "videos_blocked": videos_blocked,
             "cost_so_far": cost_so_far,
         })
+
+    logger.info(
+        "[VIDEO] Pipeline complete session=%s generated=%d variants=%d selected=%d blocked=%d cost=$%.4f",
+        session_id, videos_generated, video_variants_generated, videos_selected, videos_blocked, cost_so_far,
+    )
 
     publish_progress(session_id, {
         "type": VIDEO_PIPELINE_COMPLETE,

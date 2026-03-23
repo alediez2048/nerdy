@@ -41,7 +41,8 @@ export default function useSessionProgress(
         // Stop listening on completion or error
         if (
           event.type === 'pipeline_complete' ||
-          event.type === 'pipeline_error'
+          event.type === 'pipeline_error' ||
+          event.type === 'video_pipeline_complete'
         ) {
           source.close()
           setConnected(false)
@@ -77,6 +78,8 @@ export default function useSessionProgress(
   }, [sessionId])
 
   useEffect(() => {
+    // Skip connection when sessionId is empty (session not running)
+    if (!sessionId) return
     connect()
     return () => {
       if (sourceRef.current) {
@@ -84,7 +87,7 @@ export default function useSessionProgress(
         sourceRef.current = null
       }
     }
-  }, [connect])
+  }, [connect, sessionId])
 
   return { progress, history, connected, error }
 }

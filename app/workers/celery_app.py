@@ -1,7 +1,10 @@
 # Ad-Ops-Autopilot — Celery application
+from dotenv import load_dotenv  # noqa: E402
 from celery import Celery
 
 from app.config import settings
+
+load_dotenv()  # Inject .env vars (FAL_KEY, GEMINI_API_KEY, etc.) into os.environ
 
 celery_app = Celery(
     "nerdy",

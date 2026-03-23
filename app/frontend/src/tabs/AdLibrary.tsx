@@ -32,7 +32,9 @@ function logVideoRenderDebug(adId: string, src: string, el: HTMLVideoElement) {
   // endregion
 }
 
-export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessionId: string; sessionType?: string }) {
+const AD_POLL_INTERVAL = 5_000 // 5 seconds while running
+
+export default function AdLibrary({ sessionId, sessionType = 'image', sessionStatus = 'completed' }: { sessionId: string; sessionType?: string; sessionStatus?: string }) {
   const [ads, setAds] = useState<Ad[]>([])
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -40,10 +42,20 @@ export default function AdLibrary({ sessionId, sessionType = 'image' }: { sessio
   const [curatedIds, setCuratedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    fetchAds(sessionId)
-      .then((data) => setAds((data.ad_library || []) as Ad[]))
-      .catch((e) => setError(e.message))
-  }, [sessionId])
+    let cancelled = false
+    const load = () => {
+      fetchAds(sessionId)
+        .then((data) => { if (!cancelled) setAds((data.ad_library || []) as Ad[]) })
+        .catch((e) => { if (!cancelled) setError(e.message) })
+    }
+    load()
+    // Poll while session is running
+    if (sessionStatus === 'running') {
+      const timer = setInterval(load, AD_POLL_INTERVAL)
+      return () => { cancelled = true; clearInterval(timer) }
+    }
+    return () => { cancelled = true }
+  }, [sessionId, sessionStatus])
 
   if (error) return <p style={{ color: colors.red }}>{error}</p>
 

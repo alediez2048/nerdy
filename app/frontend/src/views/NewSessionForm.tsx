@@ -210,23 +210,34 @@ export default function NewSessionForm() {
           <div style={s.field}>
             <label style={s.label}>Session Type <span style={s.required}>*</span></label>
             <div style={s.toggleGroup}>
-              {(['image', 'video'] as SessionType[]).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => update('session_type', t)}
-                  style={config.session_type === t
-                    ? (t === 'video' ? s.toggleActiveVideo : s.toggleActive)
-                    : s.toggle}
-                >
-                  {t === 'image' ? 'Image Ads' : 'Video Ads'}
-                </button>
-              ))}
+              {([
+                { type: 'image' as SessionType, imageEnabled: false, label: 'Copy Only' },
+                { type: 'image' as SessionType, imageEnabled: true, label: 'Copy + Image' },
+                { type: 'video' as SessionType, imageEnabled: false, label: 'Copy + Video' },
+              ]).map(({ type, imageEnabled, label }) => {
+                const isActive = config.session_type === type && config.image_enabled === imageEnabled
+                const isVideo = type === 'video'
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => {
+                      update('session_type', type)
+                      update('image_enabled', imageEnabled)
+                    }}
+                    style={isActive ? (isVideo ? s.toggleActiveVideo : s.toggleActive) : s.toggle}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
             </div>
             <div style={s.hint}>
-              {config.session_type === 'image'
-                ? 'Generate copy + image ads for Meta feed placements'
-                : 'Generate copy + video ads for Stories/Reels placements'}
+              {config.session_type === 'video'
+                ? 'Generate copy + video ads for Stories/Reels placements'
+                : config.image_enabled
+                  ? 'Generate copy + image ads for Meta feed placements'
+                  : 'Generate ad copy only — no images or video'}
             </div>
           </div>
 
@@ -400,13 +411,6 @@ export default function NewSessionForm() {
                     <input type="number" min={1} step={0.5} value={config.budget_cap_usd ?? ''}
                       onChange={(e) => update('budget_cap_usd', e.target.value ? Number(e.target.value) : null)}
                       placeholder="No limit" style={s.input} />
-                  </div>
-                  <div style={s.field}>
-                    <label style={s.checkLabel}>
-                      <input type="checkbox" checked={config.image_enabled}
-                        onChange={(e) => update('image_enabled', e.target.checked)} />
-                      Enable image generation
-                    </label>
                   </div>
                   <div style={s.field}>
                     <label style={s.label}>Aspect Ratio</label>

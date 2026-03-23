@@ -16,4 +16,10 @@ export interface ProgressEvent {
   score?: number
   copy?: string
   scores?: Record<string, number>
+  // Video pipeline fields
+  videos_total?: number
+  videos_generated?: number
+  video_variants_generated?: number
+  videos_selected?: number
+  videos_blocked?: number
 }
