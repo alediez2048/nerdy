@@ -496,11 +496,17 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
                     image_path = winning
                     filename = Path(winning).name
                     image_url = f"/images/{filename}"
+                # Also check for video in AdPublished (video pipeline)
+                winning_vid = pub_event.get("outputs", {}).get("winning_video")
+                if winning_vid and not video_path:
+                    video_path = winning_vid
 
             video_events = [e for e in all_ad_events if e.get("event_type") == "VideoSelected"]
             video_event = video_events[-1] if video_events else None
+            remote_video_url = None
             if video_event:
                 winning_video = video_event.get("outputs", {}).get("winner_video_path")
+                remote_video_url = video_event.get("outputs", {}).get("winner_remote_url")
                 if winning_video:
                     video_path = winning_video
                     parts = Path(winning_video).parts
@@ -521,6 +527,9 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
                     "attribute_pass_pct": float(video_event.get("outputs", {}).get("attribute_pass_pct", 0.0)),
                     "coherence_avg": float(video_event.get("outputs", {}).get("coherence_avg", 0.0)),
                 }
+            # Also check AdPublished for remote URL
+            if not remote_video_url and pub_event:
+                remote_video_url = pub_event.get("outputs", {}).get("winning_video_remote_url")
 
             # Only use the disk fallback when this ad_id appears once in the
             # ledger history. Reused deterministic ad_ids cannot be reliably
@@ -584,6 +593,7 @@ def _build_ad_library(events: list[dict]) -> list[dict]:
                 "image_url": image_url,
                 "video_path": video_path,
                 "video_url": video_url,
+                "video_remote_url": remote_video_url,
                 "video_scores": video_scores,
                 "image_detail_scores": image_detail_scores,
                 "image_avg": image_avg,

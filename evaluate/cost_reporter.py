@@ -410,8 +410,6 @@ def compute_global_total_cost_usd(
         session_total += compute_session_cost_usd(session_id, ledger_path).total_usd
     global_only = compute_standalone_global_ledger_cost_usd(global_ledger_path)
     combined = session_total + global_only
-    if global_only >= BILLING_REFERENCE_TOTAL_USD * 0.95:
-        return round(min(combined, BILLING_REFERENCE_TOTAL_USD), 4)
     return round(combined, 4)
 
 

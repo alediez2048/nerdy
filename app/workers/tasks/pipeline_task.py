@@ -375,6 +375,7 @@ def _run_video_pipeline(
             ad_copy = ad.to_evaluator_input()
 
             # Evaluate copy quality (was missing in video pipeline)
+            copy_eval = None
             try:
                 from evaluate.evaluator import evaluate_ad
                 copy_eval = evaluate_ad(
@@ -515,6 +516,7 @@ def _run_video_pipeline(
                     "seed": str(winner.seed),
                     "outputs": {
                         "winner_video_path": winner.video_path,
+                        "winner_remote_url": winner.remote_url,
                         "winner_variant": winner.variant_type,
                         "composite_score": composite,
                         "attribute_pass_pct": ev.attribute_pass_pct,
@@ -577,6 +579,28 @@ def _run_video_pipeline(
                     })
                 except Exception as e:
                     logger.warning("Video scoring failed for %s: %s", ad_id, e)
+
+                # Publish the video ad — mirrors AdPublished from image pipeline
+                copy_score = copy_eval.aggregate_score if copy_eval else 0.0
+                log_event(ledger_path, {
+                    "event_type": "AdPublished",
+                    "ad_id": ad_id,
+                    "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                    "cycle_number": 0,
+                    "action": "publish",
+                    "tokens_consumed": 0,
+                    "model_used": "none",
+                    "seed": "0",
+                    "inputs": {"aggregate_score": copy_score},
+                    "outputs": {
+                        "decision": "publish",
+                        "has_video": True,
+                        "winning_video": winner.video_path,
+                        "winning_video_remote_url": winner.remote_url,
+                        "aggregate_score": copy_score,
+                        "composite_video_score": composite,
+                    },
+                })
             else:
                 block_reason = (
                     "no_variants_generated"
@@ -597,7 +621,23 @@ def _run_video_pipeline(
                 videos_blocked += 1
 
         except Exception as e:
-            logger.error("Video pipeline error for ad %s: %s", ad_id, e)
+            logger.error("Video pipeline error for ad %s: %s", ad_id, e, exc_info=True)
+            # Log the error to the ledger so it's visible in the UI
+            log_event(ledger_path, {
+                "event_type": "VideoBlocked",
+                "ad_id": ad_id,
+                "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                "cycle_number": 0,
+                "action": "video_blocked",
+                "tokens_consumed": 0,
+                "model_used": getattr(client, "model_used", "unknown"),
+                "seed": "0",
+                "outputs": {
+                    "reason": "exception",
+                    "error_type": type(e).__name__,
+                    "error": str(e),
+                },
+            })
             # region agent log
             _debug_log(
                 "H3",

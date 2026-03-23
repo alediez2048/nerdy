@@ -14,6 +14,14 @@ interface AdData {
   aggregate_score: number
   image_url: string | null
   video_url?: string | null
+  video_remote_url?: string | null
+}
+
+function getVideoSrc(ad: AdData | undefined): string | null {
+  if (!ad) return null
+  const url = ad.video_url || ad.video_remote_url
+  if (!url) return null
+  return url.startsWith('http') ? url : `/api${url}`
 }
 
 interface SessionGroup {
@@ -239,9 +247,9 @@ function AdCard({
     <div style={s.card}>
       <div style={s.cardLayout}>
         {/* Media preview */}
-        {ad?.video_url && (
+        {getVideoSrc(ad) && (
           <video
-            src={`/api${ad.video_url}`}
+            src={getVideoSrc(ad)!}
             controls
             muted
             playsInline
@@ -249,7 +257,7 @@ function AdCard({
             onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none' }}
           />
         )}
-        {ad?.image_url && !ad?.video_url && (
+        {ad?.image_url && !getVideoSrc(ad) && (
           <img
             src={`/api${ad.image_url}`}
             alt={cad.ad_id}

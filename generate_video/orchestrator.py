@@ -67,6 +67,7 @@ class VideoVariant:
     seed: int
     credits_consumed: int
     model_used: str
+    remote_url: str | None = None
 
 
 _CREDITS_PER_SECOND: dict[str, int] = {
@@ -174,6 +175,7 @@ def generate_video_variants(
                 raise FileNotFoundError(f"Video file not created: {out_path}")
 
             credits = _estimate_credits(effective_spec.duration, audio, provider_name)
+            remote_url = getattr(client, "_last_remote_url", None)
             variant = VideoVariant(
                 ad_id=ad_id,
                 variant_type=variant_type,
@@ -185,6 +187,7 @@ def generate_video_variants(
                 seed=var_seed,
                 credits_consumed=credits,
                 model_used=provider_name,
+                remote_url=remote_url,
             )
             variants.append(variant)
 
@@ -199,6 +202,7 @@ def generate_video_variants(
                 "seed": str(var_seed),
                 "outputs": {
                     "video_path": out_path,
+                    "remote_url": remote_url,
                     "variant_type": variant_type,
                     "duration": effective_spec.duration,
                     "audio_mode": effective_spec.audio_mode,
