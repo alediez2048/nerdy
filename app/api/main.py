@@ -35,14 +35,9 @@ app.add_middleware(
 
 
 @app.get("/health")
-def health() -> dict:
+def health() -> dict[str, str]:
     """Health check for load balancers and Docker."""
-    import os
-    return {
-        "status": "ok",
-        "fal_key_set": bool(os.getenv("FAL_KEY", "").strip()),
-        "gemini_key_set": bool(os.getenv("GEMINI_API_KEY", "").strip()),
-    }
+    return {"status": "ok"}
 
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
