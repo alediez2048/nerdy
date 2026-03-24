@@ -126,16 +126,6 @@ def test_score_image_with_real_file(tmp_path: Path) -> None:
     img = tmp_path / "test_ad.png"
     img.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 100)
 
-    from generate.gemini_client import GeminiResponse
-
-    mock_resp = GeminiResponse(
-        text=MOCK_RESPONSE_JSON,
-        total_tokens=600,
-        prompt_tokens=500,
-        completion_tokens=100,
-        model="gemini-2.0-flash",
-    )
-
     with patch("evaluate.image_scorer.retry_with_backoff") as mock_retry:
         # Make retry_with_backoff call the function directly
         mock_retry.side_effect = lambda fn: _build_result(

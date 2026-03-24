@@ -371,19 +371,19 @@ def test_get_campaign_sessions_endpoint(alice):
     mock_task.delay.return_value = mock_result
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
             "campaign_id": campaign_id,
         })
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
             "campaign_id": campaign_id,
         })
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
             "campaign_id": campaign_id2,
         })
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
         })
 
@@ -440,7 +440,7 @@ def test_campaign_stats_aggregates_from_multiple_sessions(alice):
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
         # Create 3 sessions
         for i in range(3):
-            alice.post("/sessions", json={
+            alice.post("/api/sessions", json={
                 "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50, "session_type": "image"},
                 "campaign_id": campaign_id,
             })
@@ -503,11 +503,11 @@ def test_campaign_stats_weighted_average_quality_score(alice):
     mock_task.delay.return_value = mock_result
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
             "campaign_id": campaign_id,
         })
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
             "campaign_id": campaign_id,
         })
@@ -556,7 +556,7 @@ def test_campaign_stats_handles_missing_results_summary_fields(alice):
     mock_task.delay.return_value = mock_result
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
             "campaign_id": campaign_id,
         })
@@ -594,16 +594,16 @@ def test_campaign_stats_includes_session_type_breakdown(alice):
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
         # Create 2 image sessions
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50, "session_type": "image"},
             "campaign_id": campaign_id,
         })
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50, "session_type": "image"},
             "campaign_id": campaign_id,
         })
         # Create 1 video session
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 30, "session_type": "video"},
             "campaign_id": campaign_id,
         })
@@ -635,7 +635,7 @@ def test_campaign_list_includes_summary_stats(alice):
     mock_task.delay.return_value = mock_result
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
             "campaign_id": campaign_id,
         })
@@ -702,11 +702,11 @@ def test_duplicate_campaign_has_no_sessions(alice):
     mock_task.delay.return_value = mock_result
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
             "campaign_id": campaign_id,
         })
-        alice.post("/sessions", json={
+        alice.post("/api/sessions", json={
             "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 50},
             "campaign_id": campaign_id,
         })

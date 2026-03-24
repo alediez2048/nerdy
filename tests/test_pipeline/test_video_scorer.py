@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 
 from evaluate.video_scorer import (
     VIDEO_DIMENSIONS,

@@ -1,6 +1,7 @@
 // PA-09: Ad Library tab
 import { useEffect, useState } from 'react'
 import { colors, radii, font } from '../design/tokens'
+import useMediaQuery from '../hooks/useMediaQuery'
 import { fetchAds } from '../api/dashboard'
 import { addAdToCurated } from '../api/curation'
 import Badge, { StatusBadge } from '../components/Badge'
@@ -35,6 +36,8 @@ function logVideoRenderDebug(adId: string, src: string, el: HTMLVideoElement) {
 const AD_POLL_INTERVAL = 5_000 // 5 seconds while running
 
 export default function AdLibrary({ sessionId, sessionType = 'image', sessionStatus = 'completed' }: { sessionId: string; sessionType?: string; sessionStatus?: string }) {
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isTablet = useMediaQuery('(max-width: 1024px)')
   const [ads, setAds] = useState<Ad[]>([])
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -81,7 +84,16 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
       {filtered.length === 0 ? (
         <p style={{ color: colors.muted }}>No ads found</p>
       ) : (
-        <div style={s.grid}>
+        <div
+          style={{
+            ...s.grid,
+            gridTemplateColumns: isMobile
+              ? '1fr'
+              : isTablet
+                ? 'repeat(2, 1fr)'
+                : s.grid.gridTemplateColumns,
+          }}
+        >
           {filtered.map((ad) => {
             const uid = ad.instance_id || ad.ad_id
             const isExpanded = expanded.has(uid)
@@ -104,12 +116,19 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
                   onClick={toggle}
                   style={{ ...s.card, ...s.cardExpanded }}
                 >
-                  <div style={s.expandedLayout}>
+                  <div style={{ ...s.expandedLayout, flexDirection: isMobile ? 'column' : s.expandedLayout.flexDirection }}>
                     {hasVideo ? (
                       <video
                         src={videoSrc}
                         controls
-                        style={s.adVideoExpanded}
+                        style={{
+                          ...s.adVideoExpanded,
+                          width: isMobile ? '100%' : s.adVideoExpanded.width,
+                          minWidth: isMobile ? undefined : s.adVideoExpanded.minWidth,
+                          maxHeight: isMobile ? '360px' : s.adVideoExpanded.maxHeight,
+                          borderRight: isMobile ? 'none' : s.adVideoExpanded.borderRight,
+                          borderBottom: isMobile ? `1px solid ${colors.muted}20` : undefined,
+                        }}
                         onLoadedData={(e) => logVideoRenderDebug(ad.ad_id, videoSrc, e.currentTarget)}
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -117,11 +136,27 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
                       <img
                         src={`/api${ad.image_url}`}
                         alt={`Ad ${ad.ad_id}`}
-                        style={s.adImageExpanded}
+                        style={{
+                          ...s.adImageExpanded,
+                          width: isMobile ? '100%' : s.adImageExpanded.width,
+                          minWidth: isMobile ? undefined : s.adImageExpanded.minWidth,
+                          maxHeight: isMobile ? '320px' : s.adImageExpanded.maxHeight,
+                          borderRight: isMobile ? 'none' : s.adImageExpanded.borderRight,
+                          borderBottom: isMobile ? `1px solid ${colors.muted}20` : undefined,
+                        }}
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
                     ) : isVideo ? (
-                      <div style={s.noVideoPlaceholder}>
+                      <div
+                        style={{
+                          ...s.noVideoPlaceholder,
+                          width: isMobile ? '100%' : s.noVideoPlaceholder.width,
+                          minWidth: isMobile ? undefined : s.noVideoPlaceholder.minWidth,
+                          minHeight: isMobile ? '160px' : s.noVideoPlaceholder.minHeight,
+                          borderRight: isMobile ? 'none' : s.noVideoPlaceholder.borderRight,
+                          borderBottom: isMobile ? `1px solid ${colors.muted}20` : undefined,
+                        }}
+                      >
                         <span style={{ fontSize: '32px' }}>🎬</span>
                         <span style={{ color: colors.muted, fontSize: '12px' }}>Copy only</span>
                       </div>
@@ -152,7 +187,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
                         {ad.copy?.cta_button && <p style={{ margin: '4px 0' }}><strong>CTA:</strong> {ad.copy.cta_button}</p>}
                       </div>
                       <p style={{ color: colors.muted, fontSize: '11px', margin: '8px 0 4px' }}>Copy Scores (text evaluation only)</p>
-                      <div style={s.scoreGrid}>
+                      <div style={{ ...s.scoreGrid, gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : s.scoreGrid.gridTemplateColumns }}>
                         {Object.entries(ad.scores).map(([dim, score]) => (
                           <div key={dim} style={s.scoreItem}>
                             <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace('_', ' ')}</span>
@@ -160,7 +195,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
                           </div>
                         ))}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', padding: '0 14px' }}>
+                      <div style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginTop: '10px', padding: '0 14px' }}>
                         {!isVideo && <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>}
                         {hasVideo && (
                           <a

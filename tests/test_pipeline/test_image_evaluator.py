@@ -82,13 +82,13 @@ def test_attribute_result_3_of_5_fails() -> None:
 @patch("evaluate.image_evaluator._call_multimodal_eval")
 def test_evaluate_image_attributes_returns_result(mock_call: MagicMock) -> None:
     """evaluate_image_attributes returns structured result from mock API."""
-    mock_call.return_value = {
+    mock_call.return_value = ({
         "age_appropriate": True,
         "lighting": True,
         "diversity": True,
         "brand_consistent": True,
         "no_artifacts": False,
-    }
+    }, 0)
     result = evaluate_image_attributes(
         image_path="/tmp/test.png",
         visual_spec={"subject": "Student studying"},

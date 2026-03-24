@@ -131,12 +131,12 @@ def test_zero_coherence_penalizes_composite() -> None:
 @patch("evaluate.coherence_checker._call_coherence_eval")
 def test_check_coherence_returns_result(mock_call: MagicMock) -> None:
     """check_coherence returns structured CoherenceResult from mock API."""
-    mock_call.return_value = {
+    mock_call.return_value = ({
         "message_alignment": 8,
         "audience_match": 7,
         "emotional_consistency": 9,
         "visual_narrative": 6,
-    }
+    }, 0)
     result = check_coherence(
         copy=COPY,
         image_path="/tmp/test.png",

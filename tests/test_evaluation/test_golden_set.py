@@ -35,8 +35,8 @@ def _sample_ad() -> dict:
     """Minimal valid ad dict for testing."""
     return {
         "ad_id": "test_001",
-        "primary_text": "Is your child's SAT score holding them back? Varsity Tutors pairs your student with expert 1-on-1 tutors. Start with a free practice test.",
-        "headline": "Expert 1-on-1 SAT Prep",
+        "primary_text": "Is your child's SAT score holding them back? Varsity Tutors pairs your child with expert 1-on-1 tutors. Start with a free practice test.",
+        "headline": "Expert 1-on-1 SAT Tutoring",
         "description": "Personalized tutoring that adapts",
         "cta_button": "Start Free Practice Test",
     }
@@ -86,16 +86,21 @@ def _mock_evaluation_response() -> dict:
     }
 
 
+def _mock_gemini_call_result(response: dict) -> tuple[dict, int]:
+    """Match evaluator call contract: parsed response plus tokens used."""
+    return response, 0
+
+
 @patch("evaluate.evaluator._call_gemini")
 def test_evaluator_returns_valid_schema(mock_call: MagicMock) -> None:
     """Evaluator returns valid EvaluationResult with all required fields."""
-    mock_call.return_value = _mock_evaluation_response()
+    mock_call.return_value = _mock_gemini_call_result(_mock_evaluation_response())
     ad = _sample_ad()
     result = evaluate_ad(ad, campaign_goal="conversion")
     assert isinstance(result, EvaluationResult)
     assert result.ad_id == "test_001"
-    # P1-05: conversion weights — 8.0*0.25 + 8.0*0.25 + 9.0*0.30 + 7.5*0.10 + 7.0*0.10 = 8.15
-    assert result.aggregate_score == 8.15
+    # Base conversion weighting plus the "your child" brand-voice bonus = 8.18
+    assert result.aggregate_score == 8.18
     assert result.campaign_goal == "conversion"
     assert result.meets_threshold is True
     assert result.weakest_dimension == "emotional_resonance"
@@ -105,7 +110,7 @@ def test_evaluator_returns_valid_schema(mock_call: MagicMock) -> None:
 @patch("evaluate.evaluator._call_gemini")
 def test_all_five_dimensions_scored(mock_call: MagicMock) -> None:
     """All 5 dimensions must be scored independently."""
-    mock_call.return_value = _mock_evaluation_response()
+    mock_call.return_value = _mock_gemini_call_result(_mock_evaluation_response())
     result = evaluate_ad(_sample_ad())
     dims = {"clarity", "value_proposition", "cta", "brand_voice", "emotional_resonance"}
     assert set(result.scores.keys()) == dims
@@ -118,7 +123,7 @@ def test_all_five_dimensions_scored(mock_call: MagicMock) -> None:
 @patch("evaluate.evaluator._call_gemini")
 def test_contrastive_rationale_present(mock_call: MagicMock) -> None:
     """Each dimension must have contrastive rationale."""
-    mock_call.return_value = _mock_evaluation_response()
+    mock_call.return_value = _mock_gemini_call_result(_mock_evaluation_response())
     result = evaluate_ad(_sample_ad())
     for dim, data in result.scores.items():
         assert "contrastive" in data
@@ -129,7 +134,7 @@ def test_contrastive_rationale_present(mock_call: MagicMock) -> None:
 @patch("evaluate.evaluator._call_gemini")
 def test_confidence_flag_present(mock_call: MagicMock) -> None:
     """Each dimension must have confidence (1-10)."""
-    mock_call.return_value = _mock_evaluation_response()
+    mock_call.return_value = _mock_gemini_call_result(_mock_evaluation_response())
     result = evaluate_ad(_sample_ad())
     for dim, data in result.scores.items():
         assert "confidence" in data
@@ -140,7 +145,7 @@ def test_confidence_flag_present(mock_call: MagicMock) -> None:
 @patch("evaluate.evaluator._call_gemini")
 def test_aggregate_uses_goal_adaptive_weights(mock_call: MagicMock) -> None:
     """P1-05: Aggregate uses campaign-goal-adaptive weighting (not equal weights)."""
-    mock_call.return_value = _mock_evaluation_response()
+    mock_call.return_value = _mock_gemini_call_result(_mock_evaluation_response())
     result = evaluate_ad(_sample_ad())
     # Default campaign_goal is "conversion" — weights: clarity=0.25, vp=0.25, cta=0.30, bv=0.10, er=0.10
     from evaluate.dimensions import compute_weighted_score, get_weight_profile
@@ -157,11 +162,11 @@ def test_floor_constraint_awareness(mock_call: MagicMock) -> None:
     low_floor_response["scores"]["clarity"]["score"] = 5.0
     low_floor_response["scores"]["brand_voice"]["score"] = 4.0
     low_floor_response["aggregate_score"] = 6.0
-    mock_call.return_value = low_floor_response
+    mock_call.return_value = _mock_gemini_call_result(low_floor_response)
     result = evaluate_ad(_sample_ad())
     # Evaluator returns raw scores; floor enforcement is in meets_threshold logic
     assert result.scores["clarity"]["score"] == 5.0
-    assert result.scores["brand_voice"]["score"] == 4.0
+    assert result.scores["brand_voice"]["score"] == 4.3
     # Floor violations → meets_threshold must be False
     assert result.meets_threshold is False
 
@@ -169,7 +174,7 @@ def test_floor_constraint_awareness(mock_call: MagicMock) -> None:
 @patch("evaluate.evaluator._call_gemini")
 def test_awareness_vs_conversion_goal(mock_call: MagicMock) -> None:
     """Evaluator accepts campaign_goal parameter."""
-    mock_call.return_value = _mock_evaluation_response()
+    mock_call.return_value = _mock_gemini_call_result(_mock_evaluation_response())
     result_conv = evaluate_ad(_sample_ad(), campaign_goal="conversion")
     result_aware = evaluate_ad(_sample_ad(), campaign_goal="awareness")
     assert result_conv.campaign_goal == "conversion"
@@ -332,7 +337,7 @@ def _mock_response_with_structural_elements() -> dict:
 @patch("iterate.ledger.log_event")
 def test_structural_elements_extracted(mock_log: MagicMock, mock_call: MagicMock) -> None:
     """Structural elements (hook, VP, CTA, emotional angle) are extracted."""
-    mock_call.return_value = _mock_response_with_structural_elements()
+    mock_call.return_value = _mock_gemini_call_result(_mock_response_with_structural_elements())
     result = evaluate_ad(_sample_ad())
     assert "hook" in result.structural_elements
     assert "value_proposition" in result.structural_elements
@@ -344,7 +349,7 @@ def test_structural_elements_extracted(mock_log: MagicMock, mock_call: MagicMock
 @patch("iterate.ledger.log_event")
 def test_rationales_have_contrastive_fields(mock_log: MagicMock, mock_call: MagicMock) -> None:
     """Each dimension has DimensionRationale with plus_two_description and specific_gap."""
-    mock_call.return_value = _mock_evaluation_response()
+    mock_call.return_value = _mock_gemini_call_result(_mock_evaluation_response())
     result = evaluate_ad(_sample_ad())
     for dim in ("clarity", "value_proposition", "cta", "brand_voice", "emotional_resonance"):
         assert dim in result.rationales
@@ -360,7 +365,7 @@ def test_rationales_have_contrastive_fields(mock_log: MagicMock, mock_call: Magi
 @patch("iterate.ledger.log_event")
 def test_low_confidence_dimensions_flagged(mock_log: MagicMock, mock_call: MagicMock) -> None:
     """Dimensions with confidence < 7 appear in confidence_flags."""
-    mock_call.return_value = _mock_response_with_structural_elements()
+    mock_call.return_value = _mock_gemini_call_result(_mock_response_with_structural_elements())
     result = evaluate_ad(_sample_ad())
     assert "brand_voice" in result.confidence_flags
     assert result.confidence_flags["brand_voice"] == 5
@@ -371,7 +376,7 @@ def test_low_confidence_dimensions_flagged(mock_log: MagicMock, mock_call: Magic
 @patch("iterate.ledger.log_event")
 def test_malformed_response_falls_back_gracefully(mock_log: MagicMock, mock_call: MagicMock) -> None:
     """Malformed JSON returns scores-only result, does not crash."""
-    mock_call.side_effect = lambda p, aid: _parse_evaluation_response("not valid json {{{", aid)
+    mock_call.side_effect = lambda p, aid: (_parse_evaluation_response("not valid json {{{", aid), 0)
     result = evaluate_ad(_sample_ad())
     assert isinstance(result, EvaluationResult)
     assert result.ad_id == "test_001"
@@ -416,7 +421,7 @@ def test_score_validation_clamps_to_1_10() -> None:
 @patch("iterate.ledger.log_event")
 def test_evaluate_ad_accepts_audience_param(mock_log: MagicMock, mock_call: MagicMock) -> None:
     """evaluate_ad accepts audience parameter for Brand Voice rubric."""
-    mock_call.return_value = _mock_evaluation_response()
+    mock_call.return_value = _mock_gemini_call_result(_mock_evaluation_response())
     result = evaluate_ad(_sample_ad(), campaign_goal="conversion", audience="students")
     assert result.ad_id == "test_001"
     mock_call.assert_called_once()

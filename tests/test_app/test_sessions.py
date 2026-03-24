@@ -104,7 +104,7 @@ VALID_CONFIG = {
 
 
 def _create(client, config=None):
-    return client.post("/sessions", json=config or VALID_CONFIG)
+    return client.post("/api/sessions", json=config or VALID_CONFIG)
 
 
 # --- Create ---
@@ -121,7 +121,7 @@ def test_create_session_valid_config(alice):
 
 
 def test_create_session_with_custom_name(alice):
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "name": "My Custom Session",
         "config": {"audience": "students", "campaign_goal": "awareness"},
     })
@@ -130,19 +130,19 @@ def test_create_session_with_custom_name(alice):
 
 
 def test_create_session_invalid_audience_returns_422(alice):
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {"audience": "dogs", "campaign_goal": "conversion"},
     })
     assert resp.status_code == 422
 
 
 def test_create_session_missing_required_returns_422(alice):
-    resp = alice.post("/sessions", json={"config": {}})
+    resp = alice.post("/api/sessions", json={"config": {}})
     assert resp.status_code == 422
 
 
 def test_create_session_ad_count_out_of_range_returns_422(alice):
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {"audience": "parents", "campaign_goal": "conversion", "ad_count": 999},
     })
     assert resp.status_code == 422
@@ -169,7 +169,7 @@ def test_list_sessions_only_own():
     _create(client_b)
 
     # Bob sees only 1
-    resp_bob = client_b.get("/sessions")
+    resp_bob = client_b.get("/api/sessions")
     assert resp_bob.json()["total"] == 1
     client_b.close()
     for p in patches_b:
@@ -178,7 +178,7 @@ def test_list_sessions_only_own():
 
     # Alice sees only 2
     client_a2, patches_a2 = _build_app_with_user("alice")
-    resp_alice = client_a2.get("/sessions")
+    resp_alice = client_a2.get("/api/sessions")
     assert resp_alice.json()["total"] == 2
     client_a2.close()
     for p in patches_a2:
@@ -192,10 +192,10 @@ def test_list_sessions_only_own():
 def test_list_sessions_filter_by_status(alice):
     _create(alice)
 
-    resp = alice.get("/sessions?status=completed")
+    resp = alice.get("/api/sessions?status=completed")
     assert resp.json()["total"] == 0
 
-    resp = alice.get("/sessions?status=pending")
+    resp = alice.get("/api/sessions?status=pending")
     assert resp.json()["total"] == 1
 
 
@@ -220,7 +220,7 @@ def test_list_sessions_includes_ad_preview(alice):
         "status": "published",
         "aggregate_score": 7.4,
     }):
-        resp = alice.get("/sessions")
+        resp = alice.get("/api/sessions")
 
     assert resp.status_code == 200
     session = resp.json()["sessions"][0]
@@ -256,7 +256,7 @@ def test_list_sessions_ad_preview_includes_video_url(alice):
             "aggregate_score": 7.2,
         },
     ):
-        resp = alice.get("/sessions")
+        resp = alice.get("/api/sessions")
 
     assert resp.status_code == 200
     session = resp.json()["sessions"][0]
@@ -271,14 +271,14 @@ def test_list_sessions_pagination(alice):
     for _ in range(5):
         _create(alice)
 
-    resp = alice.get("/sessions?offset=0&limit=2")
+    resp = alice.get("/api/sessions?offset=0&limit=2")
     data = resp.json()
     assert len(data["sessions"]) == 2
     assert data["total"] == 5
     assert data["offset"] == 0
     assert data["limit"] == 2
 
-    resp2 = alice.get("/sessions?offset=2&limit=2")
+    resp2 = alice.get("/api/sessions?offset=2&limit=2")
     assert len(resp2.json()["sessions"]) == 2
 
 
@@ -289,7 +289,7 @@ def test_get_session_own(alice):
     create_resp = _create(alice)
     sid = create_resp.json()["session_id"]
 
-    resp = alice.get(f"/sessions/{sid}")
+    resp = alice.get(f"/api/sessions/{sid}")
     assert resp.status_code == 200
     assert resp.json()["session_id"] == sid
 
@@ -307,7 +307,7 @@ def test_get_session_other_user_returns_404():
     app.dependency_overrides.clear()
 
     client_b, patches_b = _build_app_with_user("bob")
-    resp = client_b.get(f"/sessions/{sid}")
+    resp = client_b.get(f"/api/sessions/{sid}")
     assert resp.status_code == 404
     client_b.close()
     for p in patches_b:
@@ -322,11 +322,11 @@ def test_update_session_name_own(alice):
     create_resp = _create(alice)
     sid = create_resp.json()["session_id"]
 
-    resp = alice.patch(f"/sessions/{sid}", json={"name": "Renamed Session"})
+    resp = alice.patch(f"/api/sessions/{sid}", json={"name": "Renamed Session"})
     assert resp.status_code == 200
     assert resp.json()["name"] == "Renamed Session"
 
-    get_resp = alice.get(f"/sessions/{sid}")
+    get_resp = alice.get(f"/api/sessions/{sid}")
     assert get_resp.status_code == 200
     assert get_resp.json()["name"] == "Renamed Session"
 
@@ -335,7 +335,7 @@ def test_update_session_name_blank_returns_400(alice):
     create_resp = _create(alice)
     sid = create_resp.json()["session_id"]
 
-    resp = alice.patch(f"/sessions/{sid}", json={"name": "   "})
+    resp = alice.patch(f"/api/sessions/{sid}", json={"name": "   "})
     assert resp.status_code == 400
     assert resp.json()["detail"] == "Session name cannot be empty"
 
@@ -347,10 +347,10 @@ def test_delete_session_own(alice):
     create_resp = _create(alice)
     sid = create_resp.json()["session_id"]
 
-    resp = alice.delete(f"/sessions/{sid}")
+    resp = alice.delete(f"/api/sessions/{sid}")
     assert resp.status_code == 204
 
-    resp2 = alice.get(f"/sessions/{sid}")
+    resp2 = alice.get(f"/api/sessions/{sid}")
     assert resp2.status_code == 404
 
 
@@ -367,7 +367,7 @@ def test_delete_session_other_user_returns_404():
     app.dependency_overrides.clear()
 
     client_b, patches_b = _build_app_with_user("bob")
-    resp = client_b.delete(f"/sessions/{sid}")
+    resp = client_b.delete(f"/api/sessions/{sid}")
     assert resp.status_code == 404
     client_b.close()
     for p in patches_b:
@@ -376,7 +376,7 @@ def test_delete_session_other_user_returns_404():
 
     # Still exists for alice
     client_a2, patches_a2 = _build_app_with_user("alice")
-    resp2 = client_a2.get(f"/sessions/{sid}")
+    resp2 = client_a2.get(f"/api/sessions/{sid}")
     assert resp2.status_code == 200
     client_a2.close()
     for p in patches_a2:
@@ -395,7 +395,7 @@ def test_session_type_defaults_to_image(alice):
 
 
 def test_create_video_session(alice):
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {
             "session_type": "video",
             "audience": "students",
@@ -416,7 +416,7 @@ def test_create_video_session(alice):
 
 
 def test_video_duration_defaults_to_8(alice):
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {
             "session_type": "video",
             "audience": "students",
@@ -428,7 +428,7 @@ def test_video_duration_defaults_to_8(alice):
 
 
 def test_video_count_out_of_range_returns_422(alice):
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {
             "session_type": "video",
             "audience": "parents",
@@ -440,7 +440,7 @@ def test_video_count_out_of_range_returns_422(alice):
 
 
 def test_video_duration_out_of_range_returns_422(alice):
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {
             "session_type": "video",
             "audience": "parents",
@@ -452,7 +452,7 @@ def test_video_duration_out_of_range_returns_422(alice):
 
 
 def test_invalid_session_type_returns_422(alice):
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {
             "session_type": "audio",
             "audience": "parents",
@@ -464,7 +464,7 @@ def test_invalid_session_type_returns_422(alice):
 
 def test_image_session_ignores_video_fields(alice):
     """Image sessions accept video fields but they're just defaults."""
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {
             "session_type": "image",
             "audience": "parents",
@@ -481,7 +481,7 @@ def test_image_session_ignores_video_fields(alice):
 
 def test_video_advanced_fields_default_empty(alice):
     """Advanced video fields default to empty strings."""
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {
             "session_type": "video",
             "audience": "students",
@@ -497,7 +497,7 @@ def test_video_advanced_fields_default_empty(alice):
 
 
 def test_video_session_with_advanced_fields(alice):
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": {
             "session_type": "video",
             "audience": "parents",
@@ -524,7 +524,7 @@ def test_create_session_with_campaign_id(alice):
     campaign_id = campaign_resp.json()["campaign_id"]
 
     # Create session with campaign_id
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": VALID_CONFIG["config"],
         "campaign_id": campaign_id,
     })
@@ -545,7 +545,7 @@ def test_create_session_without_campaign_id(alice):
 
 def test_create_session_with_invalid_campaign_id(alice):
     """Create session with non-existent campaign_id returns 404."""
-    resp = alice.post("/sessions", json={
+    resp = alice.post("/api/sessions", json={
         "config": VALID_CONFIG["config"],
         "campaign_id": "camp_nonexistent",
     })
@@ -567,7 +567,7 @@ def test_create_session_with_another_users_campaign_id():
 
     # Bob tries to create session with Alice's campaign
     client_b, patches_b = _build_app_with_user("bob")
-    resp = client_b.post("/sessions", json={
+    resp = client_b.post("/api/sessions", json={
         "config": VALID_CONFIG["config"],
         "campaign_id": campaign_id,
     })
@@ -586,25 +586,25 @@ def test_list_sessions_filter_by_campaign_id(alice):
     campaign_id = campaign_resp.json()["campaign_id"]
 
     # Create 2 sessions with campaign, 1 without
-    alice.post("/sessions", json={
+    alice.post("/api/sessions", json={
         "config": VALID_CONFIG["config"],
         "campaign_id": campaign_id,
     })
-    alice.post("/sessions", json={
+    alice.post("/api/sessions", json={
         "config": VALID_CONFIG["config"],
         "campaign_id": campaign_id,
     })
-    alice.post("/sessions", json={"config": VALID_CONFIG["config"]})
+    alice.post("/api/sessions", json={"config": VALID_CONFIG["config"]})
 
     # Filter by campaign_id
-    resp = alice.get(f"/sessions?campaign_id={campaign_id}")
+    resp = alice.get(f"/api/sessions?campaign_id={campaign_id}")
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 2
     assert all(s["campaign_id"] == campaign_id for s in data["sessions"])
 
     # No filter returns all
-    resp = alice.get("/sessions")
+    resp = alice.get("/api/sessions")
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 3
@@ -617,14 +617,14 @@ def test_get_session_detail_includes_campaign_name(alice):
     campaign_id = campaign_resp.json()["campaign_id"]
 
     # Create session with campaign
-    create_resp = alice.post("/sessions", json={
+    create_resp = alice.post("/api/sessions", json={
         "config": VALID_CONFIG["config"],
         "campaign_id": campaign_id,
     })
     session_id = create_resp.json()["session_id"]
 
     # Get session detail
-    resp = alice.get(f"/sessions/{session_id}")
+    resp = alice.get(f"/api/sessions/{session_id}")
     assert resp.status_code == 200
     data = resp.json()
     assert data["campaign_id"] == campaign_id
@@ -643,11 +643,11 @@ def test_assign_session_to_campaign_updates_fk(alice):
     mock_task.delay.return_value = mock_result
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
-        resp = alice.post("/sessions", json={"config": VALID_CONFIG["config"]})
+        resp = alice.post("/api/sessions", json={"config": VALID_CONFIG["config"]})
         session_id = resp.json()["session_id"]
 
     # Verify no campaign
-    resp = alice.get(f"/sessions/{session_id}")
+    resp = alice.get(f"/api/sessions/{session_id}")
     assert resp.json()["campaign_id"] is None
 
     # Create campaign
@@ -655,12 +655,12 @@ def test_assign_session_to_campaign_updates_fk(alice):
     campaign_id = campaign_resp.json()["campaign_id"]
 
     # Assign session to campaign
-    resp = alice.patch(f"/sessions/{session_id}", json={"campaign_id": campaign_id})
+    resp = alice.patch(f"/api/sessions/{session_id}", json={"campaign_id": campaign_id})
     assert resp.status_code == 200
     assert resp.json()["campaign_id"] == campaign_id
 
     # Verify persisted
-    resp = alice.get(f"/sessions/{session_id}")
+    resp = alice.get(f"/api/sessions/{session_id}")
     assert resp.json()["campaign_id"] == campaign_id
 
 
@@ -674,10 +674,10 @@ def test_assign_session_to_invalid_campaign_returns_404(alice):
     mock_task.delay.return_value = mock_result
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
-        resp = alice.post("/sessions", json={"config": VALID_CONFIG["config"]})
+        resp = alice.post("/api/sessions", json={"config": VALID_CONFIG["config"]})
         session_id = resp.json()["session_id"]
 
-    resp = alice.patch(f"/sessions/{session_id}", json={"campaign_id": "camp_nonexistent"})
+    resp = alice.patch(f"/api/sessions/{session_id}", json={"campaign_id": "camp_nonexistent"})
     assert resp.status_code == 404
 
 
@@ -695,23 +695,23 @@ def test_remove_session_from_campaign_sets_campaign_id_null(alice):
     mock_task.delay.return_value = mock_result
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
-        resp = alice.post("/sessions", json={
+        resp = alice.post("/api/sessions", json={
             "config": VALID_CONFIG["config"],
             "campaign_id": campaign_id,
         })
         session_id = resp.json()["session_id"]
 
     # Verify in campaign
-    resp = alice.get(f"/sessions/{session_id}")
+    resp = alice.get(f"/api/sessions/{session_id}")
     assert resp.json()["campaign_id"] == campaign_id
 
     # Remove from campaign (send empty string or null string)
-    resp = alice.patch(f"/sessions/{session_id}", json={"campaign_id": ""})
+    resp = alice.patch(f"/api/sessions/{session_id}", json={"campaign_id": ""})
     assert resp.status_code == 200
     assert resp.json()["campaign_id"] is None
 
     # Verify persisted
-    resp = alice.get(f"/sessions/{session_id}")
+    resp = alice.get(f"/api/sessions/{session_id}")
     assert resp.json()["campaign_id"] is None
 
 
@@ -730,7 +730,7 @@ def test_cannot_reassign_running_session(alice):
     mock_task.delay.return_value = mock_result
 
     with patch("app.api.routes.sessions.run_pipeline_session", mock_task):
-        resp = alice.post("/sessions", json={"config": VALID_CONFIG["config"]})
+        resp = alice.post("/api/sessions", json={"config": VALID_CONFIG["config"]})
         session_id = resp.json()["session_id"]
 
     # Manually set session to running using test DB
@@ -741,6 +741,6 @@ def test_cannot_reassign_running_session(alice):
     db.close()
 
     # Try to reassign
-    resp = alice.patch(f"/sessions/{session_id}", json={"campaign_id": campaign_id})
+    resp = alice.patch(f"/api/sessions/{session_id}", json={"campaign_id": campaign_id})
     assert resp.status_code == 400
     assert "running" in resp.json()["detail"].lower()

@@ -68,8 +68,9 @@ def test_normalize_duration_forces_known_good_veo_length():
     assert client.normalize_duration(10) == 8
 
 
+@patch("generate_video.veo_client.retry_with_backoff", side_effect=lambda func: func())
 @patch("generate_video.veo_client.genai.Client")
-def test_generate_video_retries_silent_after_audio_quota_error(mock_client_cls, tmp_path):
+def test_generate_video_retries_silent_after_audio_quota_error(mock_client_cls, mock_retry, tmp_path):
     output_path = tmp_path / "generated.mp4"
 
     class FakeVideoFile:

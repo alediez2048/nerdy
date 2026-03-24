@@ -2,12 +2,13 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { colors, font } from '../design/tokens'
+import useMediaQuery from '../hooks/useMediaQuery'
 
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 
 const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
-function ThemeToggle() {
+function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const [light, setLight] = useState(() => localStorage.getItem('theme') === 'light')
 
   useEffect(() => {
@@ -17,7 +18,7 @@ function ThemeToggle() {
 
   return (
     <button onClick={() => setLight(!light)} style={s.themeToggle}>
-      {light ? '☾ Dark' : '☀ Light'}
+      {compact ? (light ? '☾' : '☀') : light ? '☾ Dark' : '☀ Light'}
     </button>
   )
 }
@@ -25,6 +26,12 @@ function ThemeToggle() {
 export default function NavBar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const isMobile = useMediaQuery('(max-width: 900px)')
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname, isMobile])
 
   const isActive = (path: string) => {
     if (path === '/campaigns') {
@@ -33,75 +40,98 @@ export default function NavBar() {
     return location.pathname === path || location.pathname.startsWith(`${path}/`)
   }
 
+  const navItems = [
+    { path: '/dashboard', label: 'Dashboard' },
+    { path: '/campaigns', label: 'Campaigns' },
+    { path: '/sessions', label: 'Sessions' },
+    { path: '/ads', label: 'Ad Library' },
+    { path: '/competitive', label: 'Competitive' },
+    { path: '/curated', label: 'Curated Set' },
+  ]
+
   return (
-    <nav style={s.bar}>
-      <div style={s.left}>
-        <a
-          href="/campaigns"
-          onClick={(e) => {
-            e.preventDefault()
-            navigate('/campaigns')
-          }}
-          style={s.logo}
-          aria-label="Go to Campaigns"
-        >
-          <img src="/nerdy-logo.png" alt="Nerdy" style={s.logoImg} />
-        </a>
-      </div>
-      <div style={s.center}>
-        <button
-          onClick={() => navigate('/dashboard')}
-          style={isActive('/dashboard') ? s.navLinkActive : s.navLink}
-        >
-          Dashboard
-        </button>
-        <button
-          onClick={() => navigate('/campaigns')}
-          style={isActive('/campaigns') ? s.navLinkActive : s.navLink}
-        >
-          Campaigns
-        </button>
-        <button
-          onClick={() => navigate('/sessions')}
-          style={isActive('/sessions') ? s.navLinkActive : s.navLink}
-        >
-          Sessions
-        </button>
-        <button
-          onClick={() => navigate('/ads')}
-          style={isActive('/ads') ? s.navLinkActive : s.navLink}
-        >
-          Ad Library
-        </button>
-        <button
-          onClick={() => navigate('/competitive')}
-          style={isActive('/competitive') ? s.navLinkActive : s.navLink}
-        >
-          Competitive
-        </button>
-        <button
-          onClick={() => navigate('/curated')}
-          style={isActive('/curated') ? s.navLinkActive : s.navLink}
-        >
-          Curated Set
-        </button>
-      </div>
-      <div style={s.right}>
-        <ThemeToggle />
-        {CLERK_ENABLED && (
-          <>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button style={s.signInBtn}>Sign In</button>
-              </SignInButton>
-            </SignedOut>
-          </>
+    <>
+      <nav style={{ ...s.bar, ...(isMobile ? s.barMobile : {}) }}>
+        <div style={s.left}>
+          <a
+            href="/campaigns"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('/campaigns')
+            }}
+            style={s.logo}
+            aria-label="Go to Campaigns"
+          >
+            <img src="/nerdy-logo.png" alt="Nerdy" style={s.logoImg} />
+          </a>
+        </div>
+        {!isMobile && (
+          <div style={s.center}>
+            {navItems.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                style={isActive(item.path) ? s.navLinkActive : s.navLink}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         )}
-      </div>
-    </nav>
+        <div style={s.right}>
+          <ThemeToggle compact={isMobile} />
+          {!isMobile && CLERK_ENABLED && (
+            <>
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button style={s.signInBtn}>Sign In</button>
+                </SignInButton>
+              </SignedOut>
+            </>
+          )}
+          {isMobile ? (
+            <button
+              onClick={() => setMenuOpen((open) => !open)}
+              style={s.menuBtn}
+              aria-expanded={menuOpen}
+              aria-label="Toggle navigation menu"
+            >
+              {menuOpen ? 'Close' : 'Menu'}
+            </button>
+          ) : null}
+        </div>
+      </nav>
+      {isMobile && menuOpen && (
+        <div style={s.mobileMenu}>
+          <div style={s.mobileMenuInner}>
+            {navItems.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                style={isActive(item.path) ? s.mobileNavLinkActive : s.mobileNavLink}
+              >
+                {item.label}
+              </button>
+            ))}
+            {CLERK_ENABLED && (
+              <div style={s.mobileAuthRow}>
+                <SignedIn>
+                  <UserButton />
+                </SignedIn>
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <button style={s.signInBtn}>Sign In</button>
+                  </SignInButton>
+                </SignedOut>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -120,6 +150,9 @@ const s: Record<string, React.CSSProperties> = {
     padding: '0 24px',
     zIndex: 1000,
     fontFamily: font.family,
+  },
+  barMobile: {
+    padding: '0 14px',
   },
   left: {
     display: 'flex',
@@ -170,6 +203,17 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '12px',
   },
+  menuBtn: {
+    padding: '8px 14px',
+    borderRadius: '100px',
+    border: `1px solid ${colors.cyan}40`,
+    background: `${colors.cyan}14`,
+    color: colors.cyan,
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontFamily: font.family,
+    fontWeight: 600,
+  },
   signInBtn: {
     padding: '8px 16px',
     borderRadius: '100px',
@@ -190,5 +234,52 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '13px',
     fontFamily: font.family,
+  },
+  mobileMenu: {
+    position: 'fixed',
+    top: '64px',
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    background: 'rgba(32, 35, 68, 0.94)',
+    borderBottom: `1px solid ${colors.muted}20`,
+    backdropFilter: 'blur(12px)',
+  },
+  mobileMenuInner: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    padding: '12px 14px 16px',
+  },
+  mobileNavLink: {
+    background: 'transparent',
+    border: `1px solid ${colors.muted}20`,
+    color: colors.white,
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 500,
+    fontFamily: font.family,
+    padding: '12px 14px',
+    textAlign: 'left' as const,
+    borderRadius: '14px',
+  },
+  mobileNavLinkActive: {
+    background: `${colors.cyan}14`,
+    border: `1px solid ${colors.cyan}40`,
+    color: colors.cyan,
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 600,
+    fontFamily: font.family,
+    padding: '12px 14px',
+    textAlign: 'left' as const,
+    borderRadius: '14px',
+  },
+  mobileAuthRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    paddingTop: '4px',
   },
 }

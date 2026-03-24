@@ -104,6 +104,7 @@ def test_brand_knowledge_verified_claims_have_source() -> None:
                     "reference_ad",
                     "public_website",
                     "brand_context",
+                    "supplementary",
                 ), f"Invalid source: {claim['source']}"
 
 

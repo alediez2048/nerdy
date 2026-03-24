@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { colors, radii, font } from '../design/tokens'
+import useMediaQuery from '../hooks/useMediaQuery'
 import { listSessions, deleteSession } from '../api/sessions'
 import SessionCard from '../components/SessionCard'
 import SessionFilters, { type Filters } from '../components/SessionFilters'
@@ -12,6 +13,8 @@ const POLL_INTERVAL = 30_000
 
 export default function SessionList() {
   const navigate = useNavigate()
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isTablet = useMediaQuery('(max-width: 1024px)')
   const [sessions, setSessions] = useState<SessionSummary[]>([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
@@ -81,19 +84,22 @@ export default function SessionList() {
 
   return (
     <div style={s.pageBg}>
-      <div style={s.container}>
+      <div style={{ ...s.container, padding: isMobile ? '88px 16px 24px' : s.container.padding }}>
         {/* Header */}
         <div style={s.header}>
           <div style={s.headerTop}>
             <div>
-              <h1 style={s.title}>Sessions</h1>
+              <h1 style={{ ...s.title, fontSize: isMobile ? '24px' : s.title.fontSize }}>Sessions</h1>
               <p style={s.description}>
                 Every session is a pipeline run. Use this view to scan recent work, spot runs that need attention,
                 and jump into completed dashboards or live sessions faster.
               </p>
             </div>
-            <div style={s.headerActions}>
-              <button onClick={() => navigate('/sessions/new')} style={s.newBtn}>
+            <div style={{ ...s.headerActions, width: isMobile ? '100%' : undefined }}>
+              <button
+                onClick={() => navigate('/sessions/new')}
+                style={{ ...s.newBtn, width: isMobile ? '100%' : undefined }}
+              >
                 + New Session
               </button>
             </div>
@@ -110,7 +116,7 @@ export default function SessionList() {
         </button>
 
         {showHowItWorks && (
-          <div style={s.howPanel}>
+          <div style={{ ...s.howPanel, padding: isMobile ? '20px 18px' : s.howPanel.padding }}>
             <div style={s.howSteps}>
               <div style={s.howStep}>
                 <span style={s.howNum}>1</span>
@@ -195,7 +201,16 @@ export default function SessionList() {
             <p style={s.count}>
               Showing {sessions.length} of {total} sessions
             </p>
-            <div style={s.grid}>
+            <div
+              style={{
+                ...s.grid,
+                gridTemplateColumns: isMobile
+                  ? '1fr'
+                  : isTablet
+                    ? 'repeat(2, minmax(0, 1fr))'
+                    : s.grid.gridTemplateColumns,
+              }}
+            >
               {sessions.map((session) => (
                 <SessionCard
                   key={session.session_id}

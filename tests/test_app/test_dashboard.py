@@ -96,7 +96,7 @@ def test_summary_returns_data(client):
         mock_dash.return_value = {
             "pipeline_summary": {"total_ads_generated": 50, "total_ads_published": 38},
         }
-        resp = client.get(f"/sessions/{sid}/summary")
+        resp = client.get(f"/api/sessions/{sid}/summary")
 
     assert resp.status_code == 200
     data = resp.json()
@@ -122,7 +122,7 @@ def test_summary_falls_back_to_results_summary_when_ledger_export_empty(client):
     db.close()
 
     with patch("app.api.routes.dashboard._get_dashboard_data", return_value={}):
-        resp = client.get(f"/sessions/{sid}/summary")
+        resp = client.get(f"/api/sessions/{sid}/summary")
 
     assert resp.status_code == 200
     ps = resp.json()["pipeline_summary"]
@@ -143,7 +143,7 @@ def test_costs_falls_back_to_results_summary_when_ledger_export_empty(client):
     db.close()
 
     with patch("app.api.routes.dashboard._get_dashboard_data", return_value={}):
-        resp = client.get(f"/sessions/{sid}/costs")
+        resp = client.get(f"/api/sessions/{sid}/costs")
 
     assert resp.status_code == 200
     te = resp.json()["token_economics"]
@@ -159,7 +159,7 @@ def test_cycles_returns_data(client):
             "iteration_cycles": [{"ad_id": "ad_1", "score_before": 5.0, "score_after": 7.5}],
             "quality_trends": {"batch_scores": []},
         }
-        resp = client.get(f"/sessions/{sid}/cycles")
+        resp = client.get(f"/api/sessions/{sid}/cycles")
 
     assert resp.status_code == 200
     assert len(resp.json()["iteration_cycles"]) == 1
@@ -175,20 +175,20 @@ def test_ads_returns_library(client):
                 {"ad_id": "ad_2", "aggregate_score": 5.2, "status": "discarded"},
             ],
         }
-        resp = client.get(f"/sessions/{sid}/ads")
+        resp = client.get(f"/api/sessions/{sid}/ads")
 
     assert resp.status_code == 200
     assert len(resp.json()["ad_library"]) == 2
 
 
 def test_404_for_nonexistent_session(client):
-    resp = client.get("/sessions/fake_session/summary")
+    resp = client.get("/api/sessions/fake_session/summary")
     assert resp.status_code == 404
 
 
 def test_404_for_other_user_session(client):
     _seed_session("sess_bob", user_id="bob")
-    resp = client.get("/sessions/sess_bob/summary")
+    resp = client.get("/api/sessions/sess_bob/summary")
     assert resp.status_code == 404
 
 
@@ -202,14 +202,14 @@ def test_spc_returns_health(client):
                 "compliance_stats": {"total_checked": 50, "passed": 48, "failed": 2},
             },
         }
-        resp = client.get(f"/sessions/{sid}/spc")
+        resp = client.get(f"/api/sessions/{sid}/spc")
 
     assert resp.status_code == 200
     assert resp.json()["system_health"]["spc"]["mean"] == 7.5
 
 
 def test_competitive_summary(client):
-    resp = client.get("/competitive/summary")
+    resp = client.get("/api/competitive/summary")
     assert resp.status_code == 200
 
 
@@ -234,8 +234,9 @@ def test_global_dashboard_cost_uses_session_rollup(client):
             "output.export_dashboard.build_dashboard_data_from_events",
             return_value={"pipeline_summary": {"total_cost_usd": 86.85}},
         ),
+        patch("evaluate.cost_reporter.compute_global_total_cost_usd", return_value=17.2),
     ):
-        resp = client.get("/dashboard/global?timeframe=all")
+        resp = client.get("/api/dashboard/global?timeframe=all")
 
     assert resp.status_code == 200
     assert resp.json()["pipeline_summary"]["total_cost_usd"] == 17.2
