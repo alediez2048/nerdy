@@ -33,22 +33,33 @@ function AuthGate({ children }: { children: React.ReactNode }) {
               Generate, evaluate, and curate high-performing<br />
               Facebook & Instagram ads — powered by AI.
             </p>
-            <SignIn
-              routing="hash"
-              appearance={{
-                elements: {
-                  socialButtonsBlockButton: {
-                    backgroundColor: '#ffffff',
-                    color: '#1f1f1f',
-                    border: '1px solid #dadce0',
+            <div style={authStyles.signInWrap}>
+              <SignIn
+                routing="hash"
+                appearance={{
+                  elements: {
+                    rootBox: {
+                      width: '100%',
+                      display: 'flex',
+                      justifyContent: 'center',
+                    },
+                    cardBox: {
+                      width: '100%',
+                      maxWidth: '420px',
+                    },
+                    socialButtonsBlockButton: {
+                      backgroundColor: '#ffffff',
+                      color: '#1f1f1f',
+                      border: '1px solid #dadce0',
+                    },
+                    socialButtonsBlockButtonText: {
+                      color: '#1f1f1f',
+                      fontWeight: 500,
+                    },
                   },
-                  socialButtonsBlockButtonText: {
-                    color: '#1f1f1f',
-                    fontWeight: 500,
-                  },
-                },
-              }}
-            />
+                }}
+              />
+            </div>
           </div>
         </div>
       </SignedOut>
@@ -67,10 +78,14 @@ const authStyles: Record<string, React.CSSProperties> = {
     padding: '20px',
   },
   card: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
     textAlign: 'center',
     padding: '48px 32px',
     maxWidth: '420px',
     width: '100%',
+    boxSizing: 'border-box',
   },
   logo: {
     width: '140px',
@@ -82,6 +97,11 @@ const authStyles: Record<string, React.CSSProperties> = {
     fontSize: '15px',
     lineHeight: 1.6,
     margin: '0 0 36px',
+  },
+  signInWrap: {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
   },
 }
 
