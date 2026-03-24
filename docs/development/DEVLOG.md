@@ -7,6 +7,29 @@
 
 ---
 
+## Mobile auth centering fix (✅)
+
+### Plain-English Summary
+- Centered the Clerk sign-in module on mobile so the auth card no longer appears shifted to the right.
+- Kept the existing auth styling, but wrapped the Clerk component in an explicit centered container.
+
+### Metadata
+- **Status:** Complete  |  **Date:** March 24, 2026  |  **Branch:** `final-submission`
+- **Tests:** Full suite passed before push; no new lint issues
+
+### Files Changed
+- `app/frontend/src/App.tsx` — centered the signed-out Clerk auth module with a dedicated wrapper and card alignment updates
+- `docs/development/DEVLOG.md` — recorded the mobile auth centering fix
+
+### Key Achievements
+- The mobile sign-in view is now horizontally centered instead of appearing offset.
+- The fix stays local to the auth gate and does not affect signed-in app routes.
+
+### Learnings
+- Even when the page container is centered, embedded auth widgets can still drift on mobile without an explicit full-width centering wrapper.
+
+---
+
 ## Phase PD: Pipeline Debt — Completed Tickets (✅ partial)
 
 ### Plain-English Summary
