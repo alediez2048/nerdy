@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { colors, radii, font } from '../design/tokens'
+import useMediaQuery from '../hooks/useMediaQuery'
 import { fetchGlobalDashboard } from '../api/dashboard'
 import { StatusBadge } from '../components/Badge'
 
@@ -70,6 +71,8 @@ const TIMEFRAME_LABELS: Record<TimeframeKey, string> = {
 // ── Main Component ─────────────────────────────────────────────────
 
 export default function GlobalDashboard() {
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isTablet = useMediaQuery('(max-width: 1024px)')
   const [searchParams, setSearchParams] = useSearchParams()
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -92,7 +95,7 @@ export default function GlobalDashboard() {
   if (error) {
     return (
       <div style={s.pageBg}>
-        <div style={s.pageInner}>
+        <div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}>
           <p style={{ color: colors.red }}>{error}</p>
           <a href="/sessions" style={{ color: colors.cyan }}>Back to Sessions</a>
         </div>
@@ -101,19 +104,26 @@ export default function GlobalDashboard() {
   }
 
   if (!data) {
-    return <div style={s.pageBg}><div style={s.pageInner}><p style={{ color: colors.muted }}>Loading global dashboard...</p></div></div>
+    return <div style={s.pageBg}><div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}><p style={{ color: colors.muted }}>Loading global dashboard...</p></div></div>
   }
 
   return (
     <div style={s.pageBg}>
-      <div style={s.pageInner}>
+      <div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}>
         {/* Header */}
         <div style={s.header}>
-          <div style={s.headerTopRow}>
+          <div style={{ ...s.headerTopRow, flexDirection: isMobile ? 'column' : s.headerTopRow.flexDirection, alignItems: isMobile ? 'stretch' : s.headerTopRow.alignItems }}>
             <div>
               <h1 style={s.dashboardTitle}>Dashboard</h1>
             </div>
-            <div style={s.timeframeGroup}>
+            <div
+              style={{
+                ...s.timeframeGroup,
+                width: isMobile ? '100%' : undefined,
+                overflowX: isMobile ? 'auto' : undefined,
+                flexWrap: isMobile ? 'nowrap' : s.timeframeGroup.flexWrap,
+              }}
+            >
               {TIMEFRAMES.map((option) => (
                 <button
                   key={option}
@@ -125,7 +135,7 @@ export default function GlobalDashboard() {
               ))}
             </div>
           </div>
-          <h1 style={s.title}>Global Dashboard</h1>
+          <h1 style={{ ...s.title, fontSize: isMobile ? '24px' : s.title.fontSize }}>Global Dashboard</h1>
           <p style={{ color: colors.muted, fontSize: '13px', margin: 0, maxWidth: '720px', lineHeight: '1.6' }}>
             Aggregated view of every ad generation session. Metrics are read from the
             global decision ledger — the append-only log of every generation, evaluation,
@@ -152,12 +162,12 @@ export default function GlobalDashboard() {
 
         {/* Tab content */}
         <div style={s.tabContent}>
-          {activeTab === 'summary' && <PipelineSummaryTab data={data} />}
-          {activeTab === 'iterations' && <IterationCyclesTab data={data} />}
-          {activeTab === 'quality' && <QualityTrendsTab data={data} />}
-          {activeTab === 'dimensions' && <DimensionDeepDiveTab data={data} />}
-          {activeTab === 'costs' && <TokenEconomicsTab data={data} />}
-          {activeTab === 'health' && <SystemHealthTab data={data} />}
+          {activeTab === 'summary' && <PipelineSummaryTab data={data} isMobile={isMobile} />}
+          {activeTab === 'iterations' && <IterationCyclesTab data={data} isMobile={isMobile} />}
+          {activeTab === 'quality' && <QualityTrendsTab data={data} isMobile={isMobile} />}
+          {activeTab === 'dimensions' && <DimensionDeepDiveTab data={data} isMobile={isMobile} isTablet={isTablet} />}
+          {activeTab === 'costs' && <TokenEconomicsTab data={data} isMobile={isMobile} />}
+          {activeTab === 'health' && <SystemHealthTab data={data} isMobile={isMobile} />}
           {activeTab === 'scoring' && <ScoringMethodologyTab />}
         </div>
       </div>
@@ -167,7 +177,7 @@ export default function GlobalDashboard() {
 
 // ── Tab 1: Pipeline Summary ────────────────────────────────────────
 
-function PipelineSummaryTab({ data }: { data: Record<string, unknown> }) {
+function PipelineSummaryTab({ data, isMobile }: { data: Record<string, unknown>; isMobile: boolean }) {
   const ps = (data.pipeline_summary || {}) as PipelineSummary
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
@@ -212,7 +222,7 @@ function PipelineSummaryTab({ data }: { data: Record<string, unknown> }) {
             {m.label}
           </div>
           {hoveredIdx === i && (
-            <div style={s.kpiTooltip}>{m.tip}</div>
+            <div style={{ ...s.kpiTooltip, width: isMobile ? 'min(240px, calc(100vw - 48px))' : s.kpiTooltip.width }}>{m.tip}</div>
           )}
         </div>
       ))}
@@ -222,7 +232,7 @@ function PipelineSummaryTab({ data }: { data: Record<string, unknown> }) {
 
 // ── Tab 2: Iteration Cycles ────────────────────────────────────────
 
-function IterationCyclesTab({ data }: { data: Record<string, unknown> }) {
+function IterationCyclesTab({ data, isMobile }: { data: Record<string, unknown>; isMobile: boolean }) {
   const cycles = (data.iteration_cycles || []) as IterationCycle[]
 
   if (cycles.length === 0) return <p style={{ color: colors.muted }}>No iteration data available</p>
@@ -246,7 +256,7 @@ function IterationCyclesTab({ data }: { data: Record<string, unknown> }) {
                 <span style={s.cycleAdId} title={c.ad_id}>{c.ad_id}</span>
                 <StatusBadge status={c.action_taken} />
               </div>
-              <div style={s.cycleMetrics}>
+              <div style={{ ...s.cycleMetrics, gridTemplateColumns: isMobile ? '1fr' : s.cycleMetrics.gridTemplateColumns }}>
                 <div style={s.cycleMetricBlock}>
                   <div style={s.cycleMetricLabel}>Before</div>
                   <div style={s.cycleMetricValue}>
@@ -373,7 +383,19 @@ function QualityTrendsTab({ data }: { data: Record<string, unknown> }) {
 
 // ── Tab 4: Dimension Deep-Dive ─────────────────────────────────────
 
-function DimensionGrid({ title, description, trends }: { title: string; description: string; trends: Record<string, number[]> }) {
+function DimensionGrid({
+  title,
+  description,
+  trends,
+  isMobile,
+  isTablet,
+}: {
+  title: string
+  description: string
+  trends: Record<string, number[]>
+  isMobile: boolean
+  isTablet: boolean
+}) {
   const entries = Object.entries(trends).filter(([, vals]) => (vals as number[]).length > 0)
   if (entries.length === 0) return null
 
@@ -386,7 +408,16 @@ function DimensionGrid({ title, description, trends }: { title: string; descript
     <div style={s.section}>
       <h3 style={s.heading}>{title}</h3>
       <p style={s.sectionDescription}>{description}</p>
-      <div style={s.dimensionAvgGrid}>
+      <div
+        style={{
+          ...s.dimensionAvgGrid,
+          gridTemplateColumns: isMobile
+            ? 'repeat(2, minmax(0, 1fr))'
+            : isTablet
+              ? 'repeat(3, minmax(0, 1fr))'
+              : s.dimensionAvgGrid.gridTemplateColumns,
+        }}
+      >
         {avgs.map(({ dim, avg, count }) => (
           <div key={dim} style={s.dimensionAvgCard}>
             <div style={{ fontSize: '22px', fontWeight: 700, color: avg >= 7 ? colors.mint : avg >= 5 ? colors.yellow : colors.red, fontFamily: font.family }}>
@@ -403,7 +434,7 @@ function DimensionGrid({ title, description, trends }: { title: string; descript
   )
 }
 
-function DimensionDeepDiveTab({ data }: { data: Record<string, unknown> }) {
+function DimensionDeepDiveTab({ data, isMobile, isTablet }: { data: Record<string, unknown>; isMobile: boolean; isTablet: boolean }) {
   const dd = (data.dimension_deep_dive || {}) as Record<string, unknown>
   const dimTrends = (dd.dimension_trends || {}) as Record<string, number[]>
   const imageTrends = (dd.image_dimension_trends || {}) as Record<string, number[]>
@@ -425,21 +456,29 @@ function DimensionDeepDiveTab({ data }: { data: Record<string, unknown> }) {
         title="Copy Quality"
         description="Average score for each of the five copy evaluation dimensions across all scored ads."
         trends={dimTrends}
+        isMobile={isMobile}
+        isTablet={isTablet}
       />
       <DimensionGrid
         title="Brief Adherence"
         description="How well ads follow the creative brief — audience targeting, persona tone, key message delivery, and format compliance."
         trends={adherenceTrends}
+        isMobile={isMobile}
+        isTablet={isTablet}
       />
       <DimensionGrid
         title="Image Quality"
         description="Visual quality scores for generated ad images — clarity, brand consistency, emotional impact, copy coherence, and platform fit."
         trends={imageTrends}
+        isMobile={isMobile}
+        isTablet={isTablet}
       />
       <DimensionGrid
         title="Video Quality"
         description="Video quality scores — hook strength, visual quality, narrative flow, copy coherence, and UGC authenticity."
         trends={videoTrends}
+        isMobile={isMobile}
+        isTablet={isTablet}
       />
 
       {/* Correlation matrix (copy dimensions only — others will have too few data points initially) */}
@@ -493,7 +532,7 @@ function DimensionDeepDiveTab({ data }: { data: Record<string, unknown> }) {
 
 // ── Tab 6: Token Economics ──────────────────────────────────────────
 
-function TokenEconomicsTab({ data }: { data: Record<string, unknown> }) {
+function TokenEconomicsTab({ data, isMobile }: { data: Record<string, unknown>; isMobile: boolean }) {
   const econ = (data.token_economics || {}) as Record<string, unknown>
   const byStage = (econ.by_stage || {}) as Record<string, number>
   const byModel = (econ.by_model || {}) as Record<string, number>
@@ -528,7 +567,7 @@ function TokenEconomicsTab({ data }: { data: Record<string, unknown> }) {
           Shows which parts of the workflow are consuming the most tokens, such as generation, evaluation, or
           regeneration. Use this to identify stages where quality gains may not justify the extra spend.
         </p>
-        <CostBars data={byStage} barColor={colors.yellow} />
+        <CostBars data={byStage} barColor={colors.yellow} isMobile={isMobile} />
       </div>
 
       <div style={s.section}>
@@ -537,27 +576,44 @@ function TokenEconomicsTab({ data }: { data: Record<string, unknown> }) {
           Compares spend by model family. This is useful for checking whether higher-cost models are concentrated in
           borderline ads and whether the current routing strategy is using expensive tokens where they actually help.
         </p>
-        <CostBars data={byModel} barColor={colors.cyan} />
+        <CostBars data={byModel} barColor={colors.cyan} isMobile={isMobile} />
       </div>
     </div>
   )
 }
 
-function CostBars({ data, barColor }: { data: Record<string, number>; barColor: string }) {
+function CostBars({
+  data,
+  barColor,
+  isMobile,
+}: {
+  data: Record<string, number>
+  barColor: string
+  isMobile: boolean
+}) {
   const total = Object.values(data).reduce((a, b) => a + b, 0) || 1
   const sorted = Object.entries(data).sort(([, a], [, b]) => b - a)
 
   return (
     <div>
       {sorted.map(([label, tokens]) => (
-        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-          <span style={{ width: '120px', fontSize: '12px', color: colors.muted, textAlign: 'right', fontFamily: font.family }}>
+        <div
+          key={label}
+          style={{
+            display: 'flex',
+            alignItems: isMobile ? 'stretch' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: '10px',
+            marginBottom: '8px',
+          }}
+        >
+          <span style={{ width: isMobile ? '100%' : '120px', fontSize: '12px', color: colors.muted, textAlign: isMobile ? 'left' : 'right', fontFamily: font.family }}>
             {label}
           </span>
           <div style={{ flex: 1, height: '20px', background: `${colors.muted}20`, borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{ width: `${(tokens / total) * 100}%`, height: '100%', background: barColor, borderRadius: radii.input }} />
           </div>
-          <span style={{ fontSize: '12px', color: colors.white, width: '60px', fontFamily: font.family }}>
+          <span style={{ fontSize: '12px', color: colors.white, width: isMobile ? '100%' : '60px', fontFamily: font.family, textAlign: isMobile ? 'right' : 'left' }}>
             {tokens.toLocaleString()}
           </span>
         </div>
@@ -568,7 +624,7 @@ function CostBars({ data, barColor }: { data: Record<string, number>; barColor: 
 
 // ── Tab 7: System Health ───────────────────────────────────────────
 
-function SystemHealthTab({ data }: { data: Record<string, unknown> }) {
+function SystemHealthTab({ data, isMobile }: { data: Record<string, unknown>; isMobile: boolean }) {
   const health = (data.system_health || {}) as Record<string, unknown>
   const spc = (health.spc || {}) as Record<string, unknown>
   const confidence = (health.confidence_stats || {}) as Record<string, unknown>
@@ -595,7 +651,16 @@ function SystemHealthTab({ data }: { data: Record<string, unknown> }) {
           limits. A breach suggests the evaluator or generation system may be drifting, improving unusually fast, or
           degrading unexpectedly.
         </p>
-        <div style={{ display: 'flex', gap: '32px', padding: '16px', background: colors.surface, borderRadius: radii.card }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: '16px',
+            padding: '16px',
+            background: colors.surface,
+            borderRadius: radii.card,
+          }}
+        >
           <StatBox label="Mean" value={spc.mean != null ? (spc.mean as number).toFixed(2) : '-'} />
           <StatBox label="UCL" value={spc.ucl != null ? (spc.ucl as number).toFixed(2) : '-'} color={colors.red} />
           <StatBox label="LCL" value={spc.lcl != null ? (spc.lcl as number).toFixed(2) : '-'} color={colors.yellow} />
@@ -776,7 +841,7 @@ function ScoringMethodologyTab() {
 
       <div style={{ ...s.section, marginTop: '24px' }}>
         <h3 style={s.heading}>How Scores Are Used</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
           <div style={{ background: colors.surface, borderRadius: radii.card, padding: '16px' }}>
             <h4 style={{ color: colors.mint, fontSize: '14px', margin: '0 0 8px', fontFamily: font.family }}>Publish Gate (existing)</h4>
             <p style={{ color: colors.muted, fontSize: '13px', margin: 0, lineHeight: 1.5, fontFamily: font.family }}>
@@ -847,7 +912,7 @@ function ScoringMethodologyTab() {
         <p style={{ color: colors.muted, fontSize: '13px', lineHeight: 1.6, fontFamily: font.family, margin: '0 0 12px' }}>
           You may notice image and video scores clustering in a narrow range (e.g., most images scoring 6-7). This is expected for three reasons:
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '12px' }}>
           <div style={{ background: colors.surface, borderRadius: radii.card, padding: '16px' }}>
             <h4 style={{ color: colors.white, fontSize: '13px', margin: '0 0 6px', fontFamily: font.family }}>Same Pipeline</h4>
             <p style={{ color: colors.muted, fontSize: '12px', margin: 0, lineHeight: 1.5, fontFamily: font.family }}>

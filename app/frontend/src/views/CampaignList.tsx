@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { colors, radii, font } from '../design/tokens'
+import useMediaQuery from '../hooks/useMediaQuery'
 import { listCampaigns } from '../api/campaigns'
 import CampaignCard from '../components/CampaignCard'
 import type { CampaignSummary } from '../types/campaign'
@@ -13,6 +14,8 @@ type StatusFilter = 'all' | 'active' | 'archived'
 
 export default function CampaignList() {
   const navigate = useNavigate()
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isTablet = useMediaQuery('(max-width: 1024px)')
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
@@ -75,25 +78,37 @@ export default function CampaignList() {
 
   return (
     <div style={s.pageBg}>
-      <div style={s.container}>
+      <div style={{ ...s.container, padding: isMobile ? '88px 16px 24px' : s.container.padding }}>
         {/* Header */}
         <div style={s.header}>
           <div style={s.headerTop}>
             <div>
-              <h1 style={s.title}>Campaigns</h1>
+              <h1 style={{ ...s.title, fontSize: isMobile ? '24px' : s.title.fontSize }}>Campaigns</h1>
               <p style={s.description}>
                 Organize your sessions into campaigns. Each campaign can have default settings that
                 pre-fill when creating new sessions.
               </p>
             </div>
-            <div style={s.headerActions}>
-              <button onClick={() => navigate('/campaigns/new')} style={s.newBtn}>
+            <div style={{ ...s.headerActions, width: isMobile ? '100%' : undefined }}>
+              <button
+                onClick={() => navigate('/campaigns/new')}
+                style={{ ...s.newBtn, width: isMobile ? '100%' : undefined }}
+              >
                 + New Campaign
               </button>
             </div>
           </div>
 
-          <div style={s.summaryGrid}>
+          <div
+            style={{
+              ...s.summaryGrid,
+              gridTemplateColumns: isMobile
+                ? 'repeat(2, minmax(0, 1fr))'
+                : isTablet
+                  ? 'repeat(2, minmax(0, 1fr))'
+                  : s.summaryGrid.gridTemplateColumns,
+            }}
+          >
             {stats.map((stat) => (
               <div key={stat.label} style={s.summaryCard}>
                 <div style={{ ...s.summaryValue, color: stat.tone }}>{stat.value}</div>
@@ -166,7 +181,16 @@ export default function CampaignList() {
             <p style={s.count}>
               Showing {campaigns.length} of {total} campaigns
             </p>
-            <div style={s.grid}>
+            <div
+              style={{
+                ...s.grid,
+                gridTemplateColumns: isMobile
+                  ? '1fr'
+                  : isTablet
+                    ? 'repeat(2, minmax(0, 1fr))'
+                    : s.grid.gridTemplateColumns,
+              }}
+            >
               {campaigns.map((campaign) => (
                 <CampaignCard
                   key={campaign.campaign_id}

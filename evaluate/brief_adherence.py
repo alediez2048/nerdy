@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -141,7 +141,6 @@ def score_brief_adherence(
         from generate.gemini_client import call_gemini_multimodal
 
         from google import genai
-        from google.genai import types
 
         import os
         api_key = os.getenv("GEMINI_API_KEY")

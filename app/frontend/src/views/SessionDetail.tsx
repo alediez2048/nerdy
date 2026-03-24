@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { colors, font, radii } from '../design/tokens'
+import useMediaQuery from '../hooks/useMediaQuery'
 import { getSession, updateSessionName, updateSession } from '../api/sessions'
 import { getCampaign, listCampaigns } from '../api/campaigns'
 import { StatusBadge } from '../components/Badge'
@@ -29,6 +30,7 @@ type TabKey = typeof TABS[number]['key']
 
 export default function SessionDetail() {
   const { sessionId } = useParams<{ sessionId: string }>()
+  const isMobile = useMediaQuery('(max-width: 767px)')
   const [searchParams, setSearchParams] = useSearchParams()
   const [session, setSession] = useState<SessionDetailType | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -113,7 +115,7 @@ export default function SessionDetail() {
   if (error) {
     return (
       <div style={s.pageBg}>
-        <div style={s.pageInner}>
+        <div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}>
           <p style={{ color: colors.red }}>{error}</p>
           <a href="/sessions" style={{ color: colors.cyan }}>← Back to Sessions</a>
         </div>
@@ -121,7 +123,7 @@ export default function SessionDetail() {
     )
   }
   if (!session) {
-    return <div style={s.pageBg}><div style={s.pageInner}><p style={{ color: colors.muted }}>Loading...</p></div></div>
+    return <div style={s.pageBg}><div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}><p style={{ color: colors.muted }}>Loading...</p></div></div>
   }
 
   const config = session.config || {}
@@ -158,16 +160,16 @@ export default function SessionDetail() {
 
   return (
     <div style={s.pageBg}>
-      <div style={s.pageInner}>
+      <div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}>
         {/* Session header */}
-        <div style={s.header}>
+        <div style={{ ...s.header, gap: isMobile ? '14px' : s.header.gap }}>
           <div style={{ flex: 1 }}>
             {isEditingName ? (
-              <div style={s.renameRow}>
+              <div style={{ ...s.renameRow, flexDirection: isMobile ? 'column' : s.renameRow.flexDirection, alignItems: isMobile ? 'stretch' : s.renameRow.alignItems }}>
                 <input
                   value={draftName}
                   onChange={(e) => setDraftName(e.target.value)}
-                  style={s.renameInput}
+                  style={{ ...s.renameInput, minWidth: isMobile ? undefined : s.renameInput.minWidth, width: isMobile ? '100%' : undefined }}
                   placeholder="Session name"
                   autoFocus
                 />
@@ -179,8 +181,8 @@ export default function SessionDetail() {
                 </button>
               </div>
             ) : (
-              <div style={s.titleRow}>
-                <h1 style={s.title}>{session.name || session.session_id}</h1>
+              <div style={{ ...s.titleRow, flexDirection: isMobile ? 'column' : s.titleRow.flexDirection, alignItems: isMobile ? 'flex-start' : s.titleRow.alignItems }}>
+                <h1 style={{ ...s.title, fontSize: isMobile ? '24px' : s.title.fontSize }}>{session.name || session.session_id}</h1>
                 <button
                   onClick={() => {
                     setIsEditingName(true)
@@ -215,12 +217,12 @@ export default function SessionDetail() {
               </span>
             </div>
           </div>
-          <div style={s.headerActions}>
+          <div style={{ ...s.headerActions, width: isMobile ? '100%' : undefined }}>
             {/* PC-12: Move to campaign button */}
             {session.status !== 'running' && (
               <button
                 onClick={() => setShowMoveModal(true)}
-                style={s.moveBtn}
+                style={{ ...s.moveBtn, width: isMobile ? '100%' : undefined }}
                 title="Move to Campaign"
               >
                 {session.campaign_id ? 'Change Campaign' : 'Move to Campaign'}
@@ -335,12 +337,15 @@ export default function SessionDetail() {
         })()}
 
         {/* Tab navigation */}
-        <div style={s.tabBar}>
+        <div style={{ ...s.tabBar, marginBottom: isMobile ? '18px' : s.tabBar.marginBottom }}>
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setTab(tab.key)}
-              style={activeTab === tab.key ? s.tabActive : s.tab}
+              style={{
+                ...(activeTab === tab.key ? s.tabActive : s.tab),
+                padding: isMobile ? '10px 12px' : (activeTab === tab.key ? s.tabActive.padding : s.tab.padding),
+              }}
             >
               {tab.label}
             </button>

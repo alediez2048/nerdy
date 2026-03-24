@@ -51,7 +51,7 @@ class TestFalVideoClient:
         assert client.normalize_duration(6) == 6
         assert client.normalize_duration(8) == 8
         assert client.normalize_duration(10) == 8
-        assert client.normalize_duration(3) == 8
+        assert client.normalize_duration(3) == 4
 
     @patch.dict("os.environ", {"FAL_KEY": "test-key"})
     def test_normalize_aspect_ratio(self) -> None:

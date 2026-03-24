@@ -81,7 +81,7 @@ def _make_jwt(user_id: str = "1", email: str = "jad@nerdy.com", name: str = "Jad
 
 def test_dev_mode_fallback_returns_mock_user(client_dev_mode):
     """When GOOGLE_CLIENT_ID is empty, mock auth returns test-user."""
-    resp = client_dev_mode.get("/auth/me")
+    resp = client_dev_mode.get("/api/auth/me")
     assert resp.status_code == 200
     data = resp.json()
     assert data["user_id"] == "test-user"
@@ -90,7 +90,7 @@ def test_dev_mode_fallback_returns_mock_user(client_dev_mode):
 
 def test_dev_mode_accepts_x_user_id_header(client_dev_mode):
     """DEV_MODE respects X-User-Id header."""
-    resp = client_dev_mode.get("/auth/me", headers={"X-User-Id": "custom-dev-user"})
+    resp = client_dev_mode.get("/api/auth/me", headers={"X-User-Id": "custom-dev-user"})
     assert resp.status_code == 200
     assert resp.json()["user_id"] == "custom-dev-user"
 
@@ -100,20 +100,20 @@ def test_dev_mode_accepts_x_user_id_header(client_dev_mode):
 
 def test_prod_mode_missing_auth_returns_401(client_prod_mode):
     """Without Authorization header, return 401."""
-    resp = client_prod_mode.get("/auth/me")
+    resp = client_prod_mode.get("/api/auth/me")
     assert resp.status_code == 401
 
 
 def test_prod_mode_invalid_scheme_returns_401(client_prod_mode):
     """Non-Bearer scheme returns 401."""
-    resp = client_prod_mode.get("/auth/me", headers={"Authorization": "Basic abc123"})
+    resp = client_prod_mode.get("/api/auth/me", headers={"Authorization": "Basic abc123"})
     assert resp.status_code == 401
 
 
 def test_prod_mode_valid_jwt_returns_user(client_prod_mode):
     """Valid JWT returns user profile."""
     token = _make_jwt(secret="test-secret")
-    resp = client_prod_mode.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    resp = client_prod_mode.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["user_id"] == "1"
@@ -124,14 +124,14 @@ def test_prod_mode_valid_jwt_returns_user(client_prod_mode):
 def test_prod_mode_expired_jwt_returns_401(client_prod_mode):
     """Expired JWT returns 401."""
     token = _make_jwt(secret="test-secret", expired=True)
-    resp = client_prod_mode.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    resp = client_prod_mode.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 401
 
 
 def test_prod_mode_wrong_secret_returns_401(client_prod_mode):
     """JWT signed with wrong secret returns 401."""
     token = _make_jwt(secret="wrong-secret")
-    resp = client_prod_mode.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    resp = client_prod_mode.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 401
 
 

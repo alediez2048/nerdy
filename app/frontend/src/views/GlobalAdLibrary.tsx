@@ -1,6 +1,7 @@
 // Global Ad Library — standalone view (all sessions, all ads)
 import { useEffect, useState } from 'react'
 import { colors, radii, font } from '../design/tokens'
+import useMediaQuery from '../hooks/useMediaQuery'
 import { fetchGlobalDashboard } from '../api/dashboard'
 import Badge, { StatusBadge } from '../components/Badge'
 
@@ -37,6 +38,8 @@ function getVideoSrc(ad: Ad): string | null {
 }
 
 export default function GlobalAdLibrary() {
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isTablet = useMediaQuery('(max-width: 1024px)')
   const [ads, setAds] = useState<Ad[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -99,8 +102,8 @@ export default function GlobalAdLibrary() {
 
   return (
     <div style={s.page}>
-      <div style={s.inner}>
-        <h1 style={s.title}>Ad Library</h1>
+      <div style={{ ...s.inner, padding: isMobile ? '88px 16px 24px' : s.inner.padding }}>
+        <h1 style={{ ...s.title, fontSize: isMobile ? '24px' : s.title.fontSize }}>Ad Library</h1>
         <p style={s.subtitle}>
           All generated ads across every session. Click any card to expand details.
         </p>
@@ -142,12 +145,12 @@ export default function GlobalAdLibrary() {
               Archived ({archived.size})
             </button>
           </div>
-          <label style={s.sessionFilterWrap}>
+          <label style={{ ...s.sessionFilterWrap, width: isMobile ? '100%' : undefined }}>
             <span style={s.sessionFilterLabel}>Session</span>
             <select
               value={sessionFilter}
               onChange={(e) => setSessionFilter(e.target.value)}
-              style={s.sessionSelect}
+              style={{ ...s.sessionSelect, width: isMobile ? '100%' : undefined }}
             >
               <option value="">All sessions ({sessionOptions.length})</option>
               {sessionOptions.map((session) => (
@@ -161,7 +164,16 @@ export default function GlobalAdLibrary() {
         {filtered.length === 0 ? (
           <p style={{ color: colors.muted }}>No ads found</p>
         ) : (
-          <div style={s.grid}>
+          <div
+            style={{
+              ...s.grid,
+              gridTemplateColumns: isMobile
+                ? '1fr'
+                : isTablet
+                  ? 'repeat(2, 1fr)'
+                  : s.grid.gridTemplateColumns,
+            }}
+          >
             {filtered.map((ad) => (
               <div
                 key={ad.instance_id}
@@ -240,7 +252,7 @@ export default function GlobalAdLibrary() {
                     {Object.keys(ad.scores).length > 0 && (
                       <div style={{ marginTop: '10px' }}>
                         <div style={{ fontSize: '11px', color: colors.cyan, fontWeight: 600, marginBottom: '4px' }}>Copy Quality</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: '8px' }}>
                           {Object.entries(ad.scores).map(([dim, score]) => (
                             <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                               <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
@@ -255,7 +267,7 @@ export default function GlobalAdLibrary() {
                     {ad.adherence_scores && Object.values(ad.adherence_scores).some((v) => typeof v === 'number' && v > 0) && (
                       <div style={{ marginTop: '10px' }}>
                         <div style={{ fontSize: '11px', color: colors.mint, fontWeight: 600, marginBottom: '4px' }}>Brief Adherence</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: '8px' }}>
                           {Object.entries(ad.adherence_scores).map(([dim, score]) => (
                             <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                               <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
@@ -270,7 +282,7 @@ export default function GlobalAdLibrary() {
                     {ad.image_detail_scores && Object.values(ad.image_detail_scores).some((v) => typeof v === 'number' && v > 0) && (
                       <div style={{ marginTop: '10px' }}>
                         <div style={{ fontSize: '11px', color: colors.cyan, fontWeight: 600, marginBottom: '4px' }}>Image Quality</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: '8px' }}>
                           {Object.entries(ad.image_detail_scores).map(([dim, score]) => (
                             <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                               <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>
@@ -285,7 +297,7 @@ export default function GlobalAdLibrary() {
                     {ad.video_detail_scores && Object.values(ad.video_detail_scores).some((v) => typeof v === 'number' && v > 0) && (
                       <div style={{ marginTop: '10px' }}>
                         <div style={{ fontSize: '11px', color: colors.cyan, fontWeight: 600, marginBottom: '4px' }}>Video Quality</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: '8px' }}>
                           {Object.entries(ad.video_detail_scores).map(([dim, score]) => (
                             <div key={dim} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                               <span style={{ color: colors.muted, fontSize: '11px' }}>{dim.replace(/_/g, ' ')}</span>

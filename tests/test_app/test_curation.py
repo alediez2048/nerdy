@@ -93,15 +93,15 @@ def client():
 
 def test_create_curated_set(client):
     sid = _seed_session()
-    resp = client.post(f"/sessions/{sid}/curated", json={"name": "Best Ads"})
+    resp = client.post(f"/api/sessions/{sid}/curated", json={"name": "Best Ads"})
     assert resp.status_code == 200
     assert resp.json()["name"] == "Best Ads"
 
 
 def test_create_curated_set_idempotent(client):
     sid = _seed_session()
-    client.post(f"/sessions/{sid}/curated", json={"name": "Set 1"})
-    resp = client.post(f"/sessions/{sid}/curated", json={"name": "Set 2"})
+    client.post(f"/api/sessions/{sid}/curated", json={"name": "Set 1"})
+    resp = client.post(f"/api/sessions/{sid}/curated", json={"name": "Set 2"})
     assert resp.json()["name"] == "Set 1"  # Returns existing
 
 
@@ -110,17 +110,17 @@ def test_create_curated_set_idempotent(client):
 
 def test_add_ad_to_curated_set(client):
     sid = _seed_session()
-    client.post(f"/sessions/{sid}/curated", json={})
-    resp = client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_001", "position": 1})
+    client.post(f"/api/sessions/{sid}/curated", json={})
+    resp = client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_001", "position": 1})
     assert resp.status_code == 201
     assert resp.json()["ad_id"] == "ad_001"
 
 
 def test_add_duplicate_ad_returns_already_exists(client):
     sid = _seed_session()
-    client.post(f"/sessions/{sid}/curated", json={})
-    client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_001"})
-    resp = client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_001"})
+    client.post(f"/api/sessions/{sid}/curated", json={})
+    client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_001"})
+    resp = client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_001"})
     assert resp.json()["status"] == "already_exists"
 
 
@@ -129,13 +129,13 @@ def test_add_duplicate_ad_returns_already_exists(client):
 
 def test_remove_ad_from_curated_set(client):
     sid = _seed_session()
-    client.post(f"/sessions/{sid}/curated", json={})
-    client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_001"})
-    resp = client.delete(f"/sessions/{sid}/curated/ads/ad_001")
+    client.post(f"/api/sessions/{sid}/curated", json={})
+    client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_001"})
+    resp = client.delete(f"/api/sessions/{sid}/curated/ads/ad_001")
     assert resp.status_code == 204
 
     # Verify removed
-    get_resp = client.get(f"/sessions/{sid}/curated")
+    get_resp = client.get(f"/api/sessions/{sid}/curated")
     assert len(get_resp.json()["ads"]) == 0
 
 
@@ -144,9 +144,9 @@ def test_remove_ad_from_curated_set(client):
 
 def test_annotate_ad(client):
     sid = _seed_session()
-    client.post(f"/sessions/{sid}/curated", json={})
-    client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_002"})
-    resp = client.patch(f"/sessions/{sid}/curated/ads/ad_002", json={
+    client.post(f"/api/sessions/{sid}/curated", json={})
+    client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_002"})
+    resp = client.patch(f"/api/sessions/{sid}/curated/ads/ad_002", json={
         "annotation": "Great hook, needs shorter CTA"
     })
     assert resp.json()["annotation"] == "Great hook, needs shorter CTA"
@@ -157,9 +157,9 @@ def test_annotate_ad(client):
 
 def test_edit_ad_with_diff_tracking(client):
     sid = _seed_session()
-    client.post(f"/sessions/{sid}/curated", json={})
-    client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_003"})
-    resp = client.patch(f"/sessions/{sid}/curated/ads/ad_003", json={
+    client.post(f"/api/sessions/{sid}/curated", json={})
+    client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_003"})
+    resp = client.patch(f"/api/sessions/{sid}/curated/ads/ad_003", json={
         "edited_copy": {
             "primary_text": {"original": "Old text", "edited": "New text"},
         }
@@ -174,15 +174,15 @@ def test_edit_ad_with_diff_tracking(client):
 
 def test_batch_reorder(client):
     sid = _seed_session()
-    client.post(f"/sessions/{sid}/curated", json={})
-    client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_a", "position": 1})
-    client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_b", "position": 2})
-    client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_c", "position": 3})
+    client.post(f"/api/sessions/{sid}/curated", json={})
+    client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_a", "position": 1})
+    client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_b", "position": 2})
+    client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_c", "position": 3})
 
-    resp = client.post(f"/sessions/{sid}/curated/reorder", json={"ad_ids": ["ad_c", "ad_a", "ad_b"]})
+    resp = client.post(f"/api/sessions/{sid}/curated/reorder", json={"ad_ids": ["ad_c", "ad_a", "ad_b"]})
     assert resp.json()["status"] == "reordered"
 
-    get_resp = client.get(f"/sessions/{sid}/curated")
+    get_resp = client.get(f"/api/sessions/{sid}/curated")
     ads = get_resp.json()["ads"]
     assert [a["ad_id"] for a in ads] == ["ad_c", "ad_a", "ad_b"]
 
@@ -192,7 +192,7 @@ def test_batch_reorder(client):
 
 def test_other_user_cannot_access_curated_set(client):
     _seed_session("sess_bob", user_id="bob")
-    resp = client.get("/sessions/sess_bob/curated")
+    resp = client.get("/api/sessions/sess_bob/curated")
     assert resp.status_code == 404
 
 
@@ -201,9 +201,9 @@ def test_other_user_cannot_access_curated_set(client):
 
 def test_export_zip(client):
     sid = _seed_session()
-    client.post(f"/sessions/{sid}/curated", json={})
-    client.post(f"/sessions/{sid}/curated/ads", json={"ad_id": "ad_zip", "position": 1})
-    client.patch(f"/sessions/{sid}/curated/ads/ad_zip", json={
+    client.post(f"/api/sessions/{sid}/curated", json={})
+    client.post(f"/api/sessions/{sid}/curated/ads", json={"ad_id": "ad_zip", "position": 1})
+    client.patch(f"/api/sessions/{sid}/curated/ads/ad_zip", json={
         "edited_copy": {
             "primary_text": {"original": "Old copy", "edited": "New exported copy"},
         }
@@ -232,7 +232,7 @@ def test_export_zip(client):
         }
 
         with patch("app.api.routes.curation._load_curated_ad_assets", return_value=asset_map):
-            resp = client.get(f"/sessions/{sid}/curated/export")
+            resp = client.get(f"/api/sessions/{sid}/curated/export")
     finally:
         import os
         os.unlink(image_path)

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { colors, radii, font } from '../design/tokens'
+import useMediaQuery from '../hooks/useMediaQuery'
 import { getCampaign, updateCampaign, getCampaignSessions, duplicateCampaign } from '../api/campaigns'
 import { StatusBadge } from '../components/Badge'
 import Badge from '../components/Badge'
@@ -16,6 +17,8 @@ const POLL_INTERVAL = 30_000
 export default function CampaignDetail() {
   const { campaignId } = useParams<{ campaignId: string }>()
   const navigate = useNavigate()
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isTablet = useMediaQuery('(max-width: 1024px)')
   const [campaign, setCampaign] = useState<CampaignDetailType | null>(null)
   const [sessions, setSessions] = useState<SessionSummary[]>([])
   const [total, setTotal] = useState(0)
@@ -158,7 +161,7 @@ export default function CampaignDetail() {
   if (error && !campaign) {
     return (
       <div style={s.pageBg}>
-        <div style={s.pageInner}>
+        <div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}>
           <p style={{ color: colors.red }}>{error}</p>
           <button onClick={() => navigate('/campaigns')} style={s.backLink}>
             ← Back to Campaigns
@@ -171,7 +174,7 @@ export default function CampaignDetail() {
   if (!campaign) {
     return (
       <div style={s.pageBg}>
-        <div style={s.pageInner}>
+        <div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}>
           <p style={{ color: colors.muted }}>Loading...</p>
         </div>
       </div>
@@ -182,7 +185,7 @@ export default function CampaignDetail() {
 
   return (
     <div style={s.pageBg}>
-      <div style={s.pageInner}>
+      <div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}>
         {/* PC-12: Archived banner */}
         {campaign.status === 'archived' && (
           <div style={s.archivedBanner}>
@@ -194,7 +197,7 @@ export default function CampaignDetail() {
         <div style={s.header}>
           <div style={{ flex: 1 }}>
             {isEditingName ? (
-              <div style={s.renameRow}>
+              <div style={{ ...s.renameRow, flexDirection: isMobile ? 'column' : s.renameRow.flexDirection, alignItems: isMobile ? 'stretch' : s.renameRow.alignItems }}>
                 <input
                   value={draftName}
                   onChange={(e) => setDraftName(e.target.value)}
@@ -202,7 +205,7 @@ export default function CampaignDetail() {
                     if (e.key === 'Enter') handleSaveName()
                     if (e.key === 'Escape') handleCancelName()
                   }}
-                  style={s.renameInput}
+                  style={{ ...s.renameInput, minWidth: isMobile ? undefined : s.renameInput.minWidth, width: isMobile ? '100%' : undefined }}
                   placeholder="Campaign name"
                   autoFocus
                 />
@@ -214,8 +217,8 @@ export default function CampaignDetail() {
                 </button>
               </div>
             ) : (
-              <div style={s.titleRow}>
-                <h1 style={s.title}>{campaign.name}</h1>
+              <div style={{ ...s.titleRow, flexDirection: isMobile ? 'column' : s.titleRow.flexDirection, alignItems: isMobile ? 'flex-start' : s.titleRow.alignItems }}>
+                <h1 style={{ ...s.title, fontSize: isMobile ? '24px' : s.title.fontSize }}>{campaign.name}</h1>
                 <button
                   onClick={() => {
                     setIsEditingName(true)
@@ -258,21 +261,21 @@ export default function CampaignDetail() {
         <div style={s.actionBar}>
           <button
             onClick={() => navigate(`/campaigns/${campaignId}/sessions/new`)}
-            style={s.newSessionBtn}
+            style={{ ...s.newSessionBtn, width: isMobile ? '100%' : undefined }}
           >
             + New Session
           </button>
           <button
             onClick={handleDuplicate}
             disabled={isDuplicating}
-            style={s.duplicateBtn}
+            style={{ ...s.duplicateBtn, width: isMobile ? '100%' : undefined }}
           >
             {isDuplicating ? 'Duplicating...' : 'Duplicate'}
           </button>
           <button
             onClick={handleToggleArchive}
             disabled={isTogglingArchive}
-            style={s.archiveBtn}
+            style={{ ...s.archiveBtn, width: isMobile ? '100%' : undefined }}
           >
             {isTogglingArchive
               ? 'Updating...'
@@ -398,7 +401,16 @@ export default function CampaignDetail() {
             <p style={s.count}>
               Showing {sessions.length} of {total} sessions
             </p>
-            <div style={s.grid}>
+            <div
+              style={{
+                ...s.grid,
+                gridTemplateColumns: isMobile
+                  ? '1fr'
+                  : isTablet
+                    ? 'repeat(2, minmax(0, 1fr))'
+                    : s.grid.gridTemplateColumns,
+              }}
+            >
               {sessions.map((session) => (
                 <SessionCard key={session.session_id} session={session} />
               ))}

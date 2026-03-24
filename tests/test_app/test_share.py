@@ -106,7 +106,7 @@ def client_alice():
 
 def test_create_share_returns_url(client_alice):
     _seed_session()
-    resp = client_alice.post("/sessions/sess_share/share")
+    resp = client_alice.post("/api/sessions/sess_share/share")
     assert resp.status_code == 200
     data = resp.json()
     assert "share_url" in data
@@ -117,14 +117,14 @@ def test_create_share_returns_url(client_alice):
 
 def test_create_share_idempotent(client_alice):
     _seed_session()
-    resp1 = client_alice.post("/sessions/sess_share/share")
-    resp2 = client_alice.post("/sessions/sess_share/share")
+    resp1 = client_alice.post("/api/sessions/sess_share/share")
+    resp2 = client_alice.post("/api/sessions/sess_share/share")
     assert resp1.json()["token"] == resp2.json()["token"]
 
 
 def test_other_user_cannot_share(client_alice):
     _seed_session(user_id="bob")
-    resp = client_alice.post("/sessions/sess_share/share")
+    resp = client_alice.post("/api/sessions/sess_share/share")
     assert resp.status_code == 404
 
 
@@ -133,11 +133,11 @@ def test_other_user_cannot_share(client_alice):
 
 def test_shared_link_returns_session_data(client_alice):
     _seed_session()
-    resp = client_alice.post("/sessions/sess_share/share")
+    resp = client_alice.post("/api/sessions/sess_share/share")
     token = resp.json()["token"]
 
     # Access shared endpoint (no auth needed)
-    shared_resp = client_alice.get(f"/shared/{token}")
+    shared_resp = client_alice.get(f"/api/shared/{token}")
     assert shared_resp.status_code == 200
     data = shared_resp.json()
     assert data["session_id"] == "sess_share"
@@ -145,7 +145,7 @@ def test_shared_link_returns_session_data(client_alice):
 
 
 def test_invalid_token_returns_404(client_alice):
-    resp = client_alice.get("/shared/totally_fake_token")
+    resp = client_alice.get("/api/shared/totally_fake_token")
     assert resp.status_code == 404
 
 
@@ -154,14 +154,14 @@ def test_invalid_token_returns_404(client_alice):
 
 def test_revoked_token_returns_404(client_alice):
     _seed_session()
-    resp = client_alice.post("/sessions/sess_share/share")
+    resp = client_alice.post("/api/sessions/sess_share/share")
     token = resp.json()["token"]
 
     # Revoke
-    client_alice.delete("/sessions/sess_share/share")
+    client_alice.delete("/api/sessions/sess_share/share")
 
     # Now accessing should fail
-    shared_resp = client_alice.get(f"/shared/{token}")
+    shared_resp = client_alice.get(f"/api/shared/{token}")
     assert shared_resp.status_code == 404
 
 
@@ -184,5 +184,5 @@ def test_expired_token_returns_404(client_alice):
     db.commit()
     db.close()
 
-    resp = client_alice.get("/shared/expired_token_123")
+    resp = client_alice.get("/api/shared/expired_token_123")
     assert resp.status_code == 404

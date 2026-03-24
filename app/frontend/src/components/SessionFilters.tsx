@@ -1,5 +1,6 @@
 // Session list filter bar
 import { colors, radii, font } from '../design/tokens'
+import useMediaQuery from '../hooks/useMediaQuery'
 
 export interface Filters {
   session_type: string
@@ -21,6 +22,7 @@ const FILTER_OPTIONS: { key: keyof Filters; label: string; options: string[] }[]
 ]
 
 export default function SessionFilters({ filters, onChange }: Props) {
+  const isMobile = useMediaQuery('(max-width: 767px)')
   const hasFilters = filters.session_type || filters.audience || filters.campaign_goal || filters.status
   const statusOptions = ['', 'pending', 'running', 'completed', 'failed']
 
@@ -67,12 +69,12 @@ export default function SessionFilters({ filters, onChange }: Props) {
 
       <div style={s.controlsRow}>
         {FILTER_OPTIONS.filter(({ key }) => key !== 'status' && key !== 'session_type').map(({ key, label, options }) => (
-          <div key={key} style={s.group}>
+          <div key={key} style={{ ...s.group, width: isMobile ? '100%' : undefined }}>
             <label style={s.label}>{label}</label>
             <select
               value={filters[key]}
               onChange={(e) => onChange({ ...filters, [key]: e.target.value })}
-              style={s.select}
+              style={{ ...s.select, minWidth: isMobile ? undefined : s.select.minWidth, width: isMobile ? '100%' : undefined }}
             >
               <option value="">All</option>
               {options.filter(Boolean).map((opt) => (

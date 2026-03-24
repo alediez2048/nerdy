@@ -341,7 +341,12 @@ class TestVideoPipelineCopyGeneration:
             "cta_button": "Learn More",
         }
         mock_generate_ad.return_value = fake_ad
-        mock_build_video_spec.return_value = MagicMock()
+        mock_build_video_spec.return_value = MagicMock(
+            scene="Scene",
+            duration=8,
+            aspect_ratio="9:16",
+            spec_extraction_tokens=0,
+        )
         mock_should_skip.return_value = False
         mock_generate_video_variants.return_value = []
         mock_select_best_video.return_value = None
@@ -418,7 +423,12 @@ class TestVideoPipelineCopyGeneration:
             "cta_button": "Learn More",
         }
         mock_generate_ad.return_value = fake_ad
-        mock_build_video_spec.return_value = MagicMock()
+        mock_build_video_spec.return_value = MagicMock(
+            scene="Scene",
+            duration=8,
+            aspect_ratio="9:16",
+            spec_extraction_tokens=0,
+        )
         mock_should_skip.return_value = False
         variant = VideoVariant(
             ad_id=fake_ad.ad_id,

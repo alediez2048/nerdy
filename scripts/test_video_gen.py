@@ -47,7 +47,7 @@ def step(name: str):
                 print(f"  FAIL ({elapsed:.1f}s)")
                 print(f"  Error type: {type(e).__name__}")
                 print(f"  Error: {e}")
-                print(f"  Traceback:")
+                print("  Traceback:")
                 traceback.print_exc()
                 return None
         return wrapper
@@ -153,13 +153,12 @@ def build_spec(raw_brief: dict, session_config: dict, ad_copy: dict):
 
 @step("6. Call Fal API (video generation)")
 def call_fal(client, spec, prompt: str, output_path: str):
-    from generate_video.video_spec import build_kling_prompt
     print(f"  Model: {client.model}")
     print(f"  Duration: {spec.duration}s (formatted: {client._format_duration(client.normalize_duration(spec.duration))})")
     print(f"  Aspect ratio: {spec.aspect_ratio} (normalized: {client.normalize_aspect_ratio(spec.aspect_ratio)})")
     print(f"  Output path: {output_path}")
-    print(f"  Calling fal_client.subscribe()...")
-    print(f"  (This may take 2-5 minutes depending on model)")
+    print("  Calling fal_client.subscribe()...")
+    print("  (This may take 2-5 minutes depending on model)")
 
     t0 = time.time()
     result_path = client.generate_video(
