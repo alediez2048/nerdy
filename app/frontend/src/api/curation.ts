@@ -1,4 +1,4 @@
-// Ad-Ops-Autopilot — Curation API client
+// Curation API client
 
 import { getAuthTokenSync } from './auth'
 

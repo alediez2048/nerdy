@@ -136,7 +136,7 @@ export default function SessionList() {
                   <p style={s.howText}>
                     Each ad is generated using the Reference-Decompose-Recombine approach. Structural atoms (hook type,
                     body pattern, CTA style) are selected from the competitive pattern database and recombined with
-                    the Varsity Tutors brand voice. Each ad gets a deterministic seed for reproducibility.
+                    your brand voice. Each ad gets a deterministic seed for reproducibility.
                   </p>
                 </div>
               </div>

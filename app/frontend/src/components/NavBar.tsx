@@ -1,4 +1,4 @@
-// PC-10: Persistent navigation bar + Clerk auth
+// Persistent navigation bar + Clerk auth
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { colors, font } from '../design/tokens'
@@ -62,7 +62,7 @@ export default function NavBar() {
             style={s.logo}
             aria-label="Go to Campaigns"
           >
-            <img src="/nerdy-logo.png" alt="Nerdy" style={s.logoImg} />
+            <span style={{ color: colors.cyan, fontSize: '20px', fontWeight: 700, letterSpacing: '-0.5px' }}>AdEngine</span>
           </a>
         </div>
         {!isMobile && (
@@ -163,9 +163,7 @@ const s: Record<string, React.CSSProperties> = {
     textDecoration: 'none',
   },
   logoImg: {
-    width: '92px',
-    height: 'auto',
-    display: 'block',
+    display: 'none',
   },
   center: {
     display: 'flex',
@@ -241,7 +239,7 @@ const s: Record<string, React.CSSProperties> = {
     left: 0,
     right: 0,
     zIndex: 999,
-    background: 'rgba(32, 35, 68, 0.94)',
+    background: 'rgba(26, 26, 46, 0.94)',
     borderBottom: `1px solid ${colors.muted}20`,
     backdropFilter: 'blur(12px)',
   },

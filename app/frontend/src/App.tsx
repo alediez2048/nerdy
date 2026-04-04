@@ -1,5 +1,4 @@
-// Ad-Ops-Autopilot — App router
-// PC-10: Navigation update — campaigns as home, persistent NavBar
+// App router
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut, SignIn } from '@clerk/clerk-react'
 import { colors, font } from './design/tokens'
@@ -28,10 +27,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       <SignedOut>
         <div style={authStyles.page}>
           <div style={authStyles.card}>
-            <img src="/nerdy-logo.png" alt="Nerdy" style={authStyles.logo} />
+            <h1 style={{ color: '#e2a517', fontSize: '32px', fontWeight: 700, margin: '0 0 8px', letterSpacing: '-0.5px' }}>AdEngine</h1>
             <p style={authStyles.tagline}>
               Generate, evaluate, and curate high-performing<br />
-              Facebook & Instagram ads — powered by AI.
+              social media ads — powered by AI.
             </p>
             <div style={authStyles.signInWrap}>
               <SignIn
@@ -70,7 +69,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 const authStyles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
-    background: `linear-gradient(135deg, ${colors.ink} 0%, #0d1b2a 50%, ${colors.ink} 100%)`,
+    background: `linear-gradient(135deg, ${colors.ink} 0%, #0f1629 50%, ${colors.ink} 100%)`,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

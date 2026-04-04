@@ -1,15 +1,15 @@
-// Ad-Ops-Autopilot — Design system tokens (PRD Section 4.7.10)
+// Design system tokens
 
 export const colors = {
-  ink: '#202344',
-  surface: '#161c2c',
-  cyan: '#17e2ea',
-  mint: '#35dd8b',
-  lightPurple: '#a488f7',
-  yellow: '#ffcb19',
-  red: '#ff4e00',
+  ink: '#1a1a2e',
+  surface: '#16213e',
+  cyan: '#e2a517',
+  mint: '#f0c040',
+  lightPurple: '#c4956a',
+  yellow: '#f0c040',
+  red: '#e74c3c',
   white: '#ffffff',
-  muted: '#8b92a5',
+  muted: '#94a3b8',
 } as const
 
 export const gradients = {

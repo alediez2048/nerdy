@@ -1,4 +1,4 @@
-// Ad-Ops-Autopilot — Campaign API client
+// Campaign API client
 
 import type {
   CampaignCreate,

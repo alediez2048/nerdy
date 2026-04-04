@@ -794,7 +794,7 @@ function ScoringMethodologyTab() {
             { name: 'Clarity', low: 'Confusing message, unclear value', mid: 'Understandable but generic', high: 'Instantly clear, compelling' },
             { name: 'Value Proposition', low: 'No benefit stated', mid: 'Benefit mentioned but weak', high: 'Specific, differentiated benefit' },
             { name: 'Call to Action', low: 'No CTA or wrong action', mid: 'Generic CTA (Learn More)', high: 'Urgent, specific, conversion-driving' },
-            { name: 'Brand Voice', low: 'Wrong tone for Varsity Tutors', mid: 'Generic education tone', high: 'Unmistakably Varsity Tutors voice' },
+            { name: 'Brand Voice', low: 'Wrong tone for brand', mid: 'Generic tone', high: 'Unmistakably on-brand voice' },
             { name: 'Emotional Resonance', low: 'Flat, no emotional hook', mid: 'Mild engagement', high: 'Deeply connects with audience pain/aspiration' },
           ]}
         />
@@ -818,7 +818,7 @@ function ScoringMethodologyTab() {
           description="How good is the image as a social ad creative? Evaluated strictly — AI-generated images are held to high standards. Average scores of 5-7 are expected."
           dimensions={[
             { name: 'Visual Clarity', low: 'Cluttered, confusing subject', mid: 'Subject identifiable but generic', high: 'Striking composition, instant focal point' },
-            { name: 'Brand Consistency', low: 'Could be any brand', mid: 'Generic education imagery', high: 'Unmistakably Varsity Tutors aesthetic' },
+            { name: 'Brand Consistency', low: 'Could be any brand', mid: 'Generic imagery', high: 'Unmistakably on-brand aesthetic' },
             { name: 'Emotional Impact', low: 'Flat stock-photo energy', mid: 'Mildly pleasant but forgettable', high: 'Emotionally compelling, stops the scroll' },
             { name: 'Copy-Image Coherence', low: 'Image unrelated to copy', mid: 'Loosely related theme', high: 'Image and copy tell the exact same story' },
             { name: 'Platform Fit', low: 'Bad on mobile, tiny details', mid: 'Acceptable but not scroll-stopping', high: 'Designed for thumb-zone, high contrast' },
