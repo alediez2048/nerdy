@@ -86,7 +86,7 @@ export default function CompetitiveIntel() {
   )
 
   const handleCompetitorClick = (name: string) => {
-    // Convert display name to filename key (e.g. "Chegg" -> "chegg", "Varsity Tutors" -> "varsity_tutors")
+    // Convert display name to filename key (e.g. "Chegg" -> "chegg", "My Brand" -> "my_brand")
     const key = name.toLowerCase().replace(/\s+/g, '_')
     if (selectedCompetitor === key) {
       setSelectedCompetitor(null)

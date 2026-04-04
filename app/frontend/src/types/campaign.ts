@@ -1,4 +1,4 @@
-// Ad-Ops-Autopilot — Campaign types (matches backend schemas from PC-04, PC-11)
+// Campaign types
 
 export interface CampaignCreate {
   name: string

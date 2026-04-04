@@ -1,4 +1,4 @@
-// Ad-Ops-Autopilot — Dashboard API client
+// Dashboard API client
 
 import { getAuthTokenSync } from './auth'
 

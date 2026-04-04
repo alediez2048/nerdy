@@ -1,4 +1,4 @@
-// Ad-Ops-Autopilot — SSE connection helper
+// SSE connection helper
 import { getToken } from './auth'
 
 export function createProgressStream(sessionId: string): EventSource {

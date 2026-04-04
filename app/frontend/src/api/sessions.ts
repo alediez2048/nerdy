@@ -1,4 +1,4 @@
-// Ad-Ops-Autopilot — Session API client
+// Session API client
 
 import type {
   SessionCreate,

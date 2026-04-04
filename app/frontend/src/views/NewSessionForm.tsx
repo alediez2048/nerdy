@@ -163,7 +163,7 @@ export default function NewSessionForm() {
     <div style={s.page}>
       <div style={s.card}>
         <h1 style={s.title}>New Session</h1>
-        <p style={s.subtitle}>Configure a pipeline run for Varsity Tutors ad generation</p>
+        <p style={s.subtitle}>Configure a pipeline run for ad generation</p>
 
         {campaignId && campaignName && (
           <div style={s.campaignBanner}>

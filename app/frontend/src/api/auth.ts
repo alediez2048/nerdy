@@ -1,4 +1,4 @@
-// Ad-Ops-Autopilot — Auth (Clerk + legacy fallback)
+// Auth (Clerk + legacy fallback)
 
 // Clerk token getter — registered from App.tsx via useAuth()
 let _clerkGetToken: (() => Promise<string | null>) | null = null

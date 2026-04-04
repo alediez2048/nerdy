@@ -188,7 +188,7 @@ export default function CompetitiveIntelPage() {
               <p style={s.explainerText}>
                 When a session runs, the brief expansion step calls <code style={s.code}>get_landscape_context()</code> to
                 inject competitive insights into the prompt — what hooks competitors favor, what emotional angles they play,
-                and how Varsity Tutors can differentiate.
+                and how your brand can differentiate.
               </p>
             </div>
           </div>
@@ -199,7 +199,7 @@ export default function CompetitiveIntelPage() {
               <p style={s.explainerText}>
                 The ad generator calls <code style={s.code}>query_patterns()</code> to pull proven structural atoms from the
                 competitive pattern database. Instead of inventing ad structures, it recombines hook types, body patterns,
-                and CTA styles that work in the SAT prep market — fitted to the Varsity Tutors brand voice.
+                and CTA styles that work in the SAT prep market — fitted to your brand voice.
               </p>
             </div>
           </div>

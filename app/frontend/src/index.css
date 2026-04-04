@@ -1,4 +1,4 @@
-/* Ad-Ops-Autopilot — Global styles */
+/* Global styles */
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -6,7 +6,7 @@
 body {
   margin: 0;
   font-family: 'Poppins', sans-serif;
-  background: #202344;
+  background: #1a1a2e;
   color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -29,7 +29,7 @@ body.light-mode video {
 }
 
 a {
-  color: #17e2ea;
+  color: #e2a517;
   text-decoration: none;
 }
 

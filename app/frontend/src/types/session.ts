@@ -1,4 +1,4 @@
-// Ad-Ops-Autopilot — Session types (matches backend schemas from PA-04, PC-00)
+// Session types
 
 export type SessionType = 'image' | 'video'
 export type Audience = 'parents' | 'students'
