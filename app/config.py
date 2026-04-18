@@ -10,11 +10,16 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/nerdy"
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # Auth — leave GOOGLE_CLIENT_ID empty for DEV_MODE (mock auth)
+    # Auth — legacy (kept for backward compat)
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     SECRET_KEY: str = "dev-secret-change-in-production"
     JWT_EXPIRY_HOURS: int = 24
+
+    # Auth — Clerk JWT validation (PG-01)
+    CLERK_JWKS_URL: str = ""
+    CLERK_ISSUER: str = ""
+    DEV_MODE: bool = False
 
 
 settings = Settings()
