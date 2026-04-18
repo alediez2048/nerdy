@@ -62,6 +62,7 @@ class CampaignSummary(BaseModel):
     description: str | None
     audience: str | None
     campaign_goal: str | None
+    user_id: str | None = None
     status: str
     created_at: datetime
     session_count: int
@@ -79,6 +80,7 @@ class CampaignDetail(BaseModel):
     description: str | None
     audience: str | None
     campaign_goal: str | None
+    user_id: str | None = None
     default_config: dict[str, Any]
     status: str
     created_at: datetime

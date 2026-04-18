@@ -5,7 +5,7 @@ import type {
   SessionDetail,
   SessionListResponse,
 } from '../types/session'
-import { getAuthTokenSync } from './auth'
+import { clearToken, getAuthTokenSync } from './auth'
 
 const BASE = '/api/sessions'
 
@@ -20,6 +20,10 @@ function getHeaders(): HeadersInit {
 
 async function handleResponse<T>(resp: Response): Promise<T> {
   if (!resp.ok) {
+    if (resp.status === 401) {
+      clearToken()
+      throw new Error('Session expired — please sign in again')
+    }
     const body = await resp.json().catch(() => ({ detail: resp.statusText }))
     throw new Error(body.detail || `HTTP ${resp.status}`)
   }

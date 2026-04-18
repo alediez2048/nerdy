@@ -32,6 +32,7 @@ export interface CampaignSummary {
   description: string | null
   audience: string | null
   campaign_goal: string | null
+  user_id?: string
   status: string
   created_at: string
   session_count: number
@@ -47,6 +48,7 @@ export interface CampaignDetail {
   description: string | null
   audience: string | null
   campaign_goal: string | null
+  user_id?: string
   default_config: Record<string, unknown>
   status: string
   created_at: string
