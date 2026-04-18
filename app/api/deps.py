@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 MOCK_USER_ID = "test-user"
 
+# Legacy constant — kept for backward compat (used by progress.py token param auth)
+JWT_ALGORITHM = "HS256"
+
 
 def get_current_user(
     authorization: str | None = Header(default=None),
@@ -21,6 +24,10 @@ def get_current_user(
     if settings.DEV_MODE:
         user_id = x_user_id or MOCK_USER_ID
         return {"user_id": user_id, "email": f"{user_id}@nerdy.com", "name": user_id}
+
+    # Warn if issuer is not configured in production
+    if not settings.CLERK_ISSUER:
+        logger.warning("CLERK_ISSUER not set — JWT issuer validation is disabled")
 
     # Production: require Bearer token
     if not authorization:
@@ -54,6 +61,7 @@ def get_current_user(
             public_key,
             algorithms=["RS256"],
             issuer=settings.CLERK_ISSUER or None,
+            # Clerk does not set aud in session tokens by default
             options={"verify_aud": False},
         )
     except JWTError as e:
