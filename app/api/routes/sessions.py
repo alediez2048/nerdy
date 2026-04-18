@@ -88,12 +88,13 @@ def _get_session_ad_preview(session_row: SessionModel) -> dict | None:
 
 
 @router.get("/{session_id}/ledger")
-def get_session_ledger(session_id: str, db: Annotated[Session, Depends(get_db)]) -> Any:
-    """Return raw ledger events for debugging."""
-    from app.models.session import Session as SessionModel
-    row = db.query(SessionModel).filter(SessionModel.session_id == session_id).first()
-    if not row:
-        raise HTTPException(status_code=404, detail="Session not found")
+def get_session_ledger(
+    session_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_current_user)],
+) -> Any:
+    """Return raw ledger events for debugging (auth + ownership required)."""
+    row = _get_user_session(db, session_id, user["user_id"])
     lp = row.ledger_path
     if not lp or not Path(lp).exists():
         return {"events": [], "error": f"ledger not found: {lp}"}

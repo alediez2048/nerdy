@@ -95,6 +95,11 @@ async def stream_progress(
     if not row:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    # Verify ownership: resolve effective user from header or query param
+    effective_user = _user if _user else (_auth_from_token_param(token) if token else None)
+    if effective_user and row.user_id != effective_user.get("user_id"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     # Parse Last-Event-ID from header
     header_last_id = request.headers.get("last-event-id")
     effective_last_id = int(header_last_id) if header_last_id else last_event_id
