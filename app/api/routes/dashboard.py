@@ -250,8 +250,11 @@ global_dashboard_router = APIRouter()
 
 
 @global_dashboard_router.get("/global")
-def get_global_dashboard(timeframe: str = "all") -> dict[str, Any]:
-    """Full dashboard data from the global ledger — no auth required."""
+def get_global_dashboard(
+    user: Annotated[dict, Depends(get_current_user)],
+    timeframe: str = "all",
+) -> dict[str, Any]:
+    """Full dashboard data scoped to the authenticated user's sessions."""
     ledger = Path(DEFAULT_LEDGER)
     if not ledger.exists():
         return {}
@@ -272,6 +275,8 @@ def get_global_dashboard(timeframe: str = "all") -> dict[str, Any]:
                 SessionModel.session_id,
                 SessionModel.name,
                 SessionModel.ledger_path,
+            ).filter(
+                SessionModel.user_id == user["user_id"],
             ).all()
             session_labels = {
                 session_id: (name or session_id)
@@ -320,8 +325,10 @@ competitive_router = APIRouter()
 
 
 @competitive_router.get("/summary")
-def get_competitive_summary() -> dict[str, Any]:
-    """Competitive intelligence summary from pattern database."""
+def get_competitive_summary(
+    user: Annotated[dict, Depends(get_current_user)],
+) -> dict[str, Any]:
+    """Competitive intelligence summary from pattern database (auth required)."""
     result: dict[str, Any] = {}
     try:
         from output.export_dashboard import _build_competitive_intel
