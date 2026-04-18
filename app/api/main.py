@@ -1,11 +1,14 @@
 # Ad-Ops-Autopilot — FastAPI application
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.deps import get_current_user
 from app.api.routes import auth, campaigns, competitive, curation, dashboard, progress, sessions, share
 from app.db import init_db
 
@@ -22,7 +25,13 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "http://localhost:8000",
         "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
         "https://nerdy-three.vercel.app",
         "https://*.vercel.app",
         "https://nerdy-production-290d.up.railway.app",
@@ -52,12 +61,36 @@ app.include_router(dashboard.competitive_router, prefix="/api/competitive", tags
 app.include_router(competitive.router)
 app.include_router(dashboard.global_dashboard_router, prefix="/api/dashboard", tags=["global-dashboard"])
 
-# Serve generated images as static files
+# Auth-gated media serving (PG-03) — routes take precedence over mounts
 _images_dir = Path("output/images")
 _images_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/api/images", StaticFiles(directory=str(_images_dir)), name="images")
-
-# Serve generated videos as static files (PC-03)
 _videos_dir = Path("output/videos")
 _videos_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/api/videos", StaticFiles(directory=str(_videos_dir)), name="videos")
+
+
+@app.get("/api/images/{filename:path}")
+def serve_image(
+    filename: str,
+    user: Annotated[dict, Depends(get_current_user)],
+):
+    """Serve generated images — requires authentication."""
+    safe_path = _images_dir / filename
+    if ".." in filename or not safe_path.resolve().is_relative_to(_images_dir.resolve()):
+        raise HTTPException(status_code=400, detail="Invalid path")
+    if not safe_path.exists():
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(safe_path)
+
+
+@app.get("/api/videos/{filename:path}")
+def serve_video(
+    filename: str,
+    user: Annotated[dict, Depends(get_current_user)],
+):
+    """Serve generated videos — requires authentication."""
+    safe_path = _videos_dir / filename
+    if ".." in filename or not safe_path.resolve().is_relative_to(_videos_dir.resolve()):
+        raise HTTPException(status_code=400, detail="Invalid path")
+    if not safe_path.exists():
+        raise HTTPException(status_code=404, detail="Video not found")
+    return FileResponse(safe_path)
