@@ -60,10 +60,29 @@ def _repair_campaign_schema() -> None:
             )
 
 
+def _repair_user_schema() -> None:
+    """Add clerk_id column to users table if missing (PG-05)."""
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    if "users" not in table_names:
+        return
+
+    user_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "clerk_id" in user_columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE users ADD COLUMN clerk_id VARCHAR(256)"))
+        connection.execute(
+            text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_clerk_id ON users (clerk_id)")
+        )
+
+
 def init_db() -> None:
     """Create tables on startup and repair lightweight schema drift."""
     Base.metadata.create_all(bind=engine)
     _repair_campaign_schema()
+    _repair_user_schema()
 
 
 def get_db():

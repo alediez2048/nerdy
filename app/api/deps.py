@@ -81,7 +81,34 @@ def get_current_user(
     )
     name = payload.get("name") or payload.get("full_name") or user_id
 
+    # Auto-create User record on first auth (PG-05)
+    _upsert_user(user_id, email, name)
+
     return {"user_id": user_id, "email": email, "name": name}
+
+
+def _upsert_user(clerk_id: str, email: str, name: str) -> None:
+    """Create or update User record for this Clerk ID."""
+    try:
+        from app.db import SessionLocal
+        from app.models.user import User
+
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.clerk_id == clerk_id).first()
+            if not user:
+                user = User(clerk_id=clerk_id, google_id=clerk_id, email=email, name=name)
+                db.add(user)
+            else:
+                if user.email != email:
+                    user.email = email
+                if user.name != name:
+                    user.name = name
+            db.commit()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.debug("User upsert failed (non-fatal): %s", e)
 
 
 def _extract_email_from_addresses(addresses) -> str | None:
