@@ -265,8 +265,6 @@ def get_global_dashboard(
             merge_ledger_events,
         )
         session_pairs: list[tuple[str, str]] = []
-        session_ledgers = sorted(Path("data/sessions").glob("*/ledger.jsonl"))
-        ledger_paths = [str(ledger), *[str(path) for path in session_ledgers]]
         session_labels: dict[str, str] = {}
         init_db()
         db = SessionLocal()
@@ -290,20 +288,23 @@ def get_global_dashboard(
         finally:
             db.close()
 
+        # Only read ledger files belonging to this user's sessions
+        ledger_paths = [lp for _, lp in session_pairs]
+
         merged_events = merge_ledger_events(ledger_paths, session_labels=session_labels)
         filtered_events = filter_events_by_timeframe(merged_events, timeframe)
         data = build_dashboard_data_from_events(filtered_events, "merged")
         data.setdefault("pipeline_summary", {})
 
-        # Global total: all DB sessions (manifest + ledger) + standalone global ledger
+        # User-scoped cost total: only this user's sessions
         try:
             from evaluate.cost_reporter import compute_global_total_cost_usd
 
             data["pipeline_summary"]["total_cost_usd"] = compute_global_total_cost_usd(
                 session_pairs,
-                global_ledger_path=str(ledger),
+                global_ledger_path=None,
             )
-            data["pipeline_summary"]["cost_source"] = "global_aggregate"
+            data["pipeline_summary"]["cost_source"] = "user_aggregate"
         except Exception:
             pass
 
