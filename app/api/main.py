@@ -1,14 +1,11 @@
 # Ad-Ops-Autopilot — FastAPI application
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
-from app.api.deps import get_current_user
 from app.api.routes import auth, campaigns, competitive, curation, dashboard, progress, sessions, share
 from app.db import init_db
 
@@ -61,7 +58,8 @@ app.include_router(dashboard.competitive_router, prefix="/api/competitive", tags
 app.include_router(competitive.router)
 app.include_router(dashboard.global_dashboard_router, prefix="/api/dashboard", tags=["global-dashboard"])
 
-# Auth-gated media serving (PG-03) — routes take precedence over mounts
+# Media serving — public reads (browsers can't attach Authorization to <img> tags).
+# Path-traversal guarded; URLs are non-enumerable hashed ad IDs.
 _images_dir = Path("output/images")
 _images_dir.mkdir(parents=True, exist_ok=True)
 _videos_dir = Path("output/videos")
@@ -69,11 +67,14 @@ _videos_dir.mkdir(parents=True, exist_ok=True)
 
 
 @app.get("/api/images/{filename:path}")
-def serve_image(
-    filename: str,
-    user: Annotated[dict, Depends(get_current_user)],
-):
-    """Serve generated images — requires authentication."""
+def serve_image(filename: str):
+    """Serve generated images.
+
+    Public route: browser <img src> tags cannot attach an Authorization header,
+    so requiring a Bearer token here breaks rendering. URLs contain hashed ad
+    IDs (not enumerable), and the metadata endpoints that expose these URLs
+    are still auth-gated.
+    """
     safe_path = _images_dir / filename
     if ".." in filename or not safe_path.resolve().is_relative_to(_images_dir.resolve()):
         raise HTTPException(status_code=400, detail="Invalid path")
@@ -83,11 +84,8 @@ def serve_image(
 
 
 @app.get("/api/videos/{filename:path}")
-def serve_video(
-    filename: str,
-    user: Annotated[dict, Depends(get_current_user)],
-):
-    """Serve generated videos — requires authentication."""
+def serve_video(filename: str):
+    """Serve generated videos. See serve_image for why this is public."""
     safe_path = _videos_dir / filename
     if ".." in filename or not safe_path.resolve().is_relative_to(_videos_dir.resolve()):
         raise HTTPException(status_code=400, detail="Invalid path")
