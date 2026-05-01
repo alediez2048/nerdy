@@ -7,6 +7,32 @@
 
 ---
 
+## 2026-05-01 — Production deploy recovery: PG-01..PG-07 (Clerk auth) shipped to main (✅)
+
+### Symptom
+- A test of `GET https://nerdy-production-290d.up.railway.app/api/sessions` with no Authorization header returned HTTP 200 with the full session list — confirming the production auth wall was open and any caller could read `test-user`'s data.
+
+### Root cause
+- PG-01 through PG-07 (9 commits, including the Clerk JWT validator in `app/api/deps.py`, Clerk JWKS module, FastAPI auth on ledger/progress/competitive endpoints, per-user dashboard scoping, `User.clerk_id` model + auto-upsert, `test-user → Clerk ID` migration script, and frontend auth context) were committed on `final-submission` but never merged to `main`.
+- Railway and Vercel both deploy from `main`, so production was running pre-PG code.
+- Earlier today the user rotated `GEMINI_API_KEY` and `FAL_KEY` on Railway, which triggered an auto-redeploy of the still-pre-PG `main`.
+
+### Fix
+1. Added missing Clerk env vars on the Railway `nerdy` service: `CLERK_JWKS_URL`, `CLERK_ISSUER`, `DEV_MODE=false`.
+2. Pushed local `final-submission` to `origin/final-submission` (which was 9 commits behind).
+3. Merged `final-submission` into `main` (`--no-ff` — matches the project's existing merge-commit pattern; merge SHA `08672a3`).
+4. Pushed `origin/main`, triggering Railway + Vercel auto-redeploys with PG code + Clerk vars in place.
+
+### Verification
+- TODO: Verification: Railway redeploy SUCCESS + `/api/sessions` HTTP 401 confirmed in separate verification step — see Task 4.
+
+### Follow-up
+- Rotate secrets that leaked into chat output during the Railway CLI inspection: `GEMINI_API_KEY`, `FAL_KEY`, Postgres password (`DATABASE_URL`), Redis password (`REDIS_URL`), `SECRET_KEY`.
+- Execute PG-08 multi-tenancy verification (primer at `docs/development/tickets/PG-08-primer.md`).
+- Confirm `VITE_CLERK_PUBLISHABLE_KEY` is set on Vercel (cannot verify from CLI without Vercel token).
+
+---
+
 ## Mobile auth centering fix (✅)
 
 ### Plain-English Summary
