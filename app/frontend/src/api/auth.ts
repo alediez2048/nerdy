@@ -50,9 +50,22 @@ export function saveToken(token: string) {
 }
 
 export function clearToken() {
+  _cachedClerkToken = null
   localStorage.removeItem('token')
 }
 
 export function isLoggedIn(): boolean {
   return !!getToken()
+}
+
+/** Get current user's Clerk ID synchronously (from cached token). */
+export function getCurrentUserId(): string | null {
+  const token = _cachedClerkToken
+  if (!token) return null
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.sub || null
+  } catch {
+    return null
+  }
 }

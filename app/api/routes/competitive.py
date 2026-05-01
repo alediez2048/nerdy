@@ -5,7 +5,11 @@ import re
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, File, Form, Query, UploadFile
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
+
+from app.api.deps import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +201,7 @@ def _classify_emotion(text: str) -> str:
 
 @router.post("/upload")
 async def upload_competitive_ads(
+    user: Annotated[dict, Depends(get_current_user)],
     file: UploadFile = File(...),
     competitor_name: str = Form(...),
 ) -> dict[str, Any]:
