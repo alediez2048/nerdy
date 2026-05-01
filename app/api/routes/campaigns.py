@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, legacy_owner_filter
 from app.api.schemas.campaign import (
     CampaignCreate,
     CampaignDetail,
@@ -32,7 +32,7 @@ def _get_user_campaign(db: Session, campaign_id: str, user_id: str) -> CampaignM
     """Get a campaign owned by user_id, or raise 404."""
     row = db.query(CampaignModel).filter(
         CampaignModel.campaign_id == campaign_id,
-        CampaignModel.user_id == user_id,
+        legacy_owner_filter(CampaignModel.user_id, user_id),
     ).first()
     if not row:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -163,7 +163,7 @@ def list_campaigns(
     limit: int = Query(default=50, ge=1, le=100),
 ) -> CampaignListResponse:
     """List user's campaigns with pagination and status filter."""
-    query = db.query(CampaignModel).filter(CampaignModel.user_id == user["user_id"])
+    query = db.query(CampaignModel).filter(legacy_owner_filter(CampaignModel.user_id, user["user_id"]))
 
     # Default to active only if no status filter
     if status is None:
@@ -376,7 +376,7 @@ def get_campaign_sessions(
     # Query sessions for this campaign
     query = db.query(SessionModel).filter(
         SessionModel.campaign_id == campaign_id,
-        SessionModel.user_id == user["user_id"],
+        legacy_owner_filter(SessionModel.user_id, user["user_id"]),
     )
 
     total = query.count()
