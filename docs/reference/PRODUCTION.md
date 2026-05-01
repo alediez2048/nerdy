@@ -1,6 +1,6 @@
 # Ad-Ops-Autopilot — Production Environment
 
-**Last updated:** March 22, 2026
+**Last updated:** May 1, 2026
 
 ---
 
@@ -96,6 +96,9 @@ DATABASE_URL    = postgresql://postgres:***@postgres.railway.internal:5432/railw
 REDIS_URL       = redis://default:***@redis.railway.internal:6379
 GEMINI_API_KEY  = AIza***
 FAL_KEY         = ***
+CLERK_JWKS_URL  = https://assured-ray-60.clerk.accounts.dev/.well-known/jwks.json
+CLERK_ISSUER    = https://assured-ray-60.clerk.accounts.dev
+DEV_MODE        = false
 SECRET_KEY      = nerdy-adops-jwt-secret-2026
 PORT            = 8000
 ```
@@ -160,13 +163,12 @@ PORT            = 8000
 2. Unauthenticated users see sign-in page (Clerk's `<SignIn>` component)
 3. After sign-in, Clerk issues a session token
 4. Token is cached in frontend and sent as `Authorization: Bearer` header
-5. **Backend does NOT verify Clerk tokens** — runs in dev mode (`GOOGLE_CLIENT_ID` empty), defaults all requests to `user_id: test-user`
-6. All users see the same data (shared `test-user` namespace)
+5. Backend validates the JWT via Clerk's JWKS endpoint (`CLERK_JWKS_URL`) using RS256, with issuer verification (`CLERK_ISSUER`)
+6. On first authenticated request from a new user, the backend auto-upserts a `User` row keyed by the Clerk `sub` claim (PG-05)
+7. Sessions, campaigns, ledgers, progress, images, videos, dashboard data, and competitive data are all scoped per-user (PG-02, PG-03, PG-04, PG-06)
+8. Local dev fallback: setting `DEV_MODE=true` skips JWT validation and accepts an `X-User-Id` header (defaults to mock `test-user`). Production sets `DEV_MODE=false`.
 
-**To enable per-user isolation (future):**
-- Add `CLERK_SECRET_KEY` to Railway
-- Update `app/api/deps.py` to verify Clerk JWT with RS256
-- Migrate existing sessions to a specific Clerk user ID
+**Implementation references:** `app/api/deps.py`, `app/api/clerk_jwks.py`, `app/models/user.py`, `scripts/migrate_user_data.py`.
 
 ---
 
