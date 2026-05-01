@@ -7,7 +7,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, legacy_owner_filter
 from app.api.schemas.session import (
     ProgressSummary,
     SessionCreate,
@@ -41,7 +41,7 @@ def _get_user_session(db: Session, session_id: str, user_id: str) -> SessionMode
     """Get a session owned by user_id, or raise 404."""
     row = db.query(SessionModel).filter(
         SessionModel.session_id == session_id,
-        SessionModel.user_id == user_id,
+        legacy_owner_filter(SessionModel.user_id, user_id),
     ).first()
     if not row:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -121,7 +121,7 @@ def create_session(
     if body.campaign_id:
         campaign = db.query(CampaignModel).filter(
             CampaignModel.campaign_id == body.campaign_id,
-            CampaignModel.user_id == user["user_id"],
+            legacy_owner_filter(CampaignModel.user_id, user["user_id"]),
         ).first()
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
@@ -189,7 +189,7 @@ def list_sessions(
 ) -> SessionListResponse:
     """List current user's sessions with optional filters and pagination."""
     init_db()
-    query = db.query(SessionModel).filter(SessionModel.user_id == user["user_id"])
+    query = db.query(SessionModel).filter(legacy_owner_filter(SessionModel.user_id, user["user_id"]))
 
     # Apply filters on JSON config fields
     if session_type:
@@ -308,7 +308,7 @@ def update_session(
             # Validate campaign exists and belongs to user
             campaign = db.query(CampaignModel).filter(
                 CampaignModel.campaign_id == body.campaign_id,
-                CampaignModel.user_id == user["user_id"],
+                legacy_owner_filter(CampaignModel.user_id, user["user_id"]),
             ).first()
             if not campaign:
                 raise HTTPException(status_code=404, detail="Campaign not found")

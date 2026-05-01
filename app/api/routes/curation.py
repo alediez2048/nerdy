@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, legacy_owner_filter
 from app.api.schemas.curation import (
     BatchReorder,
     CuratedAdAdd,
@@ -29,7 +29,7 @@ router = APIRouter()
 def _get_user_session(db: Session, session_id: str, user_id: str) -> SessionModel:
     row = db.query(SessionModel).filter(
         SessionModel.session_id == session_id,
-        SessionModel.user_id == user_id,
+        legacy_owner_filter(SessionModel.user_id, user_id),
     ).first()
     if not row:
         raise HTTPException(status_code=404, detail="Session not found")

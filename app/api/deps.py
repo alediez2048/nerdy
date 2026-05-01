@@ -14,6 +14,19 @@ MOCK_USER_ID = "test-user"
 # Legacy constant — kept for backward compat (used by progress.py token param auth)
 JWT_ALGORITHM = "HS256"
 
+# Legacy demo data: rows owned by this user_id are readable by every authenticated user.
+# Writes still go to the requester's own user_id — see PG-04/05/06.
+LEGACY_OWNER_ID = MOCK_USER_ID
+
+def legacy_owner_filter(user_id_column, current_user_id: str):
+    """Return a SQLAlchemy filter matching the current user OR the legacy demo user.
+
+    Use this in place of `<Model>.user_id == current_user_id` on READ queries
+    to expose pre-PG demo data to all authenticated users.
+    """
+    from sqlalchemy import or_
+    return or_(user_id_column == current_user_id, user_id_column == LEGACY_OWNER_ID)
+
 
 def get_current_user(
     authorization: str | None = Header(default=None),
