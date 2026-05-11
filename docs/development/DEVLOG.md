@@ -7,6 +7,129 @@
 
 ---
 
+## 2026-05-10 — PH-01: Ledger seam (LedgerWriter + LedgerReader) (✅)
+
+### Plain-English Summary
+- Every write to the append-only JSONL ledger now goes through a typed
+  `LedgerWriter` instead of 22 hand-built dicts scattered across the
+  codebase. `event_type` is derived from a dataclass class name, so
+  string-literal typos can't happen at the source.
+- Added a `LedgerReader` with `read_typed_events()` that materializes
+  each JSONL row into the correct `LedgerEvent` subclass. Existing
+  `read_events()` dict reader is preserved unchanged for callers that
+  don't want to opt in yet (PH-00 reader migration policy R3).
+- The on-disk JSONL format is preserved bit-for-bit for callers whose
+  pre-PH-01 dict ordering matched the canonical layout (`event_type`,
+  `ad_id`, …, `inputs`, `outputs`). A handful of callers used different
+  orderings (e.g. `scores` between outputs and tokens_consumed) — their
+  output is now reordered to the canonical layout. JSON semantics are
+  identical; only the in-memory dict key order changed.
+
+### Metadata
+- **Status:** Complete  |  **Date:** May 10, 2026
+- **Phase:** PH (architectural deepening)
+- **Ticket:** PH-01  |  **Branch:** `feature/PH-01-ledger-seam`
+- **GitNexus pre-change blast radius:** `log_event` — CRITICAL, 22 direct
+  callers, 7 affected processes, 9 affected modules
+
+### Key Achievements
+- 22/22 callers migrated. Production code has zero `log_event(` calls
+  outside the writer module.
+- 31 typed event dataclasses cover every event_type emitted by the
+  current pipeline (29 production, 3 test-only / legacy).
+- New `iterate/ledger_events.py`, `iterate/ledger_writer.py`,
+  `iterate/ledger_reader.py` modules.
+- Full pytest suite: **1028 / 1034 passing.** Identical to the
+  pre-PH-01 baseline — the 6 failures are 5 env-dependent Clerk auth
+  tests and 1 LLM-calibration inversion test, all confirmed
+  pre-existing. **Zero regressions.**
+- New `tests/test_pipeline/test_ledger_seam.py` with 12 tests covering
+  byte-identical serialization, registry coverage, unknown-type
+  fallback, extra-field flattening, and reader round-trip.
+- `python run_pipeline.py --dry-run --max-ads 3` exits 0 and produces
+  3 generated ads as expected.
+- `ruff check` clean across all migrated dirs.
+
+### Technical Implementation
+- **Interface shape (B / B1 / R3 per primer grilling):** typed event
+  dataclasses + single `writer.record(event)`; single flat base
+  `LedgerEvent` with the 8 historically required fields; reader exposes
+  both `read_events() -> dict` (unchanged) and
+  `read_typed_events() -> LedgerEvent`.
+- **Writer wraps `log_event`** instead of replacing it — preserves the
+  existing `fcntl` file locking, `_validate_event`, and cache
+  invalidation invariants. Smallest possible blast radius.
+- **`_LEGACY_KEY_ORDER`** in the serializer ensures the on-disk dict
+  has the conventional layout. Callers whose hand-built dicts already
+  matched this order produce byte-identical output (verified via
+  fixture diff with timestamps + UUIDs patched). Callers that used
+  alternate orderings (a few `*VariantWin`, `AspectRatioGenerated`,
+  `ImageBlocked`, `VideoBlocked` sites with `scores` between outputs
+  and tokens) now write the canonical order; JSON consumers see the
+  same fields and values.
+- **Test mock canonical target:** all tests that previously patched
+  `<module>.log_event` to suppress writes were redirected to
+  `iterate.ledger_writer.log_event`. Single grep-able target.
+- **Unknown-type read fallback:** when a ledger contains an event_type
+  not in `EVENT_TYPES`, the reader returns a base `LedgerEvent` with
+  the unknown type name preserved in `extra` for round-trip.
+
+### Files Changed
+- **Created:** `iterate/ledger_events.py`, `iterate/ledger_writer.py`,
+  `iterate/ledger_reader.py`, `tests/test_pipeline/test_ledger_seam.py`
+- **Modified (callers, 20 files):** `generate/brief_expansion.py`,
+  `generate/ad_generator.py`, `generate/model_router.py`,
+  `generate/aspect_ratio_batch.py`, `generate/ab_variants.py`,
+  `generate/ab_image_variants.py`, `iterate/batch_processor.py`,
+  `iterate/image_regen.py`, `iterate/brief_mutation.py`,
+  `evaluate/evaluator.py`, `evaluate/weight_recalibrator.py`,
+  `evaluate/performance_schema.py`, `evaluate/image_cost_tracker.py`,
+  `generate_video/orchestrator.py`, `generate_video/degradation.py`,
+  `app/workers/tasks/pipeline_task.py`,
+  `scripts/backfill_video_scores.py`, `scripts/backfill_image_scores.py`,
+  `scripts/backfill_adherence_scores.py`
+- **Modified (test mocks, 6 files):** `test_brief_expansion.py`,
+  `test_persona_expansion.py`, `test_ad_generator.py`,
+  `test_pb10_persona_flow.py`, `test_pb_e2e.py`, `test_pb14_integration.py`
+
+### Issues & Solutions
+- **Byte-identical caveat:** A few caller sites used non-canonical
+  dict key orderings (`scores` between outputs and tokens, etc.).
+  Decision: standardize to canonical order; document that the
+  on-disk JSON is semantically identical but byte-different for
+  these few event types. Acceptable per PH-00 architecture
+  decision #1 (preserve the *format*, not the historic random key
+  order each caller happened to use).
+- **Unknown event_type round-trip:** First reader pass dropped
+  `event_type` for fallback events, losing type identity.
+  Fixed: preserve unknown event_type values in `extra`.
+  Surfaced by a dedicated round-trip test.
+
+### Testing
+- 12 new ledger seam tests; all pass.
+- Full pytest baseline preserved: 1028/1034.
+- `--dry-run` pipeline smoke test green.
+
+### Architectural Decisions
+1. Writer wraps existing `log_event` rather than replacing it (PH-00
+   architecture decision #1: preserve append-only invariant).
+2. Single flat `LedgerEvent` base. `BatchCompleted` continues to use
+   synthetic `ad_id="batch_<n>"` to satisfy validation; redesigning
+   that contract is explicit out-of-scope for PH-01.
+3. Reader migration is opt-in (R3). `evaluate/cost_reporter.py` is
+   the natural first consumer in PH-02.
+4. `event_type` derived from dataclass class name — eliminates
+   string-literal typos at the source.
+
+### Next Steps
+- **PH-02 (CostAttributor)** can now consume `LedgerReader`'s typed
+  surface instead of parsing raw dicts.
+- **PH-04 (EvaluationPipeline)** also benefits from typed reads.
+- Optional follow-up: redesign `BatchCompleted` / `WeightsRecalibrated`
+  contracts to drop the synthetic `ad_id` hack (not in PH scope).
+
+---
+
 ## 2026-05-01 — Production deploy recovery: PG-01..PG-07 (Clerk auth) shipped to main (✅)
 
 ### Symptom

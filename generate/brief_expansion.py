@@ -19,7 +19,8 @@ from dotenv import load_dotenv
 
 from generate.competitive import get_landscape_context
 from generate.seeds import get_ad_seed, load_global_seed
-from iterate.ledger import log_event
+from iterate.ledger_events import BriefExpanded
+from iterate.ledger_writer import LedgerWriter
 from iterate.retry import retry_with_backoff
 
 load_dotenv()
@@ -414,19 +415,17 @@ def expand_brief(
     seed = get_ad_seed(global_seed, brief_id, 0)
     tokens_actual = tokens_used or (len(prompt) + len(response)) // 4
 
-    log_event(
-        led_path,
-        {
-            "event_type": "BriefExpanded",
-            "ad_id": None,
-            "brief_id": brief_id,
-            "cycle_number": 0,
-            "action": "brief-expansion",
-            "tokens_consumed": tokens_actual,
-            "model_used": "gemini-2.0-flash",
-            "seed": str(seed),
-            "inputs": {"brief": brief, "persona": resolved_persona},
-            "outputs": {
+    LedgerWriter(led_path).record(
+        BriefExpanded(
+            ad_id=None,
+            brief_id=brief_id,
+            cycle_number=0,
+            action="brief-expansion",
+            tokens_consumed=tokens_actual,
+            model_used="gemini-2.0-flash",
+            seed=str(seed),
+            inputs={"brief": brief, "persona": resolved_persona},
+            outputs={
                 "emotional_angles": result.emotional_angles,
                 "value_propositions": result.value_propositions,
                 "key_differentiators": result.key_differentiators,
@@ -435,7 +434,7 @@ def expand_brief(
                 # Full structured brief for QA / dashboard (JSON-serializable dataclass dump)
                 "expanded_brief": asdict(result),
             },
-        },
+        )
     )
 
     return result

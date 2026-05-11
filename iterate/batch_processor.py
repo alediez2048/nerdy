@@ -20,7 +20,18 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from iterate.ledger import log_event
+from iterate.ledger_events import (
+    AdDiscarded,
+    AdGenerated,
+    AdPublished,
+    BatchCompleted,
+    BriefAdherenceScored,
+    ImageEvaluated,
+    ImageGenerated,
+    ImageScored,
+    VisualSpecExtracted,
+)
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -138,23 +149,22 @@ def process_batch(
 
             # Log AdGenerated to session ledger (copy data for dashboard)
             ad_tokens = (ad.generation_metadata or {}).get("tokens_consumed", 0)
-            log_event(ledger_path, {
-                "event_type": "AdGenerated",
-                "ad_id": ad.ad_id,
-                "brief_id": brief_id,
-                "cycle_number": 0,
-                "action": "generation",
-                "tokens_consumed": ad_tokens,
-                "model_used": "gemini-2.0-flash",
-                "seed": str(brief_seed),
-                "inputs": {"brief_id": brief_id},
-                "outputs": {
+            LedgerWriter(ledger_path).record(AdGenerated(
+                ad_id=ad.ad_id,
+                brief_id=brief_id,
+                cycle_number=0,
+                action="generation",
+                tokens_consumed=ad_tokens,
+                model_used="gemini-2.0-flash",
+                seed=str(brief_seed),
+                inputs={"brief_id": brief_id},
+                outputs={
                     "primary_text": ad.primary_text,
                     "headline": ad.headline,
                     "description": ad.description,
                     "cta_button": ad.cta_button,
                 },
-            })
+            ))
 
             # Stage 3: Evaluate (cache-aware, persona-aware)
             from evaluate.evaluator import evaluate_ad
@@ -193,22 +203,21 @@ def process_batch(
 
             if routing.decision == "publish":
                 result.published += 1
-                log_event(ledger_path, {
-                    "event_type": "AdPublished",
-                    "ad_id": ad.ad_id,
-                    "brief_id": brief_id,
-                    "cycle_number": 1,
-                    "action": "publish",
-                    "tokens_consumed": 0,
-                    "model_used": "none",
-                    "seed": "0",
-                    "inputs": {"aggregate_score": evaluation.aggregate_score},
-                    "outputs": {
+                LedgerWriter(ledger_path).record(AdPublished(
+                    ad_id=ad.ad_id,
+                    brief_id=brief_id,
+                    cycle_number=1,
+                    action="publish",
+                    tokens_consumed=0,
+                    model_used="none",
+                    seed="0",
+                    inputs={"aggregate_score": evaluation.aggregate_score},
+                    outputs={
                         "decision": "publish",
                         "has_image": winning_image is not None,
                         "winning_image": winning_image,
                     },
-                })
+                ))
 
                 # PD-12: Brief adherence scoring
                 try:
@@ -219,21 +228,20 @@ def process_batch(
                         ad_id=ad.ad_id,
                         image_path=winning_image,
                     )
-                    log_event(ledger_path, {
-                        "event_type": "BriefAdherenceScored",
-                        "ad_id": ad.ad_id,
-                        "brief_id": brief_id,
-                        "cycle_number": 1,
-                        "action": "brief_adherence",
-                        "tokens_consumed": adherence.tokens_consumed,
-                        "model_used": "gemini-2.0-flash",
-                        "seed": "0",
-                        "outputs": {
+                    LedgerWriter(ledger_path).record(BriefAdherenceScored(
+                        ad_id=ad.ad_id,
+                        brief_id=brief_id,
+                        cycle_number=1,
+                        action="brief_adherence",
+                        tokens_consumed=adherence.tokens_consumed,
+                        model_used="gemini-2.0-flash",
+                        seed="0",
+                        outputs={
                             "scores": adherence.scores,
                             "avg_score": adherence.avg_score,
                             "rationales": adherence.rationales,
                         },
-                    })
+                    ))
                 except Exception as e:
                     logger.warning("Brief adherence scoring failed for %s: %s", ad.ad_id, e)
 
@@ -247,38 +255,36 @@ def process_batch(
                             ad_id=ad.ad_id,
                             session_config=config,
                         )
-                        log_event(ledger_path, {
-                            "event_type": "ImageScored",
-                            "ad_id": ad.ad_id,
-                            "brief_id": brief_id,
-                            "cycle_number": 1,
-                            "action": "image_scored",
-                            "tokens_consumed": img_scores.tokens_consumed,
-                            "model_used": "gemini-2.0-flash",
-                            "seed": "0",
-                            "outputs": {
+                        LedgerWriter(ledger_path).record(ImageScored(
+                            ad_id=ad.ad_id,
+                            brief_id=brief_id,
+                            cycle_number=1,
+                            action="image_scored",
+                            tokens_consumed=img_scores.tokens_consumed,
+                            model_used="gemini-2.0-flash",
+                            seed="0",
+                            outputs={
                                 "image_path": winning_image,
                                 "image_scores": img_scores.scores,
                                 "image_avg_score": img_scores.avg_score,
                                 "rationales": img_scores.rationales,
                             },
-                        })
+                        ))
                     except Exception as e:
                         logger.warning("Image scoring failed for %s: %s", ad.ad_id, e)
             elif routing.decision == "discard":
                 result.discarded += 1
-                log_event(ledger_path, {
-                    "event_type": "AdDiscarded",
-                    "ad_id": ad.ad_id,
-                    "brief_id": brief_id,
-                    "cycle_number": 1,
-                    "action": "discard",
-                    "tokens_consumed": 0,
-                    "model_used": "none",
-                    "seed": "0",
-                    "inputs": {"aggregate_score": evaluation.aggregate_score},
-                    "outputs": {"decision": "discard"},
-                })
+                LedgerWriter(ledger_path).record(AdDiscarded(
+                    ad_id=ad.ad_id,
+                    brief_id=brief_id,
+                    cycle_number=1,
+                    action="discard",
+                    tokens_consumed=0,
+                    model_used="none",
+                    seed="0",
+                    inputs={"aggregate_score": evaluation.aggregate_score},
+                    outputs={"decision": "discard"},
+                ))
             elif routing.decision == "escalate":
                 result.regenerated += 1
                 logger.info(
@@ -338,18 +344,17 @@ def _generate_and_select_image(
         )
 
         if getattr(visual_spec, "spec_extraction_tokens", 0) > 0:
-            log_event(ledger_path, {
-                "event_type": "VisualSpecExtracted",
-                "ad_id": ad.ad_id,
-                "brief_id": brief.get("brief_id", "unknown"),
-                "cycle_number": 0,
-                "action": "visual-spec-extraction",
-                "tokens_consumed": visual_spec.spec_extraction_tokens,
-                "model_used": "gemini-2.0-flash",
-                "seed": str(brief_seed),
-                "inputs": {"brief_id": brief.get("brief_id", "unknown")},
-                "outputs": {"brief_id": brief.get("brief_id", "unknown")},
-            })
+            LedgerWriter(ledger_path).record(VisualSpecExtracted(
+                ad_id=ad.ad_id,
+                brief_id=brief.get("brief_id", "unknown"),
+                cycle_number=0,
+                action="visual-spec-extraction",
+                tokens_consumed=visual_spec.spec_extraction_tokens,
+                model_used="gemini-2.0-flash",
+                seed=str(brief_seed),
+                inputs={"brief_id": brief.get("brief_id", "unknown")},
+                outputs={"brief_id": brief.get("brief_id", "unknown")},
+            ))
 
         # Step 2: Generate 3 image variants
         output_dir = "output/images"
@@ -363,18 +368,17 @@ def _generate_and_select_image(
         )
 
         for variant in variants:
-            log_event(ledger_path, {
-                "event_type": "ImageGenerated",
-                "ad_id": ad.ad_id,
-                "brief_id": brief.get("brief_id", "unknown"),
-                "cycle_number": 0,
-                "action": f"image_gen_{variant.variant_type}",
-                "tokens_consumed": variant.tokens_consumed,
-                "model_used": variant.model_used,
-                "seed": str(variant.seed),
-                "inputs": {"variant_type": variant.variant_type},
-                "outputs": {"image_path": variant.image_path},
-            })
+            LedgerWriter(ledger_path).record(ImageGenerated(
+                ad_id=ad.ad_id,
+                brief_id=brief.get("brief_id", "unknown"),
+                cycle_number=0,
+                action=f"image_gen_{variant.variant_type}",
+                tokens_consumed=variant.tokens_consumed,
+                model_used=variant.model_used,
+                seed=str(variant.seed),
+                inputs={"variant_type": variant.variant_type},
+                outputs={"image_path": variant.image_path},
+            ))
 
         # Step 3: Evaluate each variant (attributes + coherence)
         variant_results: list[ImageVariantResult] = []
@@ -423,22 +427,21 @@ def _generate_and_select_image(
 
             # Log variant evaluation (real tokens from attribute + coherence evals)
             eval_tokens = getattr(attr_result, "tokens_consumed", 0) + getattr(coherence, "tokens_consumed", 0)
-            log_event(ledger_path, {
-                "event_type": "ImageEvaluated",
-                "ad_id": ad.ad_id,
-                "brief_id": brief.get("brief_id", "unknown"),
-                "cycle_number": 0,
-                "action": f"image_eval_{variant.variant_type}",
-                "tokens_consumed": eval_tokens,
-                "model_used": "gemini-2.0-flash",
-                "seed": str(variant.seed),
-                "inputs": {"variant_type": variant.variant_type},
-                "outputs": {
+            LedgerWriter(ledger_path).record(ImageEvaluated(
+                ad_id=ad.ad_id,
+                brief_id=brief.get("brief_id", "unknown"),
+                cycle_number=0,
+                action=f"image_eval_{variant.variant_type}",
+                tokens_consumed=eval_tokens,
+                model_used="gemini-2.0-flash",
+                seed=str(variant.seed),
+                inputs={"variant_type": variant.variant_type},
+                outputs={
                     "attribute_pass_pct": attr_pct,
                     "coherence_avg": coherence_avg,
                     "composite_score": comp,
                 },
-            })
+            ))
 
         # Step 4: Select best variant
         selection = select_best_variant(variant_results)
@@ -479,17 +482,16 @@ def write_batch_checkpoint(
 
     checkpoint_id = str(uuid4())
 
-    log_event(ledger_path, {
-        "event_type": "BatchCompleted",
-        "ad_id": f"batch_{batch_num}",
-        "brief_id": f"batch_{batch_num}",
-        "cycle_number": 0,
-        "action": "batch-complete",
-        "tokens_consumed": 0,
-        "model_used": "none",
-        "seed": "0",
-        "inputs": {"batch_num": batch_num},
-        "outputs": {
+    LedgerWriter(ledger_path).record(BatchCompleted(
+        ad_id=f"batch_{batch_num}",
+        brief_id=f"batch_{batch_num}",
+        cycle_number=0,
+        action="batch-complete",
+        tokens_consumed=0,
+        model_used="none",
+        seed="0",
+        inputs={"batch_num": batch_num},
+        outputs={
             "batch_num": batch_num,
             "generated": batch_result.generated,
             "published": batch_result.published,
@@ -498,7 +500,7 @@ def write_batch_checkpoint(
             "escalated": batch_result.escalated,
             "batch_average": batch_avg,
         },
-    })
+    ))
 
     logger.info("Batch %d checkpoint written: %s", batch_num, checkpoint_id)
     return checkpoint_id

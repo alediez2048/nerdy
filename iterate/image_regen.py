@@ -14,7 +14,9 @@ from typing import Any
 
 from evaluate.coherence_checker import CoherenceResult
 from evaluate.image_evaluator import ImageAttributeResult
-from iterate.ledger import log_event, read_events_filtered
+from iterate.ledger import read_events_filtered
+from iterate.ledger_events import ImageBlocked
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -242,24 +244,22 @@ def flag_image_blocked(
         diagnostic: The failure diagnostic with full context.
         ledger_path: Path to the ledger file.
     """
-    log_event(
-        ledger_path,
-        {
-            "event_type": "ImageBlocked",
-            "ad_id": ad_id,
-            "brief_id": "",
-            "cycle_number": 0,
-            "action": "image-blocked",
-            "inputs": {"failure_type": diagnostic.failure_type},
-            "outputs": {
+    LedgerWriter(ledger_path).record(
+        ImageBlocked(
+            ad_id=ad_id,
+            brief_id="",
+            cycle_number=0,
+            action="image-blocked",
+            inputs={"failure_type": diagnostic.failure_type},
+            outputs={
                 "weakest_dimension": diagnostic.weakest_dimension,
                 "fix_suggestion": diagnostic.fix_suggestion,
             },
-            "scores": {},
-            "tokens_consumed": 0,
-            "model_used": "",
-            "seed": "",
-        },
+            tokens_consumed=0,
+            model_used="",
+            seed="",
+            extra={"scores": {}},
+        )
     )
     logger.warning(
         "Ad %s flagged as image-blocked: %s/%s",

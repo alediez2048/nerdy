@@ -26,7 +26,9 @@ try:
 except ImportError:
     pass
 
-from iterate.ledger import log_event, read_events
+from iterate.ledger import read_events
+from iterate.ledger_events import BriefAdherenceScored
+from iterate.ledger_writer import LedgerWriter
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -154,21 +156,20 @@ def run_backfill(dry_run: bool = False) -> None:
                 failed += 1
                 continue
 
-            log_event(item["ledger_path"], {
-                "event_type": "BriefAdherenceScored",
-                "ad_id": item["ad_id"],
-                "brief_id": item["brief_id"],
-                "cycle_number": 0,
-                "action": "brief_adherence_backfill",
-                "tokens_consumed": result.tokens_consumed,
-                "model_used": "gemini-2.0-flash",
-                "seed": "0",
-                "outputs": {
+            LedgerWriter(item["ledger_path"]).record(BriefAdherenceScored(
+                ad_id=item["ad_id"],
+                brief_id=item["brief_id"],
+                cycle_number=0,
+                action="brief_adherence_backfill",
+                tokens_consumed=result.tokens_consumed,
+                model_used="gemini-2.0-flash",
+                seed="0",
+                outputs={
                     "scores": result.scores,
                     "avg_score": result.avg_score,
                     "rationales": result.rationales,
                 },
-            })
+            ))
 
             scored += 1
             total_tokens += result.tokens_consumed

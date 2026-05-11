@@ -240,7 +240,17 @@ def _run_video_pipeline(
     from generate.ad_generator import generate_ad
     from generate.brief_expansion import expand_brief
     from generate.seeds import get_ad_seed
-    from iterate.ledger import log_event
+    from iterate.ledger_events import (
+        AdEvaluated,
+        AdPublished,
+        BriefAdherenceScored,
+        VideoBlocked,
+        VideoEvaluated,
+        VideoScored,
+        VideoSelected,
+        VideoSpecExtracted,
+    )
+    from iterate.ledger_writer import LedgerWriter
     from iterate.pipeline_runner import PipelineConfig, generate_briefs
 
     video_count = config.get("video_count", 3)
@@ -357,24 +367,23 @@ def _run_video_pipeline(
                     ledger_path=ledger_path,
                     persona=persona,
                 )
-                log_event(ledger_path, {
-                    "event_type": "AdEvaluated",
-                    "ad_id": ad_id,
-                    "brief_id": brief.get("brief_id", str(i + 1).zfill(3)),
-                    "cycle_number": 0,
-                    "action": "evaluation",
-                    "tokens_consumed": copy_eval.tokens_consumed,
-                    "model_used": "gemini-2.0-flash",
-                    "seed": str(seed),
-                    "inputs": {},
-                    "outputs": {
+                LedgerWriter(ledger_path).record(AdEvaluated(
+                    ad_id=ad_id,
+                    brief_id=brief.get("brief_id", str(i + 1).zfill(3)),
+                    cycle_number=0,
+                    action="evaluation",
+                    tokens_consumed=copy_eval.tokens_consumed,
+                    model_used="gemini-2.0-flash",
+                    seed=str(seed),
+                    inputs={},
+                    outputs={
                         "aggregate_score": copy_eval.aggregate_score,
                         "scores": {
                             dim: {"score": copy_eval.dimension_scores.get(dim, 0), "rationale": copy_eval.rationales.get(dim, "")}
                             for dim in copy_eval.dimension_scores
                         },
                     },
-                })
+                ))
             except Exception as e:
                 logger.warning("Copy evaluation failed for video ad %s: %s", ad_id, e)
 
@@ -387,18 +396,17 @@ def _run_video_pipeline(
             logger.info("[VIDEO]   Spec built: scene=%s duration=%ds aspect=%s", spec.scene[:60], spec.duration, spec.aspect_ratio)
 
             if getattr(spec, "spec_extraction_tokens", 0) > 0:
-                log_event(ledger_path, {
-                    "event_type": "VideoSpecExtracted",
-                    "ad_id": ad_id,
-                    "brief_id": brief.get("brief_id", "unknown"),
-                    "cycle_number": 0,
-                    "action": "video-spec-extraction",
-                    "tokens_consumed": spec.spec_extraction_tokens,
-                    "model_used": "gemini-2.0-flash",
-                    "seed": str(seed),
-                    "inputs": {},
-                    "outputs": {},
-                })
+                LedgerWriter(ledger_path).record(VideoSpecExtracted(
+                    ad_id=ad_id,
+                    brief_id=brief.get("brief_id", "unknown"),
+                    cycle_number=0,
+                    action="video-spec-extraction",
+                    tokens_consumed=spec.spec_extraction_tokens,
+                    model_used="gemini-2.0-flash",
+                    seed=str(seed),
+                    inputs={},
+                    outputs={},
+                ))
 
             publish_progress(session_id, {
                 "type": VIDEO_GENERATING,
@@ -461,23 +469,22 @@ def _run_video_pipeline(
                 eval_results[v.variant_type] = ev
                 coherence_results[v.variant_type] = co
 
-                log_event(ledger_path, {
-                    "event_type": "VideoEvaluated",
-                    "ad_id": ad_id,
-                    "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                    "cycle_number": 0,
-                    "action": f"video_{v.variant_type}_evaluated",
-                    "tokens_consumed": ev.tokens_consumed + co.tokens_consumed,
-                    "model_used": "gemini-2.0-flash",
-                    "seed": str(v.seed),
-                    "outputs": {
+                LedgerWriter(ledger_path).record(VideoEvaluated(
+                    ad_id=ad_id,
+                    brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                    cycle_number=0,
+                    action=f"video_{v.variant_type}_evaluated",
+                    tokens_consumed=ev.tokens_consumed + co.tokens_consumed,
+                    model_used="gemini-2.0-flash",
+                    seed=str(v.seed),
+                    outputs={
                         "variant_type": v.variant_type,
                         "attributes": ev.attributes,
                         "attribute_pass_pct": ev.attribute_pass_pct,
                         "coherence_scores": co.dimensions,
                         "coherence_avg": co.avg_score,
                     },
-                })
+                ))
 
             winner = select_best_video(variants, eval_results, coherence_results)
             logger.info("[VIDEO]   Winner selected: %s", winner.variant_type if winner else "NONE")
@@ -486,16 +493,15 @@ def _run_video_pipeline(
                 ev = eval_results[winner.variant_type]
                 co = coherence_results[winner.variant_type]
                 composite = compute_composite_score(ev, co)
-                log_event(ledger_path, {
-                    "event_type": "VideoSelected",
-                    "ad_id": ad_id,
-                    "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                    "cycle_number": 0,
-                    "action": "video_selected",
-                    "tokens_consumed": 0,
-                    "model_used": winner.model_used,
-                    "seed": str(winner.seed),
-                    "outputs": {
+                LedgerWriter(ledger_path).record(VideoSelected(
+                    ad_id=ad_id,
+                    brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                    cycle_number=0,
+                    action="video_selected",
+                    tokens_consumed=0,
+                    model_used=winner.model_used,
+                    seed=str(winner.seed),
+                    outputs={
                         "winner_video_path": winner.video_path,
                         "winner_remote_url": winner.remote_url,
                         "winner_variant": winner.variant_type,
@@ -503,7 +509,7 @@ def _run_video_pipeline(
                         "attribute_pass_pct": ev.attribute_pass_pct,
                         "coherence_avg": co.avg_score,
                     },
-                })
+                ))
                 videos_selected += 1
 
                 # PD-12: Brief adherence scoring for video ads
@@ -515,21 +521,20 @@ def _run_video_pipeline(
                         ad_id=ad_id,
                         video_path=winner.video_path,
                     )
-                    log_event(ledger_path, {
-                        "event_type": "BriefAdherenceScored",
-                        "ad_id": ad_id,
-                        "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                        "cycle_number": 0,
-                        "action": "brief_adherence",
-                        "tokens_consumed": adherence.tokens_consumed,
-                        "model_used": "gemini-2.0-flash",
-                        "seed": "0",
-                        "outputs": {
+                    LedgerWriter(ledger_path).record(BriefAdherenceScored(
+                        ad_id=ad_id,
+                        brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                        cycle_number=0,
+                        action="brief_adherence",
+                        tokens_consumed=adherence.tokens_consumed,
+                        model_used="gemini-2.0-flash",
+                        seed="0",
+                        outputs={
                             "scores": adherence.scores,
                             "avg_score": adherence.avg_score,
                             "rationales": adherence.rationales,
                         },
-                    })
+                    ))
                 except Exception as e:
                     logger.warning("Brief adherence scoring failed for %s: %s", ad_id, e)
 
@@ -542,38 +547,36 @@ def _run_video_pipeline(
                         ad_id=ad_id,
                         session_config=config,
                     )
-                    log_event(ledger_path, {
-                        "event_type": "VideoScored",
-                        "ad_id": ad_id,
-                        "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                        "cycle_number": 0,
-                        "action": "video_scored",
-                        "tokens_consumed": vid_scores.tokens_consumed,
-                        "model_used": "gemini-2.0-flash",
-                        "seed": "0",
-                        "outputs": {
+                    LedgerWriter(ledger_path).record(VideoScored(
+                        ad_id=ad_id,
+                        brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                        cycle_number=0,
+                        action="video_scored",
+                        tokens_consumed=vid_scores.tokens_consumed,
+                        model_used="gemini-2.0-flash",
+                        seed="0",
+                        outputs={
                             "video_path": winner.video_path,
                             "video_scores": vid_scores.scores,
                             "video_avg_score": vid_scores.avg_score,
                             "rationales": vid_scores.rationales,
                         },
-                    })
+                    ))
                 except Exception as e:
                     logger.warning("Video scoring failed for %s: %s", ad_id, e)
 
                 # Publish the video ad — mirrors AdPublished from image pipeline
                 copy_score = copy_eval.aggregate_score if copy_eval else 0.0
-                log_event(ledger_path, {
-                    "event_type": "AdPublished",
-                    "ad_id": ad_id,
-                    "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                    "cycle_number": 0,
-                    "action": "publish",
-                    "tokens_consumed": 0,
-                    "model_used": "none",
-                    "seed": "0",
-                    "inputs": {"aggregate_score": copy_score},
-                    "outputs": {
+                LedgerWriter(ledger_path).record(AdPublished(
+                    ad_id=ad_id,
+                    brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                    cycle_number=0,
+                    action="publish",
+                    tokens_consumed=0,
+                    model_used="none",
+                    seed="0",
+                    inputs={"aggregate_score": copy_score},
+                    outputs={
                         "decision": "publish",
                         "has_video": True,
                         "winning_video": winner.video_path,
@@ -581,44 +584,42 @@ def _run_video_pipeline(
                         "aggregate_score": copy_score,
                         "composite_video_score": composite,
                     },
-                })
+                ))
             else:
                 block_reason = (
                     "no_variants_generated"
                     if not variants
                     else "no_winner_from_evaluation"
                 )
-                log_event(ledger_path, {
-                    "event_type": "VideoBlocked",
-                    "ad_id": ad_id,
-                    "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                    "cycle_number": 0,
-                    "action": "video_blocked",
-                    "tokens_consumed": 0,
-                    "model_used": getattr(client, "model_used", "unknown"),
-                    "seed": "0",
-                    "outputs": {"reason": block_reason},
-                })
+                LedgerWriter(ledger_path).record(VideoBlocked(
+                    ad_id=ad_id,
+                    brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                    cycle_number=0,
+                    action="video_blocked",
+                    tokens_consumed=0,
+                    model_used=getattr(client, "model_used", "unknown"),
+                    seed="0",
+                    outputs={"reason": block_reason},
+                ))
                 videos_blocked += 1
 
         except Exception as e:
             logger.error("[VIDEO] EXCEPTION for ad %s: %s: %s", ad_id, type(e).__name__, e, exc_info=True)
             # Log the error to the ledger so it's visible in the UI
-            log_event(ledger_path, {
-                "event_type": "VideoBlocked",
-                "ad_id": ad_id,
-                "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                "cycle_number": 0,
-                "action": "video_blocked",
-                "tokens_consumed": 0,
-                "model_used": getattr(client, "model_used", "unknown"),
-                "seed": "0",
-                "outputs": {
+            LedgerWriter(ledger_path).record(VideoBlocked(
+                ad_id=ad_id,
+                brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                cycle_number=0,
+                action="video_blocked",
+                tokens_consumed=0,
+                model_used=getattr(client, "model_used", "unknown"),
+                seed="0",
+                outputs={
                     "reason": "exception",
                     "error_type": type(e).__name__,
                     "error": str(e),
                 },
-            })
+            ))
             # region agent log
             _debug_log(
                 "H3",
