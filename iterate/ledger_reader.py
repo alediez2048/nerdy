@@ -55,6 +55,7 @@ def _parse_event(raw: dict[str, Any]) -> LedgerEvent:
     """
     event_type = raw.get("event_type", "")
     cls = EVENT_TYPES.get(event_type, LedgerEvent)
+    is_unknown_type = cls is LedgerEvent and event_type and event_type not in EVENT_TYPES
 
     # Fields the dataclass knows about (all subclasses inherit the base).
     known = {
@@ -83,7 +84,9 @@ def _parse_event(raw: dict[str, Any]) -> LedgerEvent:
 
     # Anything else — timestamps, checkpoint_id, event-specific top-level
     # fields — goes into `extra` so it round-trips for re-serialization.
-    reserved = known | {"event_type"}
+    # For UNKNOWN event types, we preserve `event_type` in extra so type
+    # identity isn't lost on round-trip (known types derive it from class name).
+    reserved = known if is_unknown_type else known | {"event_type"}
     extra = {k: v for k, v in raw.items() if k not in reserved}
     kwargs["extra"] = extra
 

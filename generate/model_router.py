@@ -14,7 +14,9 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from iterate.ledger import log_event, read_events
+from iterate.ledger import read_events
+from iterate.ledger_events import AdRouted
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -90,27 +92,25 @@ def route_ad(
     logger.info("Routed %s: %s (score=%.2f)", ad_id, decision.decision, aggregate_score)
 
     led_path = ledger_path or config.get("ledger_path", "data/ledger.jsonl")
-    log_event(
-        led_path,
-        {
-            "event_type": "AdRouted",
-            "ad_id": ad_id,
-            "brief_id": _extract_brief_id(ad_id),
-            "cycle_number": 0,
-            "action": "triage",
-            "tokens_consumed": 0,
-            "model_used": decision.model_used,
-            "seed": "0",
-            "inputs": {
+    LedgerWriter(led_path).record(
+        AdRouted(
+            ad_id=ad_id,
+            brief_id=_extract_brief_id(ad_id),
+            cycle_number=0,
+            action="triage",
+            tokens_consumed=0,
+            model_used=decision.model_used,
+            seed="0",
+            inputs={
                 "aggregate_score": aggregate_score,
                 "campaign_goal": campaign_goal,
                 "improvable_range": improvable_range,
             },
-            "outputs": {
+            outputs={
                 "decision": decision.decision,
                 "reason": decision.reason,
             },
-        },
+        )
     )
 
     return decision

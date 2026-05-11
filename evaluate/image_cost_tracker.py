@@ -15,7 +15,9 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from generate.image_generator import MODEL_NANO_BANANA_2, MODEL_NANO_BANANA_PRO
-from iterate.ledger import log_event, read_events, read_events_filtered
+from iterate.ledger import read_events, read_events_filtered
+from iterate.ledger_events import VariantSelected
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -146,19 +148,18 @@ def track_variant_selection(
         all_types: All variant types that competed.
         ledger_path: Path to the JSONL ledger.
     """
-    log_event(ledger_path, {
-        "event_type": "VariantSelected",
-        "ad_id": ad_id,
-        "brief_id": "",
-        "cycle_number": 0,
-        "action": "variant-selection",
-        "inputs": {"all_types": all_types},
-        "outputs": {"winner_type": winner_type},
-        "scores": {},
-        "tokens_consumed": 0,
-        "model_used": "",
-        "seed": "",
-    })
+    LedgerWriter(ledger_path).record(VariantSelected(
+        ad_id=ad_id,
+        brief_id="",
+        cycle_number=0,
+        action="variant-selection",
+        inputs={"all_types": all_types},
+        outputs={"winner_type": winner_type},
+        tokens_consumed=0,
+        model_used="",
+        seed="",
+        extra={"scores": {}},
+    ))
 
 
 def get_variant_win_rates(ledger_path: str) -> dict[str, float]:

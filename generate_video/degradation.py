@@ -9,7 +9,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from iterate.ledger import log_event
+from iterate.ledger_events import VideoBlocked
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -55,18 +56,17 @@ def handle_video_failure(
                     ad_id, reason)
 
     if ledger_path:
-        log_event(ledger_path, {
-            "event_type": "VideoBlocked",
-            "ad_id": ad_id,
-            "brief_id": "",
-            "cycle_number": 0,
-            "action": "video-degradation",
-            "inputs": {"reason": reason, "failed_variant_count": failed_count},
-            "outputs": {"fallback": "image-only"},
-            "scores": {},
-            "tokens_consumed": 0,
-            "model_used": "",
-            "seed": "",
-        })
+        LedgerWriter(ledger_path).record(VideoBlocked(
+            ad_id=ad_id,
+            brief_id="",
+            cycle_number=0,
+            action="video-degradation",
+            inputs={"reason": reason, "failed_variant_count": failed_count},
+            outputs={"fallback": "image-only"},
+            tokens_consumed=0,
+            model_used="",
+            seed="",
+            extra={"scores": {}},
+        ))
 
     return result
