@@ -49,7 +49,7 @@ def test_athlete_brief_has_persona_context():
     brief = {"audience": "parents", "campaign_goal": "conversion", "brief_id": "int_001"}
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_expansion()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         result = expand_brief(brief, persona="athlete_recruit")
     assert result.persona == "athlete_recruit"
@@ -62,7 +62,7 @@ def test_suburban_optimizer_brief_has_gpa_context():
     brief = {"audience": "parents", "campaign_goal": "conversion", "brief_id": "int_002"}
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_expansion()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         result = expand_brief(brief, persona="suburban_optimizer")
     assert result.persona == "suburban_optimizer"
@@ -160,7 +160,7 @@ def test_auto_persona_uses_default():
     brief = {"audience": "parents", "campaign_goal": "awareness", "brief_id": "int_auto"}
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_expansion()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         result = expand_brief(brief, persona=None)
     assert result.persona == "suburban_optimizer"  # default for parents

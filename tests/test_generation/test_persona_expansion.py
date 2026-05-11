@@ -125,7 +125,7 @@ def test_expand_brief_with_persona_sets_fields():
 
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_gemini_response()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         result = expand_brief(brief, persona="athlete_recruit")
 
@@ -141,7 +141,7 @@ def test_expand_brief_awareness_has_no_offer():
 
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_gemini_response()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         result = expand_brief(brief, persona="suburban_optimizer")
 
@@ -154,7 +154,7 @@ def test_expand_brief_auto_persona():
 
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_gemini_response()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         result = expand_brief(brief, persona=None)
 
@@ -166,7 +166,7 @@ def test_expand_brief_messaging_rules_in_result():
 
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_gemini_response()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         result = expand_brief(brief, persona="burned_returner")
 
