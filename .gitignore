@@ -56,3 +56,17 @@ data/ledger.jsonl.bak
 output/images/
 output/sessions/
 output/videos/
+.gitnexus
+
+# Local tooling (Claude / superpowers / GitNexus auto-generated)
+.claude/settings.local.json
+.claude/skills/
+docs/superpowers/
+AGENTS.md
+CLAUDE.md
+
+# Personal / sensitive — never commit
+transactions.md
+nerdy_backup.sql
+*.sql.gz
+*.dump

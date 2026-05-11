@@ -776,6 +776,7 @@ function ScoringCategory({ title, color, description, dimensions }: {
 }
 
 function ScoringMethodologyTab() {
+  const isMobile = useMediaQuery('(max-width: 767px)')
   return (
     <div>
       <h3 style={s.heading}>Scoring Methodology</h3>

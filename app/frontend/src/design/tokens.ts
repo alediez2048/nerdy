@@ -1,15 +1,15 @@
 // Design system tokens
 
 export const colors = {
-  ink: '#1a1a2e',
-  surface: '#16213e',
-  cyan: '#e2a517',
-  mint: '#f0c040',
-  lightPurple: '#c4956a',
-  yellow: '#f0c040',
-  red: '#e74c3c',
-  white: '#ffffff',
-  muted: '#94a3b8',
+  ink: '#0a0a0f',
+  surface: '#12121a',
+  cyan: '#00f0ff',
+  mint: '#ff2d95',
+  lightPurple: '#b44dff',
+  yellow: '#ffe44d',
+  red: '#ff3355',
+  white: '#f0f0f5',
+  muted: '#6b7280',
 } as const
 
 export const gradients = {
