@@ -7,6 +7,70 @@
 
 ---
 
+## 2026-05-12 — PH-06: ImageModelRouter (typed + cost-aware) (✅)
+
+### Plain-English Summary
+- The "which image model do we use for this variant?" decision used to
+  return a bare model-name string from `select_image_model`. New
+  `generate/image_model_router.py` returns a typed `ModelChoice` that
+  carries the model name AND the predicted USD cost — so future budget
+  gates can act before the API call instead of reconciling after.
+- Existing `select_image_model` keeps working as a thin shim over the
+  new router. Zero caller changes required.
+
+### Metadata
+- **Status:** Complete | **Date:** May 12, 2026
+- **Phase:** PH (architectural deepening)
+- **Ticket:** PH-06 | **Branch:** `feature/PH-06-image-router`
+
+### Key Achievements
+- **New `generate/image_model_router.py`** with:
+  - `VariantRole` enum (`ANCHOR` / `SIBLING`) — typed alternative to
+    the legacy `variant_type` strings.
+  - `ModelChoice` dataclass — `model_name`, `predicted_cost_usd`,
+    `rationale`. Predicted cost is the per-call USD rate, kept in sync
+    with `cost_reporter.MODEL_COST_RATES`.
+  - `choose_model(role, budget_remaining_usd, persona)` — pure
+    function. Legacy `variant_type` strings work alongside the enum.
+- **`select_image_model` is now a 4-line shim** that calls the router
+  and returns just the model name. Existing callers in
+  `image_generator.py`, `ab_image_variants.py`, etc. keep working.
+- **Persona parameter reserved** — accepted but currently inert. Future
+  per-persona routing can land without a signature change.
+
+### Verification
+- 15/15 new `test_image_model_router.py` tests: anchor → Pro, sibling
+  → NB2, budget below $2 forces NB2 for any role, $2.00 exactly uses
+  default routing (strict `<`), `None` budget disables override,
+  legacy string variant_types work, predicted_cost_usd populated on
+  every choice, legacy shim returns same model strings.
+- 30/30 existing image tests (`test_image_model_routing.py`,
+  `test_image_generator.py`, `test_image_cost_tracker.py`) pass —
+  zero behaviour regression.
+- `ruff check` clean.
+
+### Files Changed
+- **Created:** `generate/image_model_router.py`,
+  `tests/test_generation/test_image_model_router.py`.
+- **Modified:** `generate/image_generator.py` — `select_image_model`
+  is now a thin shim over `choose_model`.
+
+### Next Steps
+- **PH-05 (stage machine)** — deferred for now; restructuring
+  `process_batch` to a stateful chain is high-risk for marginal value
+  given that PH-04's composite already enforces text+routing together.
+  Revisit if a future ticket finds bugs the stage machine would catch.
+- **PH-07 (verification gate)** — the next ticket. Runs the full
+  test suite, lint, dry-run, dashboard sanity check, cost
+  reconciliation against a known session, ledger format compat.
+  After PH-07 passes, merge `final-submission` → `main` for the
+  Railway + Vercel deploy.
+- **Future:** wire `choose_model`'s `predicted_cost_usd` into a real
+  budget gate so the pipeline can skip expensive variants when the
+  per-session cap is close.
+
+---
+
 ## 2026-05-12 — PH-04: EvaluationPipeline composite (✅)
 
 ### Plain-English Summary
