@@ -65,8 +65,34 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
   const filtered = ads.filter((a) => !filter || a.status === filter)
     .sort((a, b) => b.aggregate_score - a.aggregate_score)
 
+  // Bugfix B (May 2026): Clarify the "best of N" selection. The pipeline
+  // generates multiple variants per ad (typically 3 image variants via
+  // anchor + tone_shift + composition_shift; 2 video variants via
+  // anchor + alternative) and Pareto-selects one winner per ad. The
+  // library renders only the winners — users were confused why "missing"
+  // generations weren't visible. This note explains it once at the top.
+  const variantCountLabel =
+    sessionType === 'video' ? '2 video variants' : '3 image variants'
+
   return (
     <div>
+      <div
+        style={{
+          padding: '8px 12px',
+          marginBottom: '12px',
+          borderRadius: '6px',
+          background: 'rgba(0, 240, 255, 0.08)',
+          border: `1px solid ${colors.cyan}30`,
+          color: colors.muted,
+          fontSize: '12px',
+          lineHeight: 1.5,
+        }}
+      >
+        <strong style={{ color: colors.cyan }}>How this library works:</strong>{' '}
+        each ad shows only the <em>winning</em> variant. The pipeline
+        generates {variantCountLabel} per ad and Pareto-selects the best
+        one. Full variant history is in <code>data/ledger.jsonl</code>.
+      </div>
       {/* Filters */}
       <div style={s.filterRow}>
         {['', 'published', 'in_progress', 'discarded'].map((f) => (
