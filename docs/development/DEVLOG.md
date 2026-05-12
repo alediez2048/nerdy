@@ -7,6 +7,98 @@
 
 ---
 
+## 2026-05-10 — PH-02: CostAttributor — per-format breakdown + confidence (✅)
+
+### Plain-English Summary
+- Cost queries now return a per-format breakdown (`text_usd`, `image_usd`,
+  `video_usd`) alongside the existing `total_usd`. The dashboard surfaces
+  the breakdown in its JSON response.
+- Each cost result carries a derived `confidence` band (`high` / `medium`
+  / `low`) so callers can tell whether the number is fully traced to
+  ledger events (`high`), reconstructed from a thin ledger (`medium`),
+  or estimated from `data/cost_manifest.json` (`low`).
+- `attribute_session_cost(session_id, ledger_path)` is the canonical
+  name for new code; `compute_session_cost_usd` stays as a behaviour-
+  equivalent alias so existing callers keep working unchanged.
+
+### Metadata
+- **Status:** Complete  |  **Date:** May 10, 2026
+- **Phase:** PH (architectural deepening)
+- **Ticket:** PH-02  |  **Branch:** `feature/PH-02-cost-attributor`
+- **GitNexus pre-change blast radius:**
+  - `compute_session_cost_usd` — CRITICAL, 4 direct callers, 7 processes
+  - `sum_session_display_cost_usd` — CRITICAL, 4 direct callers, 8 processes
+
+### Key Achievements
+- **Additive return-shape extension** — `SessionCostResult` grew four
+  new fields (`text_usd`, `image_usd`, `video_usd`, `confidence`) with
+  safe defaults so every existing caller keeps working without changes.
+- **`_compute_format_breakdown_usd` helper** — splits the per-event
+  cost across text/image/video buckets, honouring the same video
+  winner-only rule that `sum_session_display_cost_usd` uses. The sum
+  of the three buckets equals the ledger-derived display cost.
+- **Confidence is derived, not stored** — `__post_init__` populates it
+  from `source` (`ledger` → high, `ledger_partial` → medium,
+  `manifest_estimate` → low). Callers can't set it directly.
+- **Dashboard JSON now exposes the breakdown** — `total_cost_usd`,
+  `cost_source`, `cost_confidence`, `cost_breakdown: {text, image,
+  video}`. Frontend ignores the new fields until it reads them
+  (additive — no breakage).
+- **Cost reads now go through `iterate.ledger_reader`** — the PH-01
+  reader module's dict surface (`read_dicts`) is the only ledger
+  access path inside `cost_reporter.py`.
+
+### Verification
+- 13 / 13 existing `test_cost_reporter.py` tests pass — no behaviour
+  regression on any of the legacy cost paths.
+- 10 / 10 new `test_cost_attributor.py` tests cover confidence
+  derivation, breakdown summing, video winner-only rule, alias
+  equivalence, and manifest-fallback semantics.
+- Full pytest suite: 1049 / 1056 — same 7 pre-existing failures as
+  PH-01 (5 env-dep Clerk auth, 2 LLM-calibration inversion). **Zero
+  PH-02 regressions.**
+- `python run_pipeline.py --dry-run --max-ads 3` exits 0.
+- `ruff check` clean.
+
+### Technical Decisions
+- **A + B1 + C1** per the grilling session: in-place refactor of
+  `cost_reporter.py`, additive extension of `SessionCostResult`,
+  derived `confidence` field. Rejected alternatives: separate
+  `cost_attributor.py` module (Option B, more churn); breaking
+  replacement type (Option C, every caller touched).
+- **Breakdown reflects the *ledger* split, not the *total* split.**
+  When `source == "manifest_estimate"` the breakdown shows whatever
+  ledger events we did observe (often zero). `confidence == "low"` is
+  the cue that the breakdown is unreliable. We never had a format
+  split for the opaque manifest totals.
+- **Module-level constants left as-is.** The primer suggested making
+  rate tables private (`_MODEL_COST_RATES` etc.). Deferred to a
+  follow-up — current names are referenced by tests and at least one
+  external script, so the rename adds churn for a purely cosmetic win.
+
+### Files Changed
+- **Modified:** `evaluate/cost_reporter.py` — extended `SessionCostResult`
+  with breakdown + confidence; added `_confidence_from_source`,
+  `_compute_format_breakdown_usd`, `attribute_session_cost`; switched
+  ledger reads to `iterate.ledger_reader.read_dicts`.
+- **Modified:** `app/api/routes/dashboard.py` — two routes
+  (`/api/sessions/{id}/summary` and `/api/sessions/{id}/costs`) now
+  surface `cost_confidence` and `cost_breakdown`.
+- **Created:** `tests/test_evaluation/test_cost_attributor.py` (10 tests).
+- **Updated:** `docs/development/DEVLOG.md` — this entry.
+
+### Next Steps
+- **PH-03 (PipelineOrchestrator)** — depends on PH-01, independent of
+  PH-02. Can start immediately.
+- **PH-04 (EvaluationPipeline)** — once PH-03 is done, this is the
+  natural follow-up.
+- **Optional follow-up:** migrate the remaining 3 `cost_reporter`
+  callers (`campaigns.py`, `pipeline_task.py`) to use
+  `attribute_session_cost` and surface the breakdown. Same additive
+  pattern as the dashboard demo.
+
+---
+
 ## 2026-05-10 — PH-01: Ledger seam (LedgerWriter + LedgerReader) (✅)
 
 ### Plain-English Summary

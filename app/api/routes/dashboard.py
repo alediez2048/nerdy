@@ -103,6 +103,12 @@ def _merge_pipeline_summary_from_db(
             if scr.total_usd > 0:
                 out["total_cost_usd"] = scr.total_usd
                 out["cost_source"] = scr.source
+                out["cost_confidence"] = scr.confidence
+                out["cost_breakdown"] = {
+                    "text_usd": scr.text_usd,
+                    "image_usd": scr.image_usd,
+                    "video_usd": scr.video_usd,
+                }
         except Exception:
             logger.debug("Manifest cost fallback failed for session %s", session.session_id)
 
@@ -138,6 +144,12 @@ def _merge_token_economics_from_db(
             if scr.total_usd > 0:
                 te["total_cost_usd"] = scr.total_usd
                 te["cost_source"] = scr.source
+                te["cost_confidence"] = scr.confidence
+                te["cost_breakdown"] = {
+                    "text_usd": scr.text_usd,
+                    "image_usd": scr.image_usd,
+                    "video_usd": scr.video_usd,
+                }
         except Exception:
             pass
     return te
