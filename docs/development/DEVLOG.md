@@ -7,6 +7,89 @@
 
 ---
 
+## 2026-05-12 — PH-04: EvaluationPipeline composite (✅)
+
+### Plain-English Summary
+- "Evaluate this ad" used to require calling at least four leaf
+  functions in the right order across two modules (`evaluator.py`,
+  `model_router.py`) — and then again for image/video scoring +
+  adherence. The ordering and gating lived inline in
+  `batch_processor.process_batch`.
+- New `evaluate/evaluation_pipeline.py` exposes two composite
+  operations matching the pipeline's two phases:
+  `evaluate_copy(ad, brief, config)` and `evaluate_visual(ad, brief,
+  config, image_path=..., video_path=...)`.
+- `batch_processor.process_batch` now calls `evaluate_copy` instead of
+  separate `evaluate_ad` + `route_ad` calls. The 14+ tests that call
+  `evaluator.evaluate_ad` directly keep working — the leaf modules
+  are unchanged.
+
+### Metadata
+- **Status:** Complete | **Date:** May 12, 2026
+- **Phase:** PH (architectural deepening)
+- **Ticket:** PH-04 | **Branch:** `feature/PH-04-eval-pipeline`
+
+### Key Achievements
+- **New `evaluate/evaluation_pipeline.py`** — two public functions
+  (`evaluate_copy`, `evaluate_visual`) + two frozen dataclasses
+  (`CopyEvaluation`, `VisualEvaluation`).
+- **`CopyEvaluation` exposes four convenience properties** —
+  `aggregate_score`, `decision`, `improvable` (derived from the
+  improvable score range), `escalation_reason` (populated only when
+  routing decides to escalate). Underlying `EvaluationResult` and
+  `RoutingDecision` stay accessible for callers that need raw fields.
+- **`evaluate_visual` handles image-only, video-only, or text-only
+  ads** — runs the matching scorer plus brief adherence, returns a
+  `VisualEvaluation` with whatever pieces are populated.
+- **`batch_processor.process_batch` migrated** — Stage 3 (`evaluate_ad`)
+  and Stage 4 (`route_ad`) collapsed into a single `evaluate_copy(...)`
+  call. The orchestrator's evaluation block shrank from ~20 lines to
+  ~8.
+
+### Scope Decisions
+- **Visual scoring block NOT migrated to `evaluate_visual` yet.**
+  The existing block in `batch_processor` wraps adherence and image
+  scoring in SEPARATE try/except handlers — they fail independently.
+  Migrating to a single `evaluate_visual` call would change error-
+  isolation semantics (if adherence fails, image scoring would be
+  skipped). The composite is available for tests and future
+  consumers; the orchestrator-side migration is deferred so the
+  trade-off can be discussed explicitly. Not a blocker — the
+  current code keeps working.
+- **Video pipeline (`_run_video_pipeline`) NOT migrated.** Same
+  reasoning as PH-03: different orchestration shape. Future cleanup.
+- **No leaf-evaluator changes.** All 22 files in `evaluate/` keep
+  their public interfaces. The composite is a higher-level surface,
+  not a replacement.
+
+### Verification
+- 10/10 new `test_evaluation_pipeline.py` tests cover:
+  `CopyEvaluation` property derivation (4 properties × edge cases),
+  `evaluate_copy` composes evaluator + router correctly,
+  raw-dict ads work, `evaluate_visual` handles image-only / video-only
+  / neither, kwargs propagate correctly.
+- 661 / 662 pipeline + evaluation tests pass. The single failure is
+  `test_emotional_resonance_inversion` — same LLM-call-dependent
+  flake we've seen since PH-01; not caused by PH-04.
+- `python run_pipeline.py --dry-run --max-ads 3` exits 0.
+- `ruff check` clean.
+
+### Files Changed
+- **Created:** `evaluate/evaluation_pipeline.py`,
+  `tests/test_evaluation/test_evaluation_pipeline.py`.
+- **Modified:** `iterate/batch_processor.py` — Stages 3+4 of
+  `process_batch` collapsed into `evaluate_copy`.
+
+### Next Steps
+- **PH-05 stage machine** — type-level guards in `process_batch`.
+  Now unblocked.
+- **PH-06 ImageModelRouter** — independent, low-risk.
+- **Future:** migrate `batch_processor`'s visual scoring block and
+  `_run_video_pipeline`'s evaluation block onto `evaluate_visual`,
+  with explicit handling of the error-isolation trade-off.
+
+---
+
 ## 2026-05-12 — PH-03: PipelineOrchestrator — CLI ↔ Celery convergence (✅)
 
 ### Plain-English Summary

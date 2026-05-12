@@ -166,25 +166,17 @@ def process_batch(
                 },
             ))
 
-            # Stage 3: Evaluate (cache-aware, persona-aware)
-            from evaluate.evaluator import evaluate_ad
-            evaluation = evaluate_ad(
-                ad.to_evaluator_input(),
-                campaign_goal=brief.get("campaign_goal", "conversion"),
-                audience=brief.get("audience", "parents"),
-                ledger_path=ledger_path,
+            # Stages 3 + 4: Evaluate copy + route (PH-04 composite)
+            from evaluate.evaluation_pipeline import evaluate_copy
+            copy_eval = evaluate_copy(
+                ad,
+                brief,
+                config,
                 persona=brief_persona,
-            )
-
-            # Stage 4: Route
-            from generate.model_router import route_ad
-            routing = route_ad(
-                ad_id=ad.ad_id,
-                aggregate_score=evaluation.aggregate_score,
-                campaign_goal=brief.get("campaign_goal", "conversion"),
-                config=config,
                 ledger_path=ledger_path,
             )
+            evaluation = copy_eval.evaluation
+            routing = copy_eval.routing
 
             # --- Image generation for ads that pass text triage ---
             winning_image = None
