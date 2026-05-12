@@ -12,9 +12,6 @@ from app.db import SessionLocal, init_db
 from app.models.session import Session as SessionModel
 from app.workers.celery_app import celery_app
 from app.workers.progress import (
-    BATCH_COMPLETE,
-    BATCH_START,
-    PIPELINE_COMPLETE,
     PIPELINE_ERROR,
     VIDEO_AD_COMPLETE,
     VIDEO_AD_START,
@@ -55,7 +52,18 @@ def _run_image_pipeline(
     ledger_path: str,
     db: DBSession,
 ) -> dict:
-    """Run the image ad generation pipeline (original PA-04 flow)."""
+    """Run the image/copy ad-generation pipeline (PH-03 thin wrapper).
+
+    Delegates the batch loop, ledger writes, cost-so-far computation, and
+    progress reporting to ``PipelineOrchestrator``. The orchestrator emits
+    the same ``batch_start`` / ``batch_complete`` / ``pipeline_complete``
+    events the SSE endpoint forwards — payload shape is preserved
+    byte-for-byte so the frontend keeps working unchanged.
+    """
+    from iterate.pipeline_orchestrator import PipelineOrchestrator, _compute_avg_score, _compute_cost_so_far
+    from iterate.pipeline_runner import PipelineConfig
+    from iterate.progress_sinks import RedisProgressSink
+
     ad_count = config.get("ad_count", 10)
     cycle_count = config.get("cycle_count", 3)
     quality_threshold = config.get("quality_threshold", 7.0)
@@ -71,149 +79,43 @@ def _run_image_pipeline(
         if aspect_ratio_single
         else config.get("aspect_ratios", ["1:1"])
     )
+    audience_raw = config.get("audience")
+    campaign_goal_raw = config.get("campaign_goal")
 
     batch_size = min(10, ad_count)
     num_batches = max(1, math.ceil(ad_count / batch_size))
-
-    from iterate.batch_processor import (
-        create_batches,
-        process_batch,
-        write_batch_checkpoint,
-    )
-    from iterate.pipeline_runner import PipelineConfig, generate_briefs
-
-    pipeline_config = {
-        "ledger_path": ledger_path,
-        "text_threshold": quality_threshold,
-        "image_attribute_threshold": 0.8,
-        "coherence_threshold": 6.0,
-        "max_cycles": cycle_count,
-        "global_seed": f"session_{session_id}",
-        "improvable_range": [5.5, 7.0],
-        "image_enabled": image_enabled,
-        "persona": persona,
-        "key_message": key_message,
-        "creative_brief": creative_brief,
-        "copy_on_image": copy_on_image,
-        "aspect_ratios": aspect_ratios,
-    }
-
-    audience_raw = config.get("audience")
-    campaign_goal_raw = config.get("campaign_goal")
 
     pconfig = PipelineConfig(
         num_batches=num_batches,
         batch_size=batch_size,
         max_cycles=cycle_count,
+        text_threshold=quality_threshold,
         ledger_path=ledger_path,
         dry_run=False,
         global_seed=f"session_{session_id}",
         persona=persona,
-        audience=(
-            audience_raw if audience_raw and audience_raw != "auto" else None
-        ),
+        audience=audience_raw if audience_raw and audience_raw != "auto" else None,
         campaign_goal=(
-            campaign_goal_raw
-            if campaign_goal_raw and campaign_goal_raw != "auto"
-            else None
+            campaign_goal_raw if campaign_goal_raw and campaign_goal_raw != "auto" else None
         ),
         key_message=key_message,
+        image_enabled=image_enabled,
+        creative_brief=creative_brief,
+        copy_on_image=copy_on_image,
+        aspect_ratios=aspect_ratios,
     )
-    briefs = generate_briefs(pconfig)
-    batches = create_batches(briefs, batch_size)
 
-    total_generated = 0
-    total_published = 0
-    total_discarded = 0
-    total_regenerated = 0
-    cost_so_far = 0.0
-
-    def _compute_avg_score() -> float:
-        """Compute real average score from AdPublished events in session ledger."""
-        try:
-            from iterate.ledger import read_events as _read
-            events = _read(ledger_path)
-            scores = [
-                e.get("outputs", {}).get("aggregate_score", 0.0)
-                for e in events
-                if e.get("event_type") == "AdPublished"
-                and isinstance(e.get("outputs", {}).get("aggregate_score"), (int, float))
-            ]
-            return round(sum(scores) / len(scores), 2) if scores else 0.0
-        except Exception:
-            return 0.0
-
-    for batch_num, batch_briefs in enumerate(batches, 1):
-        current_score_avg = _compute_avg_score()
-        publish_progress(session_id, {
-            "type": BATCH_START,
-            "cycle": 1,
-            "batch": batch_num,
-            "ads_generated": total_generated,
-            "ads_evaluated": total_generated,
-            "ads_published": total_published,
-            "current_score_avg": current_score_avg,
-            "cost_so_far": cost_so_far,
-        })
-
-        batch_result = process_batch(
-            briefs=batch_briefs,
-            batch_num=batch_num,
-            config=pipeline_config,
-            dry_run=False,
-        )
-
-        write_batch_checkpoint(batch_num, batch_result, ledger_path)
-
-        total_generated += batch_result.generated
-        total_published += batch_result.published
-        total_discarded += batch_result.discarded
-        total_regenerated += batch_result.regenerated
-        try:
-            from evaluate.cost_reporter import sum_session_display_cost_usd
-            from iterate.ledger import read_events
-
-            cost_so_far = round(sum_session_display_cost_usd(read_events(ledger_path)), 4)
-        except Exception:
-            cost_so_far += batch_result.generated * 0.2
-
-        current_score_avg = _compute_avg_score()
-        publish_progress(session_id, {
-            "type": BATCH_COMPLETE,
-            "cycle": 1,
-            "batch": batch_num,
-            "ads_generated": total_generated,
-            "ads_evaluated": total_generated,
-            "ads_published": total_published,
-            "current_score_avg": current_score_avg,
-            "cost_so_far": cost_so_far,
-        })
-
-        logger.info(
-            "Session %s batch %d/%d: generated=%d published=%d",
-            session_id, batch_num, len(batches),
-            batch_result.generated, batch_result.published,
-        )
-
-    final_avg_score = _compute_avg_score()
-    publish_progress(session_id, {
-        "type": PIPELINE_COMPLETE,
-        "cycle": 1,
-        "batch": len(batches),
-        "ads_generated": total_generated,
-        "ads_evaluated": total_generated,
-        "ads_published": total_published,
-        "current_score_avg": final_avg_score,
-        "cost_so_far": cost_so_far,
-    })
+    summary = PipelineOrchestrator(
+        progress_sink=RedisProgressSink(session_id),
+    ).run(pconfig)
 
     return {
-        "ads_generated": total_generated,
-        "ads_published": total_published,
-        "ads_discarded": total_discarded,
-        "ads_regenerated": total_regenerated,
-        "avg_score": final_avg_score,
-        "cost_so_far": cost_so_far,
+        "ads_generated": summary.total_generated,
+        "ads_published": summary.total_published,
+        "ads_discarded": summary.total_discarded,
+        "ads_regenerated": summary.total_regenerated,
+        "avg_score": _compute_avg_score(ledger_path),
+        "cost_so_far": _compute_cost_so_far(ledger_path),
     }
 
 
