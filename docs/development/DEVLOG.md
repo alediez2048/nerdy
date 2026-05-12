@@ -7,6 +7,94 @@
 
 ---
 
+## 2026-05-12 — PH-03: PipelineOrchestrator — CLI ↔ Celery convergence (✅)
+
+### Plain-English Summary
+- The image/copy pipeline batch loop now lives in ONE place
+  (`iterate/pipeline_orchestrator.py`). The CLI and the Celery worker
+  both call into it; neither maintains its own copy.
+- Progress reporting is pluggable via a `ProgressSink` Protocol with
+  three adapters: `StdoutProgressSink` (CLI logs), `RedisProgressSink`
+  (publishes via `app.workers.progress.publish_progress` for the SSE
+  endpoint), and `NullProgressSink` (default; used in tests).
+- The Celery worker's `_run_image_pipeline` shrank from ~165 lines of
+  duplicated orchestration to ~50 lines of config-normalization + one
+  `PipelineOrchestrator(...).run(config)` call. The SSE event payload
+  is byte-identical, so the Vercel frontend keeps working unchanged.
+
+### Metadata
+- **Status:** Complete | **Date:** May 12, 2026
+- **Phase:** PH (architectural deepening)
+- **Ticket:** PH-03 | **Branch:** `feature/PH-03-orchestrator`
+- **GitNexus pre-change blast radius:** `run_pipeline_session` was
+  CRITICAL (43 affected processes — most via the video path). The
+  image-pipeline portion targeted by PH-03 was the bulk of the
+  duplicated code.
+
+### Key Achievements
+- **New `iterate/pipeline_orchestrator.py`** — `PipelineOrchestrator.run(config)`
+  absorbs brief generation, batch loop, ledger checkpointing,
+  cost-so-far computation (via PH-02's `sum_session_display_cost_usd`),
+  avg-score computation (via PH-01's typed reader on `AdPublished`
+  events), and progress emission at batch boundaries.
+- **New `iterate/progress_sinks.py`** — `ProgressSink` Protocol +
+  three concrete adapters. Adding a new entry point (webhook,
+  scheduled run, debugging tool) is a new sink class + a thin wrapper,
+  not a new copy of the batch loop.
+- **`pipeline_runner.run_pipeline` became a thin shim** — kept as a
+  module-level function so existing CLI imports and tests continue
+  to work, but it now just constructs a `PipelineOrchestrator` and
+  delegates.
+- **`PipelineConfig` extended** with `image_enabled`, `creative_brief`,
+  `copy_on_image`, `aspect_ratios` so the same dataclass serves both
+  the CLI (which doesn't wire these up to argparse) and Celery.
+
+### Verification
+- 10/10 new `test_pipeline_orchestrator.py` tests cover: Null/Stdout/Redis
+  sink behaviour, `_build_batch_processor_config` passthrough,
+  end-to-end dry-run, progress event sequence (`batch_start` ×N →
+  `batch_complete` ×N → `pipeline_complete` ×1), SSE-compatible payload
+  shape, final-totals on `pipeline_complete`, and back-compat of the
+  shim entry point.
+- Full pytest: 1057 passing. 9 failures are unchanged pre-existing
+  flakies (5 env-dep Clerk auth tests + 4 LLM-call-dependent
+  evaluation tests that vary run-to-run). PH-03 touches `iterate/`
+  only — none of the evaluation tests are caused by it.
+- `python run_pipeline.py --dry-run --max-ads 3` exits 0; output
+  matches pre-PH-03.
+- `ruff check` clean across all touched modules.
+
+### Technical Decisions
+- **Generic `emit(event_type, payload)` Protocol method** (chosen over
+  typed methods per `batch_start`/`batch_complete`/etc). Matches the
+  existing `publish_progress(session_id, {type, ...})` shape exactly
+  — Celery migration is a one-line change instead of a 5-method
+  refactor.
+- **Cost-so-far + avg-score live in the orchestrator**, not in the
+  sink. The CLI now sees these values too (logged by
+  `StdoutProgressSink`). Sinks stay dumb about what's in the payload.
+- **Video pipeline (`_run_video_pipeline`) intentionally untouched.**
+  It has a per-ad loop, different progress vocabulary
+  (`video_ad_start`/`video_generating`/`video_evaluating`), and would
+  balloon PH-03 scope. Flagged as a future cleanup candidate.
+
+### Files Changed
+- **Created:** `iterate/pipeline_orchestrator.py`,
+  `iterate/progress_sinks.py`,
+  `tests/test_pipeline/test_pipeline_orchestrator.py`.
+- **Modified:** `iterate/pipeline_runner.py` — `run_pipeline` became a
+  thin shim; `PipelineConfig` extended with 4 new fields.
+  `app/workers/tasks/pipeline_task.py` — `_run_image_pipeline` thinned
+  from ~165 lines to ~50.
+
+### Next Steps
+- **PH-04 (EvaluationPipeline)** — depends on PH-01 (✅ done). Can start
+  immediately.
+- **Future:** converge `_run_video_pipeline` onto the same orchestrator
+  pattern (different sink event types + per-ad strategy).
+
+---
+
 ## 2026-05-10 — PH-02: CostAttributor — per-format breakdown + confidence (✅)
 
 ### Plain-English Summary
