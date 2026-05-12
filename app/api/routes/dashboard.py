@@ -240,6 +240,133 @@ def get_ads(
     }
 
 
+@router.get("/{session_id}/ads/{ad_id}/variants")
+def get_ad_variants(
+    session_id: str,
+    ad_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_current_user)],
+) -> dict[str, Any]:
+    """All image variants generated for an ad, with selection rationale.
+
+    For each ad the pipeline emits 3 ``ImageGenerated`` events (anchor +
+    tone_shift + composition_shift) and 3 matching ``ImageEvaluated``
+    events. Pareto-selection picks the variant with the highest
+    ``composite_score = attribute_pass_pct * 0.4 + coherence_avg * 0.6``.
+
+    This endpoint reconstructs that decision from the ledger so the UI
+    can show why each non-winner was rejected.
+    """
+    init_db()
+    session = _get_session(db, session_id, user["user_id"])
+    ledger_path = session.ledger_path
+    if not ledger_path or not Path(ledger_path).exists():
+        raise HTTPException(status_code=404, detail="Session ledger not found")
+
+    # Per-call image rates ($/call) — matches generate.image_model_router.
+    # Kept local to keep the route self-contained; a future ticket may
+    # unify these into config.yaml.
+    rate_per_call = {
+        "nano-banana-pro-preview": 0.13,
+        "gemini-2.5-flash-image": 0.035,
+        "gemini-2.0-flash-preview-image-generation": 0.13,
+    }
+
+    from iterate.ledger_reader import read_dicts_filtered
+
+    events = read_dicts_filtered(ledger_path, ad_id=ad_id)
+    if not events:
+        raise HTTPException(status_code=404, detail="No events for that ad")
+
+    # Index ImageEvaluated by variant_type for score lookup.
+    scores_by_variant: dict[str, dict[str, float]] = {}
+    for ev in events:
+        if ev.get("event_type") != "ImageEvaluated":
+            continue
+        outputs = ev.get("outputs") or {}
+        inputs = ev.get("inputs") or {}
+        variant_type = inputs.get("variant_type") or outputs.get("variant_type", "")
+        if not variant_type:
+            continue
+        scores_by_variant[variant_type] = {
+            "attribute_pass_pct": float(outputs.get("attribute_pass_pct", 0.0)),
+            "coherence_avg": float(outputs.get("coherence_avg", 0.0)),
+            "composite_score": float(outputs.get("composite_score", 0.0)),
+        }
+
+    # Walk ImageGenerated events to enumerate variants + image paths + models.
+    variants: list[dict[str, Any]] = []
+    for ev in events:
+        if ev.get("event_type") != "ImageGenerated":
+            continue
+        outputs = ev.get("outputs") or {}
+        inputs = ev.get("inputs") or {}
+        variant_type = inputs.get("variant_type", "")
+        image_path = outputs.get("image_path", "")
+        scores = scores_by_variant.get(variant_type, {})
+        # Convert filesystem path to the public image route.
+        image_filename = Path(image_path).name if image_path else ""
+        public_url = f"/api/images/{image_filename}" if image_filename else None
+        model_used = ev.get("model_used", "")
+        variants.append({
+            "variant_type": variant_type,
+            "image_path": image_path or None,
+            "image_url": public_url,
+            "model_used": model_used,
+            "predicted_cost_usd": rate_per_call.get(model_used, 0.0),
+            "attribute_pass_pct": scores.get("attribute_pass_pct", 0.0),
+            "coherence_avg": scores.get("coherence_avg", 0.0),
+            "composite_score": scores.get("composite_score", 0.0),
+            "is_winner": False,  # filled in below
+            "lost_by": None,     # filled in below
+        })
+
+    if not variants:
+        raise HTTPException(status_code=404, detail="No image variants for that ad")
+
+    # Pareto winner = highest composite_score; ties go to first.
+    winner = max(variants, key=lambda v: v["composite_score"])
+    winner["is_winner"] = True
+    winner_attr = winner["attribute_pass_pct"]
+    winner_coh = winner["coherence_avg"]
+    winner_composite = winner["composite_score"]
+
+    for v in variants:
+        if v["is_winner"]:
+            continue
+        attr_delta = v["attribute_pass_pct"] - winner_attr
+        coh_delta = v["coherence_avg"] - winner_coh
+        # The "weighted" delta: which dimension contributed more to the loss?
+        # attribute is weighted 0.4, coherence 0.6 in the composite.
+        weighted_attr_loss = attr_delta * 0.4
+        weighted_coh_loss = coh_delta * 0.6
+        if attr_delta >= 0 and coh_delta >= 0:
+            # Loser matches or exceeds winner on both axes — tie-break
+            # went to first variant. Mark it as "tie".
+            dimension = "tie"
+        elif weighted_coh_loss < weighted_attr_loss:
+            dimension = "coherence"
+        else:
+            dimension = "attribute"
+        v["lost_by"] = {
+            "dimension": dimension,
+            "own_score": v["coherence_avg"] if dimension == "coherence" else v["attribute_pass_pct"],
+            "winner_score": winner_coh if dimension == "coherence" else winner_attr,
+            "composite_delta": round(v["composite_score"] - winner_composite, 4),
+        }
+
+    return {
+        "session_id": session_id,
+        "ad_id": ad_id,
+        "selection_criteria": {
+            "formula": "composite_score = attribute_pass_pct * 0.4 + coherence_avg * 0.6",
+            "winner_variant_type": winner["variant_type"],
+            "winner_composite_score": winner_composite,
+        },
+        "variants": variants,
+    }
+
+
 @router.get("/{session_id}/spc")
 def get_spc(
     session_id: str,

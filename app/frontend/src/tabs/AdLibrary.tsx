@@ -5,6 +5,7 @@ import useMediaQuery from '../hooks/useMediaQuery'
 import { fetchAds } from '../api/dashboard'
 import { addAdToCurated } from '../api/curation'
 import Badge, { StatusBadge } from '../components/Badge'
+import VariantsPanel from '../components/VariantsPanel'
 
 interface Ad {
   ad_id: string
@@ -221,6 +222,12 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
                           </div>
                         ))}
                       </div>
+                      {/* Image variants Pareto panel — visible on expand for non-video ads with images. */}
+                      {!isVideo && ad.image_url && (
+                        <div style={{ padding: '0 14px' }}>
+                          <VariantsPanel sessionId={sessionId} adId={ad.ad_id} />
+                        </div>
+                      )}
                       <div style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginTop: '10px', padding: '0 14px' }}>
                         {!isVideo && <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>}
                         {hasVideo && (
