@@ -7,6 +7,71 @@
 
 ---
 
+## 2026-05-12 — PH-07: Phase verification gate (✅)
+
+### Summary
+End-to-end verification of PH-01..PH-04 + PH-06 before any production
+deploy. PH-05 was deferred (see PH-06 DEVLOG entry below).
+
+### Results
+
+| Check | Result |
+|---|---|
+| `ruff check .` | **clean** (one pytest-import false positive fixed in test_ledger_seam.py) |
+| Full pytest (`tests/`) | **1085 passed, 6 failed** — failures match pre-PH baseline (5 env-dep Clerk auth + 1 LLM-call flake `test_clarity_inversion`). Zero PH regressions. |
+| CLI dry-run (`python run_pipeline.py --dry-run --max-ads 5`) | exits 0; produces ledger entries; no errors |
+| Ledger format compatibility | **4655 / 4655** production ledger events parse cleanly via the new typed reader. Zero unknown event types (all map to a registered subclass). One pre-existing malformed line skipped (same as before PH-01). |
+| Cost reconciliation on real session | `attribute_session_cost` matches `compute_session_cost_usd` byte-for-byte. Sample session `sess_0f7cbcaf68481b7e`: total $7.1151, source `ledger`, confidence `high`, breakdown `text $1.5599 + image $0.00 + video $5.5552` sums exactly to total. |
+
+### Phase scope as shipped
+
+| Ticket | Status | What landed |
+|---|---|---|
+| PH-01 | ✅ | Ledger seam — 22 callers, 31 typed event classes, byte-identical JSONL |
+| PH-02 | ✅ | CostAttributor — text/image/video breakdown + confidence band on dashboard |
+| PH-03 | ✅ | PipelineOrchestrator — CLI + Celery converged onto one batch loop with pluggable ProgressSink |
+| PH-04 | ✅ | EvaluationPipeline — `evaluate_copy` composite (text + routing); `evaluate_visual` available |
+| PH-05 | ⏸ | Stage machine deferred — restructure was high-risk for marginal value given PH-04 already groups text+routing. Revisit if a bug surfaces it would catch. |
+| PH-06 | ✅ | ImageModelRouter — typed `ModelChoice` with predicted_cost_usd |
+| PH-07 | ✅ | This entry — full verification across the partial phase |
+
+### Branch state
+
+- `final-submission`: at `6c057b9` — contains PH-01..PH-04 + PH-06 merges.
+- `main`: at `6327c77` — only the PH-00 phase planning docs. **Production
+  is still running pre-PH code.** Awaiting the user's explicit go-ahead
+  for the Railway + Vercel deploy.
+
+### Production deploy gate
+
+Before merging `final-submission` → `main`:
+1. **Rotate the secrets leaked during the 2026-05-01 prod recovery**
+   (`GEMINI_API_KEY`, `FAL_KEY`, `DATABASE_URL`, `REDIS_URL`,
+   `SECRET_KEY`) — still on the open TODO from `PG-08` follow-ups.
+2. **Manually exercise the dashboard** in the local dev server
+   (already wired and verified during PH-02; spot-check after the
+   merge for any visual regressions).
+3. **Confirm Vercel has `VITE_CLERK_PUBLISHABLE_KEY`** (open TODO from
+   2026-05-01 prod recovery).
+4. Tag the pre-PH merge SHA for quick rollback (`git tag pre-PH 6327c77`).
+
+### Files Changed (PH-07 only)
+- **Modified:** `tests/test_pipeline/test_ledger_seam.py` — removed
+  unused `pytest` import flagged by ruff.
+- **Created:** this DEVLOG section.
+
+### Next Steps
+- User reviews PH-07 verification results and decides on production deploy timing.
+- If deploying: rotate secrets first, then `git merge --no-ff feature/PH-07-verification`
+  onto `final-submission`, then `final-submission` → `main`, then watch
+  Railway + Vercel auto-deploys.
+- PH-05 stage machine remains optional; not part of this phase.
+- The two deferred follow-ups from earlier tickets remain open:
+  (a) batch_processor visual block migration to `evaluate_visual`;
+  (b) `_run_video_pipeline` migration to PipelineOrchestrator.
+
+---
+
 ## 2026-05-12 — PH-06: ImageModelRouter (typed + cost-aware) (✅)
 
 ### Plain-English Summary
