@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { colors, radii, font } from '../design/tokens'
 import useMediaQuery from '../hooks/useMediaQuery'
-import { fetchAds } from '../api/dashboard'
+import { fetchAds, fetchAdVariants, type AdVariant } from '../api/dashboard'
 import { addAdToCurated } from '../api/curation'
 import Badge, { StatusBadge } from '../components/Badge'
 import VariantsPanel from '../components/VariantsPanel'
@@ -44,6 +44,47 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [curatedIds, setCuratedIds] = useState<Set<string>>(new Set())
+
+  // "Show all variants" toggle — when ON, render every image variant
+  // generated for every ad as its own card in the grid, alongside the
+  // selected winners. Lazy-loaded so the API isn't hit until the user
+  // flips the toggle.
+  const [showAllVariants, setShowAllVariants] = useState(false)
+  const [variantsByAd, setVariantsByAd] = useState<Map<string, AdVariant[]>>(new Map())
+  const [variantsLoading, setVariantsLoading] = useState(false)
+  const [variantsError, setVariantsError] = useState<string | null>(null)
+
+  // Lazy-fetch all variants when the user flips the "Show all variants" toggle.
+  // Caches by ad_id so flipping off then on doesn't re-hit the API.
+  useEffect(() => {
+    if (!showAllVariants || ads.length === 0) return
+    const adsToFetch = ads.filter((a) => !variantsByAd.has(a.ad_id))
+    if (adsToFetch.length === 0) return
+
+    let cancelled = false
+    setVariantsLoading(true)
+    setVariantsError(null)
+    Promise.all(
+      adsToFetch.map((a) =>
+        fetchAdVariants(sessionId, a.ad_id)
+          .then((res) => ({ adId: a.ad_id, variants: res.variants }))
+          .catch(() => ({ adId: a.ad_id, variants: [] as AdVariant[] })),
+      ),
+    )
+      .then((results) => {
+        if (cancelled) return
+        setVariantsByAd((prev) => {
+          const next = new Map(prev)
+          for (const r of results) next.set(r.adId, r.variants)
+          return next
+        })
+        setVariantsLoading(false)
+      })
+      .catch((e) => {
+        if (!cancelled) { setVariantsError(e.message); setVariantsLoading(false) }
+      })
+    return () => { cancelled = true }
+  }, [showAllVariants, ads, sessionId, variantsByAd])
 
   useEffect(() => {
     let cancelled = false
@@ -94,21 +135,44 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
         generates {variantCountLabel} per ad and Pareto-selects the best
         one. Full variant history is in <code>data/ledger.jsonl</code>.
       </div>
-      {/* Filters */}
-      <div style={s.filterRow}>
-        {['', 'published', 'in_progress', 'discarded'].map((f) => (
+      {/* Filters + variants toggle */}
+      <div style={{ ...s.filterRow, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {['', 'published', 'in_progress', 'discarded'].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              style={filter === f ? s.filterActive : s.filterBtn}
+            >
+              {f || 'All'} {f ? `(${ads.filter((a) => a.status === f).length})` : `(${ads.length})`}
+            </button>
+          ))}
+        </div>
+        {sessionType !== 'video' && (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
-            style={filter === f ? s.filterActive : s.filterBtn}
+            onClick={() => setShowAllVariants((v) => !v)}
+            style={showAllVariants ? s.filterActive : s.filterBtn}
+            title="Show every image variant the pipeline generated, including the ones that didn't make the cut"
           >
-            {f || 'All'} {f ? `(${ads.filter((a) => a.status === f).length})` : `(${ads.length})`}
+            {showAllVariants ? '✓ Showing all variants' : 'Show all variants'}
           </button>
-        ))}
+        )}
       </div>
 
+      {/* Variant gallery — when the "Show all variants" toggle is on. */}
+      {showAllVariants && (
+        <VariantGallery
+          ads={filtered}
+          variantsByAd={variantsByAd}
+          loading={variantsLoading}
+          error={variantsError}
+          isMobile={isMobile}
+          isTablet={isTablet}
+        />
+      )}
+
       {/* Ad grid */}
-      {filtered.length === 0 ? (
+      {!showAllVariants && (filtered.length === 0 ? (
         <p style={{ color: colors.muted }}>No ads found</p>
       ) : (
         <div
@@ -309,7 +373,127 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
             )
           })}
         </div>
-      )}
+      ))}
+    </div>
+  )
+}
+
+interface VariantGalleryProps {
+  ads: Ad[]
+  variantsByAd: Map<string, AdVariant[]>
+  loading: boolean
+  error: string | null
+  isMobile: boolean
+  isTablet: boolean
+}
+
+function VariantGallery({ ads, variantsByAd, loading, error, isMobile, isTablet }: VariantGalleryProps) {
+  if (error) return <p style={{ color: colors.red }}>{error}</p>
+  if (loading && variantsByAd.size === 0) {
+    return <p style={{ color: colors.muted }}>Loading all variants…</p>
+  }
+
+  // Flatten into ad_id, variant_type pairs, preserving ad order.
+  const cards: Array<{ ad: Ad; variant: AdVariant }> = []
+  for (const ad of ads) {
+    const variants = variantsByAd.get(ad.ad_id)
+    if (!variants || variants.length === 0) continue
+    // Anchor first, then siblings, so cards cluster per ad in a predictable order.
+    const sorted = [...variants].sort((a, b) => {
+      if (a.variant_type === 'anchor') return -1
+      if (b.variant_type === 'anchor') return 1
+      return a.variant_type.localeCompare(b.variant_type)
+    })
+    for (const v of sorted) cards.push({ ad, variant: v })
+  }
+
+  if (cards.length === 0) {
+    return <p style={{ color: colors.muted }}>No variants recorded for these ads yet.</p>
+  }
+
+  const cols = isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'
+
+  return (
+    <div>
+      <p style={{ color: colors.muted, fontSize: '12px', marginBottom: '10px' }}>
+        Showing <strong style={{ color: colors.cyan }}>{cards.length}</strong> variants
+        across <strong style={{ color: colors.cyan }}>{ads.length}</strong> ads.
+        Each ad's anchor (Nano Banana Pro) sits next to its tone and composition
+        siblings (Nano Banana 2). Winners have a green border.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: cols, gap: '12px' }}>
+        {cards.map(({ ad, variant }) => {
+          const lostReason = variant.is_winner
+            ? null
+            : variant.lost_by?.dimension === 'tie'
+              ? 'Tied — selection went to first variant'
+              : variant.lost_by
+                ? `Lost on ${variant.lost_by.dimension === 'attribute' ? 'attribute fit' : 'copy coherence'}: ${variant.lost_by.own_score.toFixed(2)} vs ${variant.lost_by.winner_score.toFixed(2)}`
+                : null
+          const modelShort = variant.model_used.includes('nano-banana-pro')
+            ? 'NB Pro'
+            : variant.model_used.includes('flash-image') ? 'NB 2' : variant.model_used
+          const variantLabel = variant.variant_type === 'anchor'
+            ? 'Anchor'
+            : variant.variant_type === 'tone_shift'
+              ? 'Tone shift'
+              : variant.variant_type === 'composition_shift'
+                ? 'Composition shift'
+                : variant.variant_type
+          return (
+            <div
+              key={`${ad.ad_id}-${variant.variant_type}`}
+              style={{
+                background: colors.surface,
+                borderRadius: radii.card,
+                overflow: 'hidden',
+                border: variant.is_winner ? `2px solid ${colors.mint}` : `1px solid ${colors.muted}30`,
+              }}
+            >
+              {variant.image_url ? (
+                <img
+                  src={`/api${variant.image_url.startsWith('/api') ? variant.image_url.slice(4) : variant.image_url}`}
+                  alt={`${ad.ad_id} ${variant.variant_type}`}
+                  style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', display: 'block' }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+              ) : (
+                <div style={{
+                  width: '100%', aspectRatio: '1 / 1', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  background: '#000', color: colors.muted, fontSize: '12px',
+                }}>image missing</div>
+              )}
+              <div style={{ padding: '8px 10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                  <strong style={{ color: colors.white, fontSize: '13px' }}>{variantLabel}</strong>
+                  {variant.is_winner ? (
+                    <span style={{
+                      background: colors.mint, color: '#000', padding: '2px 6px',
+                      borderRadius: '4px', fontSize: '10px', fontWeight: 700,
+                    }}>✓ Selected</span>
+                  ) : (
+                    <span style={{ color: colors.yellow, fontWeight: 600, fontSize: '12px' }}>
+                      {variant.composite_score.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <p style={{ color: colors.muted, fontSize: '11px', margin: '4px 0 0', wordBreak: 'break-all' }}>
+                  {ad.ad_id}
+                </p>
+                <p style={{ color: colors.muted, fontSize: '11px', margin: '2px 0 0' }}>
+                  attr {variant.attribute_pass_pct.toFixed(2)} · coh {variant.coherence_avg.toFixed(2)} · {modelShort} · ${variant.predicted_cost_usd.toFixed(3)}
+                </p>
+                {lostReason && (
+                  <p style={{ color: colors.muted, fontSize: '11px', margin: '6px 0 0', fontStyle: 'italic', lineHeight: 1.4 }}>
+                    {lostReason}
+                  </p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
