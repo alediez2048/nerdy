@@ -237,6 +237,63 @@ def test_ledger_reader_ad_lifecycle() -> None:
 # --- batch-scoped event hack still passes validation ---
 
 
+def test_media_evaluation_event_roundtrip():
+    from iterate.ledger_events import MediaEvaluation, parse_event
+    ev = MediaEvaluation(
+        ad_id="ad_x",
+        brief_id="brief_001",
+        cycle_number=0,
+        action="media_eval_anchor",
+        tokens_consumed=1820,
+        model_used="gemini-2.5-flash",
+        seed="0",
+        inputs={"variant_type": "anchor", "media_type": "image"},
+        outputs={
+            "schema_version": "v2",
+            "media_type": "image",
+            "media_path": "out/foo.png",
+            "dimensions": {
+                "thumb_stop_potential": {"score": 7, "weight": 0.20, "rationale": "x"},
+            },
+            "penalty_gates": {
+                "has_ai_artifacts": {"triggered": False, "rationale": "clean"},
+            },
+            "raw_score": 0.58,
+            "penalty_multiplier": 1.0,
+            "composite_score": 58.0,
+        },
+    )
+    line = ev.to_jsonl()
+    parsed = parse_event(line)
+    assert isinstance(parsed, MediaEvaluation)
+    assert parsed.outputs["composite_score"] == 58.0
+    assert parsed.outputs["schema_version"] == "v2"
+
+
+def test_media_evaluation_failed_event():
+    from iterate.ledger_events import MediaEvaluationFailed, parse_event
+    ev = MediaEvaluationFailed(
+        ad_id="ad_x",
+        brief_id="brief_001",
+        cycle_number=0,
+        action="media_eval_failed_anchor",
+        tokens_consumed=0,
+        model_used="gemini-2.5-flash",
+        seed="0",
+        inputs={"variant_type": "anchor", "media_type": "video"},
+        outputs={
+            "schema_version": "v2",
+            "media_type": "video",
+            "failure_reason": "file_not_found",
+            "error_message": "videofile.mp4 missing",
+        },
+    )
+    line = ev.to_jsonl()
+    parsed = parse_event(line)
+    assert isinstance(parsed, MediaEvaluationFailed)
+    assert parsed.outputs["failure_reason"] == "file_not_found"
+
+
 def test_batch_completed_synthetic_ids_still_work() -> None:
     """BatchCompleted historically used ad_id='batch_N' to pass validation.
     PH-01 preserves this — it's not the place to redesign the contract."""

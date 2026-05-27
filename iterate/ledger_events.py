@@ -14,6 +14,7 @@ and `docs/deliverables/decisionlog.md` §9 for the append-only invariant.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -45,6 +46,16 @@ class LedgerEvent:
     @property
     def event_type(self) -> str:
         return type(self).__name__
+
+    def to_jsonl(self) -> str:
+        """Serialize to a single JSON line (no trailing newline).
+
+        Uses the same field ordering as `ledger_writer._serialize` so the
+        output is consistent with the on-disk JSONL format.
+        """
+        from iterate.ledger_writer import _serialize  # local import avoids circularity
+
+        return json.dumps(_serialize(self), separators=(",", ":"))
 
 
 # --- Generation phase ---------------------------------------------------------
@@ -226,6 +237,35 @@ class AdRegenerated(LedgerEvent):
     """Marker emitted in some legacy ledger fixtures."""
 
 
+# --- Unified media quality evaluator (PI-02+) ---------------------------------
+
+
+@dataclass(frozen=True)
+class MediaEvaluation(LedgerEvent):
+    """Unified per-variant media quality evaluation (PI-02). Schema v2.
+
+    Replaces ImageEvaluated, ImageScored, VideoEvaluated, VideoCoherenceChecked,
+    VideoScored. The outputs dict carries the full rubric: per-dimension
+    {score, weight, rationale}, per-gate {triggered, rationale},
+    raw_score / penalty_multiplier / composite_score, and schema_version.
+    """
+
+    event_type: str = "MediaEvaluation"
+
+
+@dataclass(frozen=True)
+class MediaEvaluationFailed(LedgerEvent):
+    """Explicit failure event for a single variant (PI-02).
+
+    Emitted when the evaluator cannot produce a MediaEvaluation — e.g.
+    file missing, upload too large, LLM JSON unparseable. Selection skips
+    failed variants; if all variants for an ad fail, the ad is
+    regenerated via the existing P1-08 brief-mutation flow.
+    """
+
+    event_type: str = "MediaEvaluationFailed"
+
+
 # --- Registry -----------------------------------------------------------------
 
 EVENT_TYPES: dict[str, type[LedgerEvent]] = {
@@ -262,6 +302,19 @@ EVENT_TYPES: dict[str, type[LedgerEvent]] = {
         ContextDistilled,
         StyleExperiment,
         AdRegenerated,
+        MediaEvaluation,
+        MediaEvaluationFailed,
     ]
 }
 """Maps `event_type` string → concrete dataclass. Consumed by `LedgerReader.read_typed_events()`."""
+
+
+def parse_event(line: str) -> LedgerEvent:
+    """Parse a single JSONL line produced by `LedgerEvent.to_jsonl()`.
+
+    Returns a typed subclass when the `event_type` is registered; falls back
+    to the base `LedgerEvent` for unknown types (forward-compatibility).
+    """
+    from iterate.ledger_reader import _parse_event  # local import avoids circularity
+
+    return _parse_event(json.loads(line))
