@@ -25,7 +25,10 @@ from iterate.ledger_events import (
     BatchCompleted,
     BriefExpanded,
     LedgerEvent,
+    MediaEvaluation,
+    MediaEvaluationFailed,
     VideoBlocked,
+    parse_event,
 )
 from iterate.ledger_reader import (
     LedgerReader,
@@ -237,8 +240,7 @@ def test_ledger_reader_ad_lifecycle() -> None:
 # --- batch-scoped event hack still passes validation ---
 
 
-def test_media_evaluation_event_roundtrip():
-    from iterate.ledger_events import MediaEvaluation, parse_event
+def test_media_evaluation_event_roundtrip() -> None:
     ev = MediaEvaluation(
         ad_id="ad_x",
         brief_id="brief_001",
@@ -270,8 +272,7 @@ def test_media_evaluation_event_roundtrip():
     assert parsed.outputs["schema_version"] == "v2"
 
 
-def test_media_evaluation_failed_event():
-    from iterate.ledger_events import MediaEvaluationFailed, parse_event
+def test_media_evaluation_failed_event() -> None:
     ev = MediaEvaluationFailed(
         ad_id="ad_x",
         brief_id="brief_001",
