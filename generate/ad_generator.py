@@ -22,7 +22,8 @@ from generate.brief_expansion import ExpandedBrief
 from generate.brand_voice import get_voice_for_prompt
 from generate.competitive import query_patterns
 from generate.seeds import get_ad_seed, load_global_seed
-from iterate.ledger import log_event
+from iterate.ledger_events import AdGenerated
+from iterate.ledger_writer import LedgerWriter
 from iterate.retry import retry_with_backoff
 
 load_dotenv()
@@ -443,30 +444,28 @@ def generate_ad(
     cfg = _load_config()
     led_path = ledger_path or cfg.get("ledger_path", "data/ledger.jsonl")
 
-    log_event(
-        led_path,
-        {
-            "event_type": "AdGenerated",
-            "ad_id": result.ad_id,
-            "brief_id": brief_id,
-            "cycle_number": cycle_number,
-            "action": "generation",
-            "tokens_consumed": tokens_estimate,
-            "model_used": "gemini-2.0-flash",
-            "seed": str(actual_seed),
-            "inputs": {
+    LedgerWriter(led_path).record(
+        AdGenerated(
+            ad_id=result.ad_id,
+            brief_id=brief_id,
+            cycle_number=cycle_number,
+            action="generation",
+            tokens_consumed=tokens_estimate,
+            model_used="gemini-2.0-flash",
+            seed=str(actual_seed),
+            inputs={
                 "expanded_brief_id": brief_id,
                 "structural_atoms_count": len(atoms),
                 "voice_profile_audience": audience,
             },
-            "outputs": {
+            outputs={
                 "primary_text": result.primary_text,
                 "primary_text_len": len(result.primary_text),
                 "headline": result.headline,
                 "description": result.description,
                 "cta_button": result.cta_button,
             },
-        },
+        )
     )
 
     return result

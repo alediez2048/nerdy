@@ -13,7 +13,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from iterate.ledger import read_events
+from iterate.ledger_reader import read_dicts as read_events
 
 logger = logging.getLogger(__name__)
 
@@ -330,20 +330,83 @@ def _ledger_events_reliable(events: list[dict]) -> bool:
     return total >= 2.0
 
 
+def _confidence_from_source(source: str) -> str:
+    """Map cost source label to a confidence band (PH-02).
+
+    - ``ledger`` → ``high`` (every dollar traced to a ledger event)
+    - ``ledger_partial`` → ``medium`` (ledger present but thin / pre-fix tokens=0)
+    - ``manifest_estimate`` → ``low`` (cost_manifest.json baseline, format split unknown)
+    """
+    return {
+        "ledger": "high",
+        "ledger_partial": "medium",
+        "manifest_estimate": "low",
+    }.get(source, "medium")
+
+
+def _compute_format_breakdown_usd(events: list[dict]) -> dict[str, float]:
+    """Per-format USD breakdown over a session's events (PH-02).
+
+    Same winner-only rule as ``sum_session_display_cost_usd``: when a
+    ``VideoSelected`` event names a winner, only that ``VideoGenerated``
+    cost counts toward ``video_usd``. Unknown event types contribute
+    to the ``text`` bucket as a fallback.
+    """
+    winners = _winner_variant_by_ad(events)
+    breakdown = {"text": 0.0, "image": 0.0, "video": 0.0}
+    for ev in events:
+        if not _include_event_in_session_display_cost(ev, winners):
+            continue
+        cost = compute_event_cost(ev)
+        if cost == 0:
+            continue
+        fmt = _FORMAT_MAP.get(ev.get("event_type", ""), "text")
+        if fmt not in breakdown:
+            fmt = "text"
+        breakdown[fmt] += cost
+    return {k: round(v, 6) for k, v in breakdown.items()}
+
+
 @dataclass
 class SessionCostResult:
-    """Cost attribution for one session."""
+    """Cost attribution for one session.
+
+    PH-02 adds the per-format breakdown (``text_usd``, ``image_usd``,
+    ``video_usd``) and a derived ``confidence`` band so callers can
+    decide how much to trust the number without re-parsing ``source``.
+
+    Breakdown fields always reflect the **ledger-derived** split, even
+    when ``source == "manifest_estimate"`` (the manifest is an opaque
+    total — we never had a format split for it). ``confidence == "low"``
+    is the cue that the breakdown is unreliable.
+    """
 
     session_id: str
     total_usd: float
     source: str  # "ledger" | "manifest_estimate" | "ledger_partial"
     ledger_usd: float
     manifest_usd: float | None
+    # PH-02 additions — default to 0 so existing constructors don't break.
+    text_usd: float = 0.0
+    image_usd: float = 0.0
+    video_usd: float = 0.0
+    confidence: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.confidence = _confidence_from_source(self.source)
 
 
 def compute_session_cost_usd(session_id: str, ledger_path: str) -> SessionCostResult:
-    """Compute display cost for one session: ledger when reliable, else manifest backfill."""
+    """Compute display cost for one session: ledger when reliable, else manifest backfill.
+
+    Returns a :class:`SessionCostResult` with per-format breakdown
+    (``text_usd``, ``image_usd``, ``video_usd``) and a derived
+    ``confidence`` band. The breakdown always reflects the ledger split;
+    when ``source == "manifest_estimate"`` the breakdown is the (small)
+    ledger-derived split, not the manifest total.
+    """
     events = read_events(ledger_path) if Path(ledger_path).exists() else []
+    breakdown = _compute_format_breakdown_usd(events)
     ledger_usd = sum_session_display_cost_usd(events)
 
     manifest = _load_cost_manifest()
@@ -367,6 +430,9 @@ def compute_session_cost_usd(session_id: str, ledger_path: str) -> SessionCostRe
             source="ledger",
             ledger_usd=ledger_usd,
             manifest_usd=manifest_usd,
+            text_usd=breakdown["text"],
+            image_usd=breakdown["image"],
+            video_usd=breakdown["video"],
         )
 
     if manifest_usd is not None:
@@ -376,6 +442,9 @@ def compute_session_cost_usd(session_id: str, ledger_path: str) -> SessionCostRe
             source="manifest_estimate",
             ledger_usd=ledger_usd,
             manifest_usd=manifest_usd,
+            text_usd=breakdown["text"],
+            image_usd=breakdown["image"],
+            video_usd=breakdown["video"],
         )
 
     return SessionCostResult(
@@ -384,7 +453,20 @@ def compute_session_cost_usd(session_id: str, ledger_path: str) -> SessionCostRe
         source="ledger_partial",
         ledger_usd=ledger_usd,
         manifest_usd=None,
+        text_usd=breakdown["text"],
+        image_usd=breakdown["image"],
+        video_usd=breakdown["video"],
     )
+
+
+def attribute_session_cost(session_id: str, ledger_path: str) -> SessionCostResult:
+    """Compute per-session cost with format breakdown (PH-02 canonical name).
+
+    Preferred entry point for new code. Identical behavior to
+    :func:`compute_session_cost_usd`, which is kept for backwards
+    compatibility with pre-PH-02 callers.
+    """
+    return compute_session_cost_usd(session_id, ledger_path)
 
 
 def compute_standalone_global_ledger_cost_usd(ledger_path: str = "data/ledger.jsonl") -> float:

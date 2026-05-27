@@ -82,7 +82,7 @@ def test_generate_ad_produces_all_four_components(sample_expanded_brief: Expande
     })
 
     with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.ad_generator.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = generate_ad(sample_expanded_brief)
 
     assert result.primary_text
@@ -101,7 +101,7 @@ def test_all_components_are_non_empty_strings(sample_expanded_brief: ExpandedBri
     })
 
     with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.ad_generator.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = generate_ad(sample_expanded_brief)
 
     assert isinstance(result.primary_text, str) and len(result.primary_text) > 0
@@ -123,7 +123,7 @@ def test_structural_atoms_selected_and_recorded(sample_expanded_brief: ExpandedB
     })
 
     with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.ad_generator.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = generate_ad(sample_expanded_brief)
 
     assert isinstance(result.structural_atoms_used, list)
@@ -160,7 +160,7 @@ def test_seed_determinism_same_seed_same_ad_id(sample_expanded_brief: ExpandedBr
     })
 
     with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.ad_generator.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             r1 = generate_ad(sample_expanded_brief, seed=12345)
             r2 = generate_ad(sample_expanded_brief, seed=12345)
 
@@ -177,7 +177,7 @@ def test_different_seed_different_ad_id(sample_expanded_brief: ExpandedBrief) ->
     })
 
     with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.ad_generator.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             r1 = generate_ad(sample_expanded_brief, seed=111)
             r2 = generate_ad(sample_expanded_brief, seed=222)
 
@@ -190,7 +190,7 @@ def test_different_seed_different_ad_id(sample_expanded_brief: ExpandedBrief) ->
 def test_malformed_api_response_handled_gracefully(sample_expanded_brief: ExpandedBrief) -> None:
     """Malformed JSON returns partial GeneratedAd, does not crash."""
     with patch("generate.ad_generator._call_gemini", return_value=("not valid json {{{", 100)):
-        with patch("generate.ad_generator.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = generate_ad(sample_expanded_brief)
 
     assert isinstance(result, GeneratedAd)
@@ -210,7 +210,7 @@ def test_cta_button_is_valid_meta_option(sample_expanded_brief: ExpandedBrief) -
     })
 
     with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.ad_generator.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = generate_ad(sample_expanded_brief)
 
     assert result.cta_button in VALID_CTAS or result.cta_button in [
@@ -235,7 +235,7 @@ def test_generation_metadata_populated(sample_expanded_brief: ExpandedBrief) -> 
     })
 
     with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.ad_generator.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = generate_ad(sample_expanded_brief)
 
     assert isinstance(result.generation_metadata, dict)
@@ -321,7 +321,7 @@ def test_generated_ad_compatible_with_evaluator_input(sample_expanded_brief: Exp
     })
 
     with patch("generate.ad_generator._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.ad_generator.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = generate_ad(sample_expanded_brief)
 
     eval_input = {

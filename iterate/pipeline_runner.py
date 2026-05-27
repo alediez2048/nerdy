@@ -13,13 +13,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from iterate.batch_processor import (
-    BatchResult,
-    PipelineResult,
-    create_batches,
-    process_batch,
-    write_batch_checkpoint,
-)
+from iterate.batch_processor import BatchResult
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +53,11 @@ class PipelineConfig:
     audience: str | None = None
     campaign_goal: str | None = None
     key_message: str = ""
+    # PH-03 — session-specific fields previously inlined in pipeline_task only.
+    image_enabled: bool = True
+    creative_brief: str = "auto"
+    copy_on_image: bool = False
+    aspect_ratios: list[str] = field(default_factory=lambda: ["1:1"])
 
 
 @dataclass
@@ -119,75 +118,11 @@ def generate_briefs(config: PipelineConfig) -> list[dict[str, Any]]:
 def run_pipeline(config: PipelineConfig) -> RunSummary:
     """Execute the full pipeline end-to-end.
 
-    Args:
-        config: Pipeline configuration.
-
-    Returns:
-        RunSummary with aggregate metrics.
+    Thin shim over :class:`iterate.pipeline_orchestrator.PipelineOrchestrator`
+    (PH-03). Kept as a module-level function so existing CLI imports and
+    tests continue to work; new code should construct an orchestrator
+    directly and pass a ``ProgressSink``.
     """
-    logger.info(
-        "Starting pipeline: %d batches x %d ads, %d cycles, dry_run=%s",
-        config.num_batches, config.batch_size, config.max_cycles, config.dry_run,
-    )
+    from iterate.pipeline_orchestrator import PipelineOrchestrator
 
-    # Generate briefs
-    briefs = generate_briefs(config)
-    batches = create_batches(briefs, config.batch_size)
-
-    pipeline_config = {
-        "ledger_path": config.ledger_path,
-        "text_threshold": config.text_threshold,
-        "image_attribute_threshold": config.image_attribute_threshold,
-        "coherence_threshold": config.coherence_threshold,
-        "max_cycles": config.max_cycles,
-        "global_seed": config.global_seed,
-        "improvable_range": [5.5, 7.0],
-    }
-
-    all_batch_results: list[BatchResult] = []
-
-    for batch_num, batch_briefs in enumerate(batches, 1):
-        logger.info(
-            "Processing batch %d/%d (%d briefs)",
-            batch_num, len(batches), len(batch_briefs),
-        )
-
-        batch_result = process_batch(
-            briefs=batch_briefs,
-            batch_num=batch_num,
-            config=pipeline_config,
-            dry_run=config.dry_run,
-        )
-
-        # Write batch checkpoint
-        write_batch_checkpoint(batch_num, batch_result, config.ledger_path)
-
-        all_batch_results.append(batch_result)
-
-        logger.info(
-            "Batch %d: generated=%d, published=%d, discarded=%d",
-            batch_num, batch_result.generated, batch_result.published,
-            batch_result.discarded,
-        )
-
-    # Aggregate results
-    pipeline_result = PipelineResult.from_batches(all_batch_results)
-
-    summary = RunSummary(
-        total_briefs=len(briefs),
-        batches_completed=pipeline_result.batches_completed,
-        total_generated=pipeline_result.total_generated,
-        total_published=pipeline_result.total_published,
-        total_discarded=pipeline_result.total_discarded,
-        total_regenerated=pipeline_result.total_regenerated,
-        total_escalated=pipeline_result.total_escalated,
-        batch_results=all_batch_results,
-    )
-
-    logger.info(
-        "Pipeline complete: %d briefs, %d generated, %d published, %d discarded",
-        summary.total_briefs, summary.total_generated,
-        summary.total_published, summary.total_discarded,
-    )
-
-    return summary
+    return PipelineOrchestrator().run(config)

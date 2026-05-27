@@ -493,7 +493,8 @@ def evaluate_ad(
     Returns:
         EvaluationResult with scores, rationales, structural_elements, confidence_flags
     """
-    from iterate.ledger import log_event
+    from iterate.ledger_events import AdEvaluated
+    from iterate.ledger_writer import LedgerWriter
 
     ad_id = ad_text.get("ad_id", "unknown")
     prompt = _build_evaluation_prompt(ad_text, campaign_goal, audience)
@@ -548,20 +549,18 @@ def evaluate_ad(
         if len(parts) >= 2:
             brief_id = parts[1]
 
-    log_event(
-        led_path,
-        {
-            "event_type": "AdEvaluated",
-            "ad_id": result.ad_id,
-            "brief_id": brief_id,
-            "cycle_number": 0,
-            "action": "evaluation",
-            "tokens_consumed": tokens_actual,
-            "model_used": "gemini-2.0-flash",
-            "seed": "0",
-            "inputs": {"ad_id": ad_id, "campaign_goal": campaign_goal, "audience": audience},
-            "outputs": result.to_dict(),
-        },
+    LedgerWriter(led_path).record(
+        AdEvaluated(
+            ad_id=result.ad_id,
+            brief_id=brief_id,
+            cycle_number=0,
+            action="evaluation",
+            tokens_consumed=tokens_actual,
+            model_used="gemini-2.0-flash",
+            seed="0",
+            inputs={"ad_id": ad_id, "campaign_goal": campaign_goal, "audience": audience},
+            outputs=result.to_dict(),
+        )
     )
 
     return result

@@ -12,7 +12,8 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any
 
-from iterate.ledger import log_event
+from iterate.ledger_events import PerformanceIngested
+from iterate.ledger_writer import LedgerWriter
 
 
 @dataclass
@@ -139,20 +140,19 @@ def ingest_performance_data(
     Returns the number of records ingested.
     """
     count = 0
+    writer = LedgerWriter(ledger_path)
     for record in records:
-        event = {
-            "event_type": "PerformanceIngested",
-            "ad_id": record.ad_id,
-            "brief_id": record.campaign_id,
-            "cycle_number": 0,
-            "action": "ingest_performance",
-            "tokens_consumed": 0,
-            "model_used": "none",
-            "seed": 0,
-            "inputs": {"source": "meta_ads_manager"},
-            "outputs": asdict(record),
-        }
-        log_event(ledger_path, event)
+        writer.record(PerformanceIngested(
+            ad_id=record.ad_id,
+            brief_id=record.campaign_id,
+            cycle_number=0,
+            action="ingest_performance",
+            tokens_consumed=0,
+            model_used="none",
+            seed=0,  # type: ignore[arg-type]  -- legacy ledgers use int 0; preserve bytes
+            inputs={"source": "meta_ads_manager"},
+            outputs=asdict(record),
+        ))
         count += 1
     return count
 

@@ -11,7 +11,9 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 
-from iterate.ledger import log_event, read_events_filtered
+from iterate.ledger import read_events_filtered
+from iterate.ledger_events import ImageVariantWin
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -191,26 +193,25 @@ def track_image_variant_win(
         audience: The audience segment.
         ledger_path: Path to the JSONL ledger.
     """
-    log_event(ledger_path, {
-        "event_type": "ImageVariantWin",
-        "ad_id": comparison.ad_id,
-        "brief_id": "",
-        "cycle_number": 0,
-        "action": "image-variant-win",
-        "inputs": {
+    LedgerWriter(ledger_path).record(ImageVariantWin(
+        ad_id=comparison.ad_id,
+        brief_id="",
+        cycle_number=0,
+        action="image-variant-win",
+        inputs={
             "control_coherence": comparison.control_coherence,
         },
-        "outputs": {
+        outputs={
             "winner": comparison.winner,
             "winning_element": comparison.winning_element,
             "audience": audience,
             "coherence_lift": comparison.coherence_lift,
         },
-        "scores": {},
-        "tokens_consumed": 0,
-        "model_used": "",
-        "seed": "",
-    })
+        tokens_consumed=0,
+        model_used="",
+        seed="",
+        extra={"scores": {}},
+    ))
 
 
 def get_visual_patterns(ledger_path: str) -> dict[str, dict[str, float]]:

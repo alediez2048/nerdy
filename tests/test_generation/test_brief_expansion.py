@@ -89,7 +89,7 @@ def test_expand_brief_produces_all_required_fields(
     })
 
     with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.brief_expansion.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = expand_brief(minimal_brief)
 
     assert isinstance(result, ExpandedBrief)
@@ -124,7 +124,7 @@ def test_expansion_includes_only_verified_brand_facts(
     })
 
     with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.brief_expansion.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = expand_brief(minimal_brief)
 
     for fact in result.brand_facts:
@@ -167,7 +167,7 @@ def test_competitive_context_included_in_expanded_brief(
     })
 
     with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.brief_expansion.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             with patch(
                 "generate.brief_expansion.get_landscape_context",
                 return_value="## Competitive Landscape\n\n### Top Patterns\n- [Chegg] direct_offer: ...",
@@ -198,7 +198,7 @@ def test_parent_brief_gets_parent_relevant_facts(minimal_brief: dict) -> None:
     })
 
     with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.brief_expansion.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = expand_brief(minimal_brief)
 
     profile = result.audience_profile
@@ -222,7 +222,7 @@ def test_student_brief_gets_student_relevant_facts() -> None:
     })
 
     with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.brief_expansion.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = expand_brief(brief)
 
     assert result.original_brief["audience"] == "students"
@@ -234,7 +234,7 @@ def test_student_brief_gets_student_relevant_facts() -> None:
 def test_malformed_api_response_handled_gracefully(minimal_brief: dict) -> None:
     """Malformed JSON from API returns partial expansion with warning, not crash."""
     with patch("generate.brief_expansion._call_gemini", return_value=("not valid json {{{", 100)):
-        with patch("generate.brief_expansion.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = expand_brief(minimal_brief)
 
     assert isinstance(result, ExpandedBrief)
@@ -250,7 +250,7 @@ def test_partial_json_response_parsed_gracefully(minimal_brief: dict) -> None:
     })
 
     with patch("generate.brief_expansion._call_gemini", return_value=(partial, 100)):
-        with patch("generate.brief_expansion.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = expand_brief(minimal_brief)
 
     assert result.emotional_angles == ["Anxiety"]
@@ -276,7 +276,7 @@ def test_retry_logic_invoked_on_api_failure(minimal_brief: dict) -> None:
                 "key_differentiators": [],
                 "constraints": [],
             }), 100)
-            with patch("generate.brief_expansion.log_event"):
+            with patch("iterate.ledger_writer.log_event"):
                 expand_brief(minimal_brief)
 
     mock_retry.assert_called()
@@ -300,7 +300,7 @@ def test_minimal_brief_with_only_required_fields_expands_successfully(
     })
 
     with patch("generate.brief_expansion._call_gemini", return_value=(mock_response, 100)):
-        with patch("generate.brief_expansion.log_event"):
+        with patch("iterate.ledger_writer.log_event"):
             result = expand_brief(minimal_brief)
 
     assert result.original_brief == minimal_brief

@@ -16,7 +16,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from iterate.ledger import log_event
+from iterate.ledger_events import AdEscalated, BriefMutated
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -149,25 +150,23 @@ def mutate_brief(
     )
 
     if ledger_path:
-        log_event(
-            ledger_path,
-            {
-                "event_type": "BriefMutated",
-                "ad_id": diagnosis.ad_id,
-                "brief_id": original_brief.get("brief_id", "unknown"),
-                "cycle_number": 0,
-                "action": "brief-mutation",
-                "tokens_consumed": 0,
-                "model_used": "none",
-                "seed": "0",
-                "inputs": {
+        LedgerWriter(ledger_path).record(
+            BriefMutated(
+                ad_id=diagnosis.ad_id,
+                brief_id=original_brief.get("brief_id", "unknown"),
+                cycle_number=0,
+                action="brief-mutation",
+                tokens_consumed=0,
+                model_used="none",
+                seed="0",
+                inputs={
                     "weakest_dimension": diagnosis.weakest_dimension,
                     "score": diagnosis.score,
                 },
-                "outputs": {
+                outputs={
                     "mutation_guidance": diagnosis.suggested_mutation,
                 },
-            },
+            )
         )
 
     return mutated
@@ -223,27 +222,25 @@ def escalate(
     logger.warning("Escalated %s after %d attempts: %s", ad_id, len(attempts), reason)
 
     if ledger_path:
-        log_event(
-            ledger_path,
-            {
-                "event_type": "AdEscalated",
-                "ad_id": ad_id,
-                "brief_id": "unknown",
-                "cycle_number": len(attempts),
-                "action": "escalation",
-                "tokens_consumed": 0,
-                "model_used": "none",
-                "seed": "0",
-                "inputs": {
+        LedgerWriter(ledger_path).record(
+            AdEscalated(
+                ad_id=ad_id,
+                brief_id="unknown",
+                cycle_number=len(attempts),
+                action="escalation",
+                tokens_consumed=0,
+                model_used="none",
+                seed="0",
+                inputs={
                     "attempts_count": len(attempts),
                     "weakest_dimension": diagnosis.weakest_dimension,
                     "weakest_score": diagnosis.score,
                 },
-                "outputs": {
+                outputs={
                     "reason": reason,
                     "attempts": attempts,
                 },
-            },
+            )
         )
 
     return report

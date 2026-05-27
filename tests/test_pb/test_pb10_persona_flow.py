@@ -95,7 +95,7 @@ def test_persona_flows_to_expand_brief():
 
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_gemini_expansion()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         result = expand_brief(brief, persona="athlete_recruit")
 
@@ -109,7 +109,7 @@ def test_persona_none_uses_default():
 
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_gemini_expansion()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         result = expand_brief(brief, persona=None)
 

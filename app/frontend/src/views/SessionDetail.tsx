@@ -46,10 +46,21 @@ export default function SessionDetail() {
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false)
 
   const activeTab = (searchParams.get('tab') as TabKey) || 'overview'
-  const isRunning = session?.status === 'running'
 
-  // SSE progress — only active while session is running
-  const { progress } = useSessionProgress(isRunning ? (sessionId || '') : '')
+  // SSE progress — subscribe while the session is in an active state
+  // (or while we're still waiting for the session record to load after
+  // a fresh "create session" navigation). Bugfix A1: the previous
+  // ``isRunning ? sessionId : ''`` gate evaluated before the session
+  // record had loaded, so the first mount saw ``status=null`` → false →
+  // empty string, and the hook skipped the subscription. By the time
+  // the session arrived in the 'pending' state, ``isRunning`` was still
+  // false (status='pending', not 'running'), and the user had to refresh
+  // for the loading bar to show.
+  const isActiveSession =
+    !session || session.status === 'running' || session.status === 'pending'
+  const { progress, error: sseError } = useSessionProgress(
+    isActiveSession ? (sessionId || '') : '',
+  )
 
   // Re-fetch session when pipeline completes so status updates
   useEffect(() => {
@@ -299,8 +310,27 @@ export default function SessionDetail() {
           </div>
         )}
 
-        {/* Progress bar — visible while pipeline is running */}
-        {isRunning && (() => {
+        {/* SSE error banner — bugfix C surfaces auth-aware messages. */}
+        {sseError && isActiveSession && (
+          <div
+            style={{
+              padding: '8px 12px',
+              margin: '8px 0',
+              borderRadius: '6px',
+              background: 'rgba(255, 51, 85, 0.15)',
+              border: `1px solid ${colors.red}`,
+              color: colors.red,
+              fontSize: '13px',
+            }}
+          >
+            {sseError}
+          </div>
+        )}
+
+        {/* Progress bar — visible while pipeline is in an active state. */}
+        {/* Bugfix A1: was ``isRunning`` only, which missed the brief */}
+        {/* 'pending' window between session creation and worker pickup. */}
+        {isActiveSession && (() => {
           const isVideo = (config.session_type as string) === 'video'
           const totalTarget = isVideo
             ? Number(config.video_count || 3)

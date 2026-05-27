@@ -234,23 +234,18 @@ def select_image_model(
 ) -> str:
     """Select image generation model based on variant type and budget.
 
-    Args:
-        variant_type: One of "anchor", "tone_shift", "composition_shift".
-        budget_remaining: Remaining budget in dollars, or None for default routing.
-
-    Returns:
-        Model identifier string.
+    Thin shim over :func:`generate.image_model_router.choose_model`
+    (PH-06). Prefer ``choose_model`` directly in new code — it returns
+    the predicted USD cost alongside the model name, enabling future
+    budget gates to act before the API call.
     """
-    # Budget override: force NB2 when budget is low
-    if budget_remaining is not None and budget_remaining < _BUDGET_THRESHOLD:
-        logger.info("Budget override: %.2f < %.2f — using NB2 for %s",
-                     budget_remaining, _BUDGET_THRESHOLD, variant_type)
-        return MODEL_NANO_BANANA_2
+    from generate.image_model_router import choose_model
 
-    # Default routing: anchor → Pro, others → NB2
-    if variant_type == "anchor":
-        return MODEL_NANO_BANANA_PRO
-    return MODEL_NANO_BANANA_2
+    choice = choose_model(variant_type, budget_remaining_usd=budget_remaining)
+    if budget_remaining is not None and budget_remaining < _BUDGET_THRESHOLD:
+        logger.info("Budget override: %.2f < %.2f — %s",
+                     budget_remaining, _BUDGET_THRESHOLD, choice.rationale)
+    return choice.model_name
 
 
 def _call_image_api_with_model(

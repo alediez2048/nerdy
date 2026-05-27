@@ -19,7 +19,9 @@ from evaluate.video_evaluator import (
 )
 from generate_video.video_client import VideoGenerationClient
 from generate_video.video_spec import VideoSpec, build_kling_prompt
-from iterate.ledger import log_event, read_events
+from iterate.ledger import read_events
+from iterate.ledger_events import VideoGenerated, VideoGenerationFailed
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -191,16 +193,15 @@ def generate_video_variants(
             )
             variants.append(variant)
 
-            log_event(ledger_path, {
-                "event_type": "VideoGenerated",
-                "ad_id": ad_id,
-                "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                "cycle_number": 0,
-                "action": f"video_{variant_type}_generated",
-                "tokens_consumed": 0,
-                "model_used": provider_name,
-                "seed": str(var_seed),
-                "outputs": {
+            LedgerWriter(ledger_path).record(VideoGenerated(
+                ad_id=ad_id,
+                brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                cycle_number=0,
+                action=f"video_{variant_type}_generated",
+                tokens_consumed=0,
+                model_used=provider_name,
+                seed=str(var_seed),
+                outputs={
                     "video_path": out_path,
                     "remote_url": remote_url,
                     "variant_type": variant_type,
@@ -208,21 +209,20 @@ def generate_video_variants(
                     "audio_mode": effective_spec.audio_mode,
                     "credits": credits,
                 },
-            })
+            ))
 
         except Exception as e:
             logger.warning("Video generation failed for %s/%s: %s", ad_id, variant_type, e)
-            log_event(ledger_path, {
-                "event_type": "VideoGenerationFailed",
-                "ad_id": ad_id,
-                "brief_id": ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                "cycle_number": 0,
-                "action": f"video_{variant_type}_failed",
-                "tokens_consumed": 0,
-                "model_used": provider_name,
-                "seed": str(var_seed),
-                "outputs": {"error": str(e), "variant_type": variant_type},
-            })
+            LedgerWriter(ledger_path).record(VideoGenerationFailed(
+                ad_id=ad_id,
+                brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
+                cycle_number=0,
+                action=f"video_{variant_type}_failed",
+                tokens_consumed=0,
+                model_used=provider_name,
+                seed=str(var_seed),
+                outputs={"error": str(e), "variant_type": variant_type},
+            ))
 
     return variants
 

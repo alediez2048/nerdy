@@ -20,7 +20,8 @@ from evaluate.dimensions import (
 from evaluate.performance_correlation import (
     DimensionPerformanceMatrix,
 )
-from iterate.ledger import log_event
+from iterate.ledger_events import WeightsRecalibrated
+from iterate.ledger_writer import LedgerWriter
 
 
 # Metric-to-campaign-goal mapping for recalibration
@@ -174,25 +175,23 @@ def compare_profiles(original: WeightProfile, recalibrated: WeightProfile) -> st
 
 def log_recalibration(report: RecalibrationReport, ledger_path: str) -> None:
     """Log a WeightsRecalibrated event to the ledger."""
-    event = {
-        "event_type": "WeightsRecalibrated",
-        "ad_id": "system",
-        "brief_id": "system",
-        "cycle_number": 0,
-        "action": "recalibrate_weights",
-        "tokens_consumed": 0,
-        "model_used": "none",
-        "seed": 0,
-        "inputs": {
+    LedgerWriter(ledger_path).record(WeightsRecalibrated(
+        ad_id="system",
+        brief_id="system",
+        cycle_number=0,
+        action="recalibrate_weights",
+        tokens_consumed=0,
+        model_used="none",
+        seed=0,  # type: ignore[arg-type]  -- legacy ledgers use int 0; preserve bytes
+        inputs={
             "campaign_goal": report.campaign_goal,
             "target_metric": report.target_metric,
             "original_weights": report.original_weights,
             "correlation_basis": report.correlation_basis,
         },
-        "outputs": {
+        outputs={
             "recalibrated_weights": report.recalibrated_weights,
             "delta_per_dimension": report.delta_per_dimension,
             "confidence_note": report.confidence_note,
         },
-    }
-    log_event(ledger_path, event)
+    ))

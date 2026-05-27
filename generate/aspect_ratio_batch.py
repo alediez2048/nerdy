@@ -11,7 +11,9 @@ import logging
 from dataclasses import dataclass
 
 from generate.image_generator import MODEL_NANO_BANANA_2
-from iterate.ledger import log_event, read_events
+from iterate.ledger import read_events
+from iterate.ledger_events import AspectRatioGenerated
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -84,23 +86,22 @@ def generate_aspect_ratios(
             failed.append(ratio)
 
         if ledger_path:
-            log_event(ledger_path, {
-                "event_type": "AspectRatioGenerated",
-                "ad_id": ad_id,
-                "brief_id": "",
-                "cycle_number": 0,
-                "action": "aspect-ratio-generation",
-                "inputs": {"aspect_ratio": ratio, "visual_spec": visual_spec},
-                "outputs": {
+            LedgerWriter(ledger_path).record(AspectRatioGenerated(
+                ad_id=ad_id,
+                brief_id="",
+                cycle_number=0,
+                action="aspect-ratio-generation",
+                inputs={"aspect_ratio": ratio, "visual_spec": visual_spec},
+                outputs={
                     "image_path": image_path,
                     "passes_checklist": result.passes_checklist,
                     "attribute_pass_pct": result.attribute_pass_pct,
                 },
-                "scores": {},
-                "tokens_consumed": 0,
-                "model_used": MODEL_NANO_BANANA_2,
-                "seed": str(seed),
-            })
+                tokens_consumed=0,
+                model_used=MODEL_NANO_BANANA_2,
+                seed=str(seed),
+                extra={"scores": {}},
+            ))
 
         logger.info("Generated %s ratio for %s via %s",
                      ratio, ad_id, MODEL_NANO_BANANA_2)

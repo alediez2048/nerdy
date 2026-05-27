@@ -11,7 +11,9 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 
-from iterate.ledger import log_event, read_events_filtered
+from iterate.ledger import read_events_filtered
+from iterate.ledger_events import VariantWin
+from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -169,26 +171,25 @@ def track_variant_win(
         audience: The audience segment (e.g., "parents", "students").
         ledger_path: Path to the JSONL ledger.
     """
-    log_event(ledger_path, {
-        "event_type": "VariantWin",
-        "ad_id": comparison.ad_id,
-        "brief_id": "",
-        "cycle_number": 0,
-        "action": "variant-win",
-        "inputs": {
+    LedgerWriter(ledger_path).record(VariantWin(
+        ad_id=comparison.ad_id,
+        brief_id="",
+        cycle_number=0,
+        action="variant-win",
+        inputs={
             "control_score": comparison.control_scores.get("aggregate_score", 0),
         },
-        "outputs": {
+        outputs={
             "winner": comparison.winner,
             "winning_element": comparison.winning_element,
             "audience": audience,
             "lift": comparison.lift,
         },
-        "scores": {},
-        "tokens_consumed": 0,
-        "model_used": "",
-        "seed": "",
-    })
+        tokens_consumed=0,
+        model_used="",
+        seed="",
+        extra={"scores": {}},
+    ))
 
 
 def get_segment_patterns(ledger_path: str) -> dict[str, dict[str, float]]:

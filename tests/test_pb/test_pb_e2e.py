@@ -38,7 +38,7 @@ def test_full_pipeline_with_persona():
     # Step 1: Expand with persona
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_gemini_expansion()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         expanded = expand_brief(brief, persona="athlete_recruit")
 
@@ -124,7 +124,7 @@ def test_pipeline_persona_in_expanded_brief():
 
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_gemini_expansion()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         expanded = expand_brief(brief, persona="neurodivergent_advocate")
 
@@ -139,7 +139,7 @@ def test_pipeline_hook_attribution():
 
     with (
         patch("generate.brief_expansion._call_gemini", return_value=_mock_gemini_expansion()),
-        patch("generate.brief_expansion.log_event"),
+        patch("iterate.ledger_writer.log_event"),
     ):
         expanded = expand_brief(brief, persona="suburban_optimizer")
 
