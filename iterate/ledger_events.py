@@ -250,8 +250,6 @@ class MediaEvaluation(LedgerEvent):
     raw_score / penalty_multiplier / composite_score, and schema_version.
     """
 
-    event_type: str = "MediaEvaluation"
-
 
 @dataclass(frozen=True)
 class MediaEvaluationFailed(LedgerEvent):
@@ -262,8 +260,6 @@ class MediaEvaluationFailed(LedgerEvent):
     failed variants; if all variants for an ad fail, the ad is
     regenerated via the existing P1-08 brief-mutation flow.
     """
-
-    event_type: str = "MediaEvaluationFailed"
 
 
 # --- Registry -----------------------------------------------------------------
