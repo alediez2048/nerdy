@@ -166,9 +166,11 @@ def evaluate_media(
 ) -> MediaEvaluationResult:
     """Run the unified evaluator on one variant. Image path only (PI-02)."""
     if not Path(media_path).exists():
+        logger.warning("media_quality: file not found for %s/%s: %s", ad_id, variant_type, media_path)
         return _failure_result(
             ad_id, variant_type, media_type, media_path,
             "file_not_found", f"{media_path} does not exist",
+            model=model,
         )
     if media_type != "image":
         raise NotImplementedError(f"media_type={media_type} not yet supported")
@@ -183,15 +185,18 @@ def evaluate_media(
         )
         parsed = _parse_response(raw_payload)
     except (json.JSONDecodeError, ValueError) as e:
+        logger.warning("media_quality: parse failed for %s/%s: %s", ad_id, variant_type, e)
         return _failure_result(ad_id, variant_type, media_type, media_path,
-                                "json_parse_failed", str(e), tokens=tokens)
+                                "json_parse_failed", str(e), model=model, tokens=tokens)
     except Exception as e:
+        logger.warning("media_quality: LLM call failed for %s/%s: %s", ad_id, variant_type, e)
         return _failure_result(ad_id, variant_type, media_type, media_path,
-                                "llm_call_failed", str(e), tokens=tokens)
+                                "llm_call_failed", str(e), model=model, tokens=tokens)
 
     dimensions: dict[str, DimensionScore] = {}
     for d in rubric_dims:
         raw_d = parsed.get("dimensions", {}).get(d["name"], {})
+        # Missing/malformed dimension defaults to mid-range; downstream may want to flag.
         score = int(raw_d.get("score", 5))
         score = max(1, min(10, score))
         dimensions[d["name"]] = DimensionScore(
@@ -236,11 +241,13 @@ def _call_multimodal(
 
 def _failure_result(
     ad_id: str, variant_type: str, media_type: str, media_path: str,
-    failure_reason: str, error_message: str, tokens: int = 0,
+    failure_reason: str, error_message: str,
+    model: str = DEFAULT_MODEL,
+    tokens: int = 0,
 ) -> MediaEvaluationResult:
     return MediaEvaluationResult(
         ad_id=ad_id, variant_type=variant_type, media_type=media_type,
-        media_path=media_path, model_used=DEFAULT_MODEL, tokens_consumed=tokens,
+        media_path=media_path, model_used=model, tokens_consumed=tokens,
         dimensions={}, penalty_gates={}, raw_score=0.0,
         penalty_multiplier=0.0, composite_score=0.0,
         failed=True, failure_reason=failure_reason, error_message=error_message,
