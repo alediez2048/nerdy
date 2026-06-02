@@ -15,20 +15,25 @@ natural checkpoints for crash recovery.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import asdict as _asdict
+from dataclasses import dataclass, field, is_dataclass
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from evaluate.media_quality import MediaEvaluationResult, evaluate_media
+from evaluate.media_selector import select_best
+from generate.image_generator import generate_variants
+from generate.visual_spec import extract_visual_spec
 from iterate.ledger_events import (
     AdDiscarded,
     AdGenerated,
     AdPublished,
     BatchCompleted,
     BriefAdherenceScored,
-    ImageEvaluated,
     ImageGenerated,
-    ImageScored,
+    MediaEvaluation,
+    MediaEvaluationFailed,
     VisualSpecExtracted,
 )
 from iterate.ledger_writer import LedgerWriter
@@ -237,33 +242,8 @@ def process_batch(
                 except Exception as e:
                     logger.warning("Brief adherence scoring failed for %s: %s", ad.ad_id, e)
 
-                # PD-13: Image quality scoring
-                if winning_image and Path(winning_image).exists():
-                    try:
-                        from evaluate.image_scorer import score_image
-                        img_scores = score_image(
-                            image_path=winning_image,
-                            ad_copy=ad.to_evaluator_input(),
-                            ad_id=ad.ad_id,
-                            session_config=config,
-                        )
-                        LedgerWriter(ledger_path).record(ImageScored(
-                            ad_id=ad.ad_id,
-                            brief_id=brief_id,
-                            cycle_number=1,
-                            action="image_scored",
-                            tokens_consumed=img_scores.tokens_consumed,
-                            model_used="gemini-2.0-flash",
-                            seed="0",
-                            outputs={
-                                "image_path": winning_image,
-                                "image_scores": img_scores.scores,
-                                "image_avg_score": img_scores.avg_score,
-                                "rationales": img_scores.rationales,
-                            },
-                        ))
-                    except Exception as e:
-                        logger.warning("Image scoring failed for %s: %s", ad.ad_id, e)
+                # PI-04: per-variant MediaEvaluation events written in
+                # _generate_and_select_image; no post-hoc winner re-scoring.
             elif routing.decision == "discard":
                 result.discarded += 1
                 LedgerWriter(ledger_path).record(AdDiscarded(
@@ -309,20 +289,18 @@ def _generate_and_select_image(
     copy_on_image: bool = False,
     aspect_ratio: str = "1:1",
 ) -> str | None:
-    """Generate 3 image variants, evaluate, and select the best one.
+    """Generate N image variants, evaluate via media_quality, select winner.
 
     Returns the winning image path, or None if all variants fail.
     """
     try:
-        from generate.visual_spec import extract_visual_spec
-        from generate.image_generator import generate_variants
-        from evaluate.image_evaluator import evaluate_image_attributes
-        from evaluate.coherence_checker import check_coherence
-        from evaluate.image_selector import ImageVariantResult, select_best_variant, compute_composite_score
+        if is_dataclass(expanded_brief):
+            brief_dict = _asdict(expanded_brief)
+        elif isinstance(expanded_brief, dict):
+            brief_dict = expanded_brief
+        else:
+            brief_dict = {}
 
-        # Step 1: Extract visual spec from expanded brief
-        from dataclasses import asdict
-        brief_dict = asdict(expanded_brief) if hasattr(expanded_brief, "__dataclass_fields__") else dict(expanded_brief)
         visual_spec = extract_visual_spec(
             expanded_brief=brief_dict,
             campaign_goal=brief.get("campaign_goal", "conversion"),
@@ -348,7 +326,6 @@ def _generate_and_select_image(
                 outputs={"brief_id": brief.get("brief_id", "unknown")},
             ))
 
-        # Step 2: Generate 3 image variants
         output_dir = "output/images"
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         variants = generate_variants(
@@ -358,6 +335,9 @@ def _generate_and_select_image(
             output_dir=output_dir,
             creative_brief=creative_brief,
         )
+        if not variants:
+            logger.warning("No image variants generated for %s", ad.ad_id)
+            return None
 
         for variant in variants:
             LedgerWriter(ledger_path).record(ImageGenerated(
@@ -365,92 +345,105 @@ def _generate_and_select_image(
                 brief_id=brief.get("brief_id", "unknown"),
                 cycle_number=0,
                 action=f"image_gen_{variant.variant_type}",
-                tokens_consumed=variant.tokens_consumed,
-                model_used=variant.model_used,
-                seed=str(variant.seed),
+                tokens_consumed=getattr(variant, "tokens_consumed", 0),
+                model_used=getattr(variant, "model_used", "unknown"),
+                seed=str(getattr(variant, "seed", "0")),
                 inputs={"variant_type": variant.variant_type},
                 outputs={"image_path": variant.image_path},
             ))
 
-        # Step 3: Evaluate each variant (attributes + coherence)
-        variant_results: list[ImageVariantResult] = []
         ad_copy = {
             "headline": ad.headline,
-            "body": ad.primary_text,
-            "cta": ad.cta_button,
+            "primary_text": getattr(ad, "primary_text", "") or getattr(ad, "body", ""),
+            "cta_button": getattr(ad, "cta_button", "") or getattr(ad, "cta", ""),
         }
-        spec_dict = asdict(visual_spec) if hasattr(visual_spec, "__dataclass_fields__") else {
-            "subject": getattr(visual_spec, "subject", "student"),
-            "setting": getattr(visual_spec, "setting", "study environment"),
-        }
+        session_config = brief.get("session_config")
 
+        evaluations: list[MediaEvaluationResult] = []
         for variant in variants:
-            # Attribute evaluation
-            attr_result = evaluate_image_attributes(
-                image_path=variant.image_path,
-                visual_spec=spec_dict,
+            result = evaluate_media(
+                media_path=variant.image_path,
+                ad_copy=ad_copy,
                 ad_id=ad.ad_id,
                 variant_type=variant.variant_type,
+                media_type="image",
+                session_config=session_config,
             )
+            evaluations.append(result)
+            _record_media_evaluation(ledger_path, brief, variant, result)
 
-            # Coherence check
-            coherence = check_coherence(
-                copy=ad_copy,
-                image_path=variant.image_path,
-                ad_id=ad.ad_id,
-                variant_type=variant.variant_type,
-            )
-
-            # Compute composite score
-            attr_pct = attr_result.pass_pct if hasattr(attr_result, "pass_pct") else (
-                sum(1 for v in attr_result.attributes.values() if v) / max(len(attr_result.attributes), 1)
-            )
-            coherence_avg = coherence.average if hasattr(coherence, "average") else 0.5
-            comp = compute_composite_score(attr_pct, coherence_avg / 10.0)
-
-            variant_results.append(ImageVariantResult(
-                ad_id=ad.ad_id,
-                variant_type=variant.variant_type,
-                image_path=variant.image_path,
-                attribute_pass_pct=attr_pct,
-                coherence_avg=coherence_avg,
-                composite_score=comp,
-            ))
-
-            # Log variant evaluation (real tokens from attribute + coherence evals)
-            eval_tokens = getattr(attr_result, "tokens_consumed", 0) + getattr(coherence, "tokens_consumed", 0)
-            LedgerWriter(ledger_path).record(ImageEvaluated(
-                ad_id=ad.ad_id,
-                brief_id=brief.get("brief_id", "unknown"),
-                cycle_number=0,
-                action=f"image_eval_{variant.variant_type}",
-                tokens_consumed=eval_tokens,
-                model_used="gemini-2.0-flash",
-                seed=str(variant.seed),
-                inputs={"variant_type": variant.variant_type},
-                outputs={
-                    "attribute_pass_pct": attr_pct,
-                    "coherence_avg": coherence_avg,
-                    "composite_score": comp,
-                },
-            ))
-
-        # Step 4: Select best variant
-        selection = select_best_variant(variant_results)
-        winner_path = selection.winner.image_path if selection.winner else None
+        selection = select_best(evaluations)
+        if selection.all_failed or selection.winner is None:
+            logger.warning("All image variants failed for %s — no winner", ad.ad_id)
+            return None
 
         logger.info(
-            "Image selection for %s: winner=%s (composite=%.3f)",
-            ad.ad_id,
-            selection.winner.variant_type if selection.winner else "none",
-            selection.winner.composite_score if selection.winner else 0,
+            "Image winner %s for %s (composite=%.2f, %d variants)",
+            selection.winner.variant_type, ad.ad_id,
+            selection.winner.composite_score, len(evaluations),
         )
-
-        return winner_path
+        return selection.winner.media_path
 
     except Exception as e:
         logger.warning("Image generation failed for %s: %s — publishing text-only", ad.ad_id, e)
         return None
+
+
+def _record_media_evaluation(
+    ledger_path: str,
+    brief: dict[str, Any],
+    variant: Any,
+    result: MediaEvaluationResult,
+) -> None:
+    """Append the right ledger event for one variant evaluation."""
+    brief_id = brief.get("brief_id", "unknown")
+    seed = str(getattr(variant, "seed", "0"))
+
+    if result.failed:
+        LedgerWriter(ledger_path).record(MediaEvaluationFailed(
+            ad_id=result.ad_id,
+            brief_id=brief_id,
+            cycle_number=0,
+            action=f"media_eval_failed_{result.variant_type}",
+            tokens_consumed=result.tokens_consumed,
+            model_used=result.model_used,
+            seed=seed,
+            inputs={"variant_type": result.variant_type, "media_type": result.media_type},
+            outputs={
+                "schema_version": "v2",
+                "media_type": result.media_type,
+                "failure_reason": result.failure_reason,
+                "error_message": result.error_message,
+            },
+        ))
+        return
+
+    LedgerWriter(ledger_path).record(MediaEvaluation(
+        ad_id=result.ad_id,
+        brief_id=brief_id,
+        cycle_number=0,
+        action=f"media_eval_{result.variant_type}",
+        tokens_consumed=result.tokens_consumed,
+        model_used=result.model_used,
+        seed=seed,
+        inputs={"variant_type": result.variant_type, "media_type": result.media_type},
+        outputs={
+            "schema_version": "v2",
+            "media_type": result.media_type,
+            "media_path": result.media_path,
+            "dimensions": {
+                name: {"score": ds.score, "weight": ds.weight, "rationale": ds.rationale}
+                for name, ds in result.dimensions.items()
+            },
+            "penalty_gates": {
+                name: {"triggered": ge.triggered, "rationale": ge.rationale}
+                for name, ge in result.penalty_gates.items()
+            },
+            "raw_score": result.raw_score,
+            "penalty_multiplier": result.penalty_multiplier,
+            "composite_score": result.composite_score,
+        },
+    ))
 
 
 def write_batch_checkpoint(
