@@ -286,12 +286,10 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
                           </div>
                         ))}
                       </div>
-                      {/* Image variants Pareto panel — visible on expand for non-video ads with images. */}
-                      {!isVideo && ad.image_url && (
-                        <div style={{ padding: '0 14px' }}>
-                          <VariantsPanel sessionId={sessionId} adId={ad.ad_id} />
-                        </div>
-                      )}
+                      {/* PI-08: VariantsPanel renders v2 (image OR video) and legacy v1. */}
+                      <div style={{ padding: '0 14px' }}>
+                        <VariantsPanel sessionId={sessionId} adId={ad.ad_id} />
+                      </div>
                       <div style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginTop: '10px', padding: '0 14px' }}>
                         {!isVideo && <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>}
                         {hasVideo && (
