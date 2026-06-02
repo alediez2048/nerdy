@@ -16,11 +16,6 @@ from typing import Any
 
 from evaluate.media_quality import MediaEvaluationResult, evaluate_media
 from evaluate.media_selector import select_best
-from evaluate.video_evaluator import (
-    VideoCoherenceResult,
-    VideoEvalResult,
-    compute_composite_score,
-)
 from generate_video.video_client import VideoGenerationClient
 from generate_video.video_spec import VideoSpec, build_kling_prompt
 from iterate.ledger import read_events
@@ -234,33 +229,6 @@ def generate_video_variants(
             ))
 
     return variants
-
-
-def select_best_video(
-    variants: list[VideoVariant],
-    eval_results: dict[str, VideoEvalResult],
-    coherence_results: dict[str, VideoCoherenceResult],
-) -> VideoVariant | None:
-    """Select the best video variant by composite score.
-
-    Returns the highest-scoring generated/evaluated variant.
-    Returns None only when no variant has both evaluation artifacts present.
-    """
-    candidates: list[tuple[float, VideoVariant]] = []
-
-    for v in variants:
-        ev = eval_results.get(v.variant_type)
-        co = coherence_results.get(v.variant_type)
-        if not ev or not co:
-            continue
-        score = compute_composite_score(ev, co)
-        candidates.append((score, v))
-
-    if not candidates:
-        return None
-
-    candidates.sort(key=lambda x: x[0], reverse=True)
-    return candidates[0][1]
 
 
 def should_skip_video_ad(ad_id: str, ledger_path: str) -> bool:

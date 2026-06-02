@@ -5,7 +5,6 @@ import pytest
 
 from evaluate.media_quality import (
     DimensionScore,
-    GateEvaluation,
     MediaEvaluationResult,
     IMAGE_DIMENSIONS,
 )

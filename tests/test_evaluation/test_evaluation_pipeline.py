@@ -6,23 +6,23 @@ Cover the public surface added in PH-04:
   (``aggregate_score``, ``decision``, ``improvable``, ``escalation_reason``).
 - :func:`evaluate_copy` composes ``evaluator.evaluate_ad`` and
   ``model_router.route_ad`` into a single call.
-- :func:`evaluate_visual` returns whichever pieces match the asset paths
-  (image only, video only, neither).
 - ``improvable`` is derived from the aggregate score range [5.5, 7.0).
 - ``escalation_reason`` is populated only when the routing decision is
   ``"escalate"``.
+
+PI-10: evaluate_visual / VisualEvaluation removed with the legacy
+post-hoc image_scorer + video_scorer path. The unified evaluate_media
+in evaluate/media_quality.py is now the single source of truth for
+visual evaluation — covered by tests/test_evaluation/test_media_quality.py.
 """
 
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from evaluate.brief_adherence import BriefAdherenceResult
 from evaluate.evaluation_pipeline import (
     CopyEvaluation,
-    VisualEvaluation,
     evaluate_copy,
-    evaluate_visual,
 )
 from evaluate.evaluator import EvaluationResult
 from generate.model_router import RoutingDecision
@@ -151,79 +151,4 @@ def test_evaluate_copy_accepts_raw_dict_ad() -> None:
     assert result.decision == "publish"
 
 
-# --- evaluate_visual ---------------------------------------------------------
-
-
-def test_evaluate_visual_no_paths_returns_empty() -> None:
-    fake_ad = MagicMock()
-    fake_ad.to_evaluator_input.return_value = {"ad_id": "ad_001"}
-    result = evaluate_visual(fake_ad, {}, {})
-    assert isinstance(result, VisualEvaluation)
-    assert result.image_scores is None
-    assert result.video_scores is None
-    assert result.adherence is None
-
-
-def test_evaluate_visual_image_path_runs_image_scorer_and_adherence() -> None:
-    fake_ad = MagicMock()
-    fake_ad.ad_id = "ad_001"
-    fake_ad.to_evaluator_input.return_value = {"ad_id": "ad_001"}
-
-    fake_image_result = MagicMock(scores={"clarity": 8.0}, avg_score=8.0, tokens_consumed=100)
-    fake_adherence = BriefAdherenceResult(
-        ad_id="ad_001", scores={}, avg_score=7.0,
-        rationales={}, tokens_consumed=50,
-    )
-
-    with (
-        patch("evaluate.image_scorer.score_image", return_value=fake_image_result) as ms,
-        patch(
-            "evaluate.evaluation_pipeline.score_brief_adherence",
-            return_value=fake_adherence,
-        ) as ma,
-    ):
-        result = evaluate_visual(
-            fake_ad, {}, {"text_threshold": 7.0},
-            image_path="/tmp/img.png",
-        )
-
-    ms.assert_called_once()
-    assert ms.call_args.kwargs["image_path"] == "/tmp/img.png"
-    ma.assert_called_once()
-    assert ma.call_args.kwargs["image_path"] == "/tmp/img.png"
-    assert ma.call_args.kwargs["video_path"] is None
-
-    assert result.image_scores is fake_image_result
-    assert result.video_scores is None
-    assert result.adherence is fake_adherence
-
-
-def test_evaluate_visual_video_path_runs_video_scorer_and_adherence() -> None:
-    fake_ad = {"ad_id": "ad_vid"}
-    fake_video_result = MagicMock(scores={}, avg_score=6.5, tokens_consumed=100)
-    fake_adherence = BriefAdherenceResult(
-        ad_id="ad_vid", scores={}, avg_score=6.5,
-        rationales={}, tokens_consumed=80,
-    )
-
-    with (
-        patch("evaluate.video_scorer.score_video", return_value=fake_video_result) as mv,
-        patch(
-            "evaluate.evaluation_pipeline.score_brief_adherence",
-            return_value=fake_adherence,
-        ) as ma,
-    ):
-        result = evaluate_visual(
-            fake_ad, {}, {},
-            video_path="/tmp/v.mp4",
-            ad_id="ad_vid",
-        )
-
-    mv.assert_called_once()
-    assert mv.call_args.kwargs["video_path"] == "/tmp/v.mp4"
-    ma.assert_called_once()
-    assert ma.call_args.kwargs["video_path"] == "/tmp/v.mp4"
-
-    assert result.video_scores is fake_video_result
-    assert result.image_scores is None
-    assert result.adherence is fake_adherence
+# PI-10: evaluate_visual tests retired with the legacy scorers.
