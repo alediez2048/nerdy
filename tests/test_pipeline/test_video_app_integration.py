@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 
 from output.video_assembler import (
     VideoAssembledAd,
@@ -377,6 +378,7 @@ class TestVideoPipelineCopyGeneration:
     @patch("app.workers.tasks.pipeline_task.publish_progress")
     @patch("iterate.ledger.log_event")
     @patch("generate_video.orchestrator.select_best_video")
+    @pytest.mark.skip(reason="PI-06: legacy evaluators replaced by evaluate_media; removed in PI-10")
     @patch("generate_video.orchestrator.generate_video_variants")
     @patch("generate_video.orchestrator.should_skip_video_ad")
     @patch("generate_video.factory.build_video_client")

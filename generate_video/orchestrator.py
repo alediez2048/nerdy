@@ -12,6 +12,10 @@ import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+from typing import Any
+
+from evaluate.media_quality import MediaEvaluationResult, evaluate_media
+from evaluate.media_selector import select_best
 from evaluate.video_evaluator import (
     VideoCoherenceResult,
     VideoEvalResult,
@@ -20,7 +24,12 @@ from evaluate.video_evaluator import (
 from generate_video.video_client import VideoGenerationClient
 from generate_video.video_spec import VideoSpec, build_kling_prompt
 from iterate.ledger import read_events
-from iterate.ledger_events import VideoGenerated, VideoGenerationFailed
+from iterate.ledger_events import (
+    MediaEvaluation,
+    MediaEvaluationFailed,
+    VideoGenerated,
+    VideoGenerationFailed,
+)
 from iterate.ledger_writer import LedgerWriter
 
 logger = logging.getLogger(__name__)
@@ -261,3 +270,97 @@ def should_skip_video_ad(ad_id: str, ledger_path: str) -> bool:
         if ev.get("ad_id") == ad_id and ev.get("event_type") in ("VideoSelected", "VideoBlocked"):
             return True
     return False
+
+
+def score_and_select_video_variants(
+    ad: Any,
+    variants: list[Any],
+    brief: dict[str, Any],
+    ledger_path: str,
+) -> str | None:
+    """Evaluate N video variants via unified media_quality, pick winner.
+
+    Returns the winning video path, or None if all variants failed.
+    Writes one MediaEvaluation (or MediaEvaluationFailed) ledger event
+    per variant. PI-06.
+    """
+    ad_copy = {
+        "headline": ad.headline,
+        "primary_text": getattr(ad, "primary_text", "") or getattr(ad, "body", ""),
+        "cta_button": getattr(ad, "cta_button", "") or getattr(ad, "cta", ""),
+    }
+    session_config = brief.get("session_config")
+    evaluations: list[MediaEvaluationResult] = []
+    for v in variants:
+        result = evaluate_media(
+            media_path=v.video_path,
+            ad_copy=ad_copy,
+            ad_id=ad.ad_id,
+            variant_type=v.variant_type,
+            media_type="video",
+            session_config=session_config,
+        )
+        evaluations.append(result)
+        _record_video_evaluation(ledger_path, brief, v, result)
+
+    selection = select_best(evaluations)
+    if selection.all_failed or selection.winner is None:
+        return None
+    return selection.winner.media_path
+
+
+def _record_video_evaluation(
+    ledger_path: str,
+    brief: dict[str, Any],
+    variant: Any,
+    result: MediaEvaluationResult,
+) -> None:
+    """Append the right ledger event for one video variant evaluation."""
+    brief_id = brief.get("brief_id", "unknown")
+    seed = str(getattr(variant, "seed", "0"))
+
+    if result.failed:
+        LedgerWriter(ledger_path).record(MediaEvaluationFailed(
+            ad_id=result.ad_id,
+            brief_id=brief_id,
+            cycle_number=0,
+            action=f"media_eval_failed_{result.variant_type}",
+            tokens_consumed=result.tokens_consumed,
+            model_used=result.model_used,
+            seed=seed,
+            inputs={"variant_type": result.variant_type, "media_type": "video"},
+            outputs={
+                "schema_version": "v2",
+                "media_type": "video",
+                "failure_reason": result.failure_reason,
+                "error_message": result.error_message,
+            },
+        ))
+        return
+
+    LedgerWriter(ledger_path).record(MediaEvaluation(
+        ad_id=result.ad_id,
+        brief_id=brief_id,
+        cycle_number=0,
+        action=f"media_eval_{result.variant_type}",
+        tokens_consumed=result.tokens_consumed,
+        model_used=result.model_used,
+        seed=seed,
+        inputs={"variant_type": result.variant_type, "media_type": "video"},
+        outputs={
+            "schema_version": "v2",
+            "media_type": "video",
+            "media_path": result.media_path,
+            "dimensions": {
+                name: {"score": ds.score, "weight": ds.weight, "rationale": ds.rationale}
+                for name, ds in result.dimensions.items()
+            },
+            "penalty_gates": {
+                name: {"triggered": ge.triggered, "rationale": ge.rationale}
+                for name, ge in result.penalty_gates.items()
+            },
+            "raw_score": result.raw_score,
+            "penalty_multiplier": result.penalty_multiplier,
+            "composite_score": result.composite_score,
+        },
+    ))
