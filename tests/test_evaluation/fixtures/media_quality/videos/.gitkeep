@@ -1,0 +1,2 @@
+# Populate with 8 reference videos named per annotations.yaml.
+# Files in this directory are gitignored (*.mp4); only this .gitkeep is tracked.

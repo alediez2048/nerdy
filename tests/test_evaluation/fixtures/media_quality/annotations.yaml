@@ -1,0 +1,106 @@
+# Calibration golden set — PI-09
+#
+# This file lists the reference images and videos used by
+# test_media_quality_calibration.py to verify that the unified
+# media_quality evaluator preserves tier separation and spread.
+#
+# tier: great | mid | bad
+# source: where the file came from (session_id/path or hand-curated note)
+# notes: 1–2 line description used by the test report
+#
+# The fixture files themselves live next to this YAML under
+# images/ and videos/ and are NOT committed to the repo
+# (gitignore covers .png + .mp4). To populate:
+#   1. Run a real image pipeline session and copy 12 representative
+#      output/images/*.png files into ./images/
+#   2. Run a real video pipeline session and copy 8 representative
+#      output/videos/*.mp4 files into ./videos/
+#   3. Update file names below to match what you copied
+#   4. Run: GEMINI_API_KEY=... pytest -m calibration
+#
+# When fixtures are missing the calibration tests skip cleanly so the
+# default CI gate stays green.
+
+images:
+  - file: img_great_01.png
+    tier: great
+    source: TBD
+    notes: strong focal point, brand colors, clean composition
+  - file: img_great_02.png
+    tier: great
+    source: TBD
+    notes: clear single subject, strong contrast, mobile-legible copy
+  - file: img_great_03.png
+    tier: great
+    source: TBD
+    notes: emotional hook, on-brand teal/navy palette
+  - file: img_great_04.png
+    tier: great
+    source: TBD
+    notes: tutor + student composition, warm lighting
+  - file: img_mid_01.png
+    tier: mid
+    source: TBD
+    notes: average composition, brand colors muted
+  - file: img_mid_02.png
+    tier: mid
+    source: TBD
+    notes: ok focal point, slightly cluttered background
+  - file: img_mid_03.png
+    tier: mid
+    source: TBD
+    notes: generic stock-feel but in-brand
+  - file: img_mid_04.png
+    tier: mid
+    source: TBD
+    notes: copy slightly small for mobile, otherwise fine
+  - file: img_bad_01.png
+    tier: bad
+    source: TBD
+    notes: planted — warped hands (has_ai_artifacts target)
+  - file: img_bad_02.png
+    tier: bad
+    source: TBD
+    notes: planted — mangled on-image text (has_ai_artifacts target)
+  - file: img_bad_03.png
+    tier: bad
+    source: TBD
+    notes: planted — off-brand colors, no clear subject
+  - file: img_bad_04.png
+    tier: bad
+    source: TBD
+    notes: planted — uncanny faces (has_uncanny_faces target)
+
+videos:
+  - file: vid_great_01.mp4
+    tier: great
+    source: TBD
+    notes: clean Veo output, hook within 1s, smooth motion
+  - file: vid_great_02.mp4
+    tier: great
+    source: TBD
+    notes: strong opening, clear CTA, on-brand audio
+  - file: vid_great_03.mp4
+    tier: great
+    source: TBD
+    notes: tutor testimonial style, steady pacing
+  - file: vid_mid_01.mp4
+    tier: mid
+    source: TBD
+    notes: ok pacing, soft hook
+  - file: vid_mid_02.mp4
+    tier: mid
+    source: TBD
+    notes: brand colors present, audio neutral
+  - file: vid_mid_03.mp4
+    tier: mid
+    source: TBD
+    notes: generic clip, no glaring issues
+  - file: vid_bad_01.mp4
+    tier: bad
+    source: TBD
+    notes: planted — temporal_artifacts (flickering frames)
+  - file: vid_bad_02.mp4
+    tier: bad
+    source: TBD
+    notes: planted — face morph across cuts (has_temporal_artifacts target)
