@@ -48,6 +48,43 @@ IMAGE_GATES: tuple[dict[str, Any], ...] = (
      "criterion": "Competitor logos, inappropriate context, unsafe imagery."},
 )
 
+# ---- Video rubric (PI-05) ----
+VIDEO_DIMENSIONS: tuple[dict[str, Any], ...] = (
+    {"name": "thumb_stop_potential", "weight": 0.15,
+     "criterion": "Visual hook within 0.3s that stops the scroll."},
+    {"name": "brand_consistency", "weight": 0.10,
+     "criterion": "Varsity Tutors palette and tone visible throughout."},
+    {"name": "emotional_impact", "weight": 0.10,
+     "criterion": "Evokes a specific emotion across the clip."},
+    {"name": "message_alignment", "weight": 0.10,
+     "criterion": "Video reinforces the copy's message and CTA."},
+    {"name": "audience_match", "weight": 0.10,
+     "criterion": "Casting and setting match the target persona."},
+    {"name": "production_quality", "weight": 0.05,
+     "criterion": "Composition + color balance + no obvious tells."},
+    {"name": "hook_in_3s", "weight": 0.15,
+     "criterion": "Opening 3 seconds grab attention — Meta's #1 video metric."},
+    {"name": "pacing", "weight": 0.10,
+     "criterion": "No dead frames; energy matches the brief."},
+    {"name": "motion_quality", "weight": 0.10,
+     "criterion": "Smooth motion, no jank or unnatural transitions."},
+    {"name": "audio_appropriateness", "weight": 0.05,
+     "criterion": "Audio fits tone; intentional silence is OK."},
+)
+
+VIDEO_GATES: tuple[dict[str, Any], ...] = (
+    {"name": "has_ai_artifacts", "cap": 0.5,
+     "criterion": "Warped hands, mangled text, impossible geometry."},
+    {"name": "has_uncanny_faces", "cap": 0.6,
+     "criterion": "Asymmetric features, melted skin, lifeless eyes."},
+    {"name": "brand_safety_violation", "cap": 0.3,
+     "criterion": "Competitor logos, inappropriate context."},
+    {"name": "has_temporal_artifacts", "cap": 0.4,
+     "criterion": "Flickering, frame jumps, faces morphing across cuts."},
+    {"name": "has_pacing_dead_zones", "cap": 0.7,
+     "criterion": "Long static moments where nothing happens."},
+)
+
 
 @dataclass
 class DimensionScore:
@@ -147,6 +184,47 @@ Return ONLY a JSON object with this exact shape:
 }}"""
 
 
+def _build_video_prompt(ad_copy: dict[str, Any], session_config: dict[str, Any] | None) -> str:
+    headline = ad_copy.get("headline", "")
+    primary_text = ad_copy.get("primary_text", "") or ad_copy.get("body", "")
+    cta = ad_copy.get("cta_button", "") or ad_copy.get("cta", "")
+    audience = (session_config or {}).get("audience", "")
+    persona = (session_config or {}).get("persona", "")
+
+    dims_block = "\n".join(
+        f"{i+1}. {d['name']} (weight {d['weight']:.2f}) — {d['criterion']}"
+        for i, d in enumerate(VIDEO_DIMENSIONS)
+    )
+    gates_block = "\n".join(
+        f"- {g['name']} (cap {g['cap']:.1f}) — {g['criterion']}"
+        for g in VIDEO_GATES
+    )
+    return f"""You are a strict UGC-style video ad evaluator for Varsity Tutors SAT test prep on Facebook and Instagram.
+
+CALIBRATION: AI-generated video has visible weak points. Be specific. A score of 7 is genuinely good. 9–10 is exceptional and rare. Most generated video clips score 4–6. Watch the full clip before scoring.
+
+AD COPY (for message-alignment evaluation):
+- Headline: {headline or "(none)"}
+- Primary Text: {primary_text or "(none)"}
+- CTA: {cta or "(none)"}
+- Target audience: {audience or "(none)"}
+- Persona: {persona or "(none)"}
+
+DIMENSIONS — score 1–10 with a 1–2 sentence rationale naming a specific moment or visual element (e.g. "the 0:02 cut from student to tutor").
+
+{dims_block}
+
+PENALTY GATES — answer true / false with a 1-sentence rationale.
+
+{gates_block}
+
+Return ONLY a JSON object with this exact shape:
+{{
+  "dimensions": {{"thumb_stop_potential": {{"score": 7, "rationale": "..."}}, ...}},
+  "penalty_gates": {{"has_ai_artifacts": {{"triggered": false, "rationale": "..."}}, ...}}
+}}"""
+
+
 def _parse_response(text: str) -> dict[str, Any]:
     stripped = text.strip()
     m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped)
@@ -172,12 +250,20 @@ def evaluate_media(
             "file_not_found", f"{media_path} does not exist",
             model=model,
         )
-    if media_type != "image":
-        raise NotImplementedError(f"media_type={media_type} not yet supported")
-
-    rubric_dims = IMAGE_DIMENSIONS
-    rubric_gates = IMAGE_GATES
-    prompt = _build_image_prompt(ad_copy, session_config)
+    if media_type == "image":
+        rubric_dims = IMAGE_DIMENSIONS
+        rubric_gates = IMAGE_GATES
+        prompt = _build_image_prompt(ad_copy, session_config)
+    elif media_type == "video":
+        rubric_dims = VIDEO_DIMENSIONS
+        rubric_gates = VIDEO_GATES
+        prompt = _build_video_prompt(ad_copy, session_config)
+    else:
+        return _failure_result(
+            ad_id, variant_type, media_type, media_path,
+            "unsupported_media_type", f"media_type={media_type}",
+            model=model,
+        )
     tokens = 0
     try:
         raw_payload, tokens = retry_with_backoff(

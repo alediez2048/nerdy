@@ -147,3 +147,61 @@ def test_evaluate_media_score_clamped_to_1_10(tmp_path) -> None:
         )
     assert not result.failed
     assert all(ds.score == 10 for ds in result.dimensions.values())
+
+
+# ---- PI-05: video path ----
+from evaluate.media_quality import VIDEO_DIMENSIONS, VIDEO_GATES  # noqa: E402
+
+
+def test_video_dimensions_and_weights() -> None:
+    """10 dimensions for video, weights sum to 1.0."""
+    assert len(VIDEO_DIMENSIONS) == 10
+    total = sum(d["weight"] for d in VIDEO_DIMENSIONS)
+    assert abs(total - 1.0) < 1e-9
+    names = {d["name"] for d in VIDEO_DIMENSIONS}
+    assert names == {
+        "thumb_stop_potential", "brand_consistency", "emotional_impact",
+        "message_alignment", "audience_match", "production_quality",
+        "hook_in_3s", "pacing", "motion_quality", "audio_appropriateness",
+    }
+
+
+def test_video_gates_have_caps() -> None:
+    assert len(VIDEO_GATES) == 5
+    names = {g["name"] for g in VIDEO_GATES}
+    assert names == {
+        "has_ai_artifacts", "has_uncanny_faces", "brand_safety_violation",
+        "has_temporal_artifacts", "has_pacing_dead_zones",
+    }
+    for g in VIDEO_GATES:
+        assert 0.0 < g["cap"] < 1.0
+
+
+def _make_video_payload(score: int = 6) -> dict[str, Any]:
+    return {
+        "dimensions": {
+            d["name"]: {"score": score, "rationale": f"video {d['name']}"}
+            for d in VIDEO_DIMENSIONS
+        },
+        "penalty_gates": {
+            g["name"]: {"triggered": False, "rationale": "clean"}
+            for g in VIDEO_GATES
+        },
+    }
+
+
+def test_evaluate_media_video_happy_path(tmp_path) -> None:
+    media_path = tmp_path / "ad.mp4"
+    media_path.write_bytes(b"fake-mp4")
+    payload = json.dumps(_make_video_payload(score=6))
+    with patch("evaluate.media_quality._call_multimodal", return_value=(payload, 3000)):
+        result = evaluate_media(
+            media_path=str(media_path),
+            ad_copy={"headline": "Ace SAT", "body": "1-on-1", "cta": "Start"},
+            ad_id="ad_001", variant_type="anchor", media_type="video",
+        )
+    assert not result.failed
+    assert result.media_type == "video"
+    assert len(result.dimensions) == 10
+    assert len(result.penalty_gates) == 5
+    assert result.composite_score == pytest.approx(60.0, abs=0.01)
