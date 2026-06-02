@@ -115,7 +115,7 @@ def _call_gemini_for_video_spec(prompt: str) -> tuple[dict[str, Any], int]:
     from generate.gemini_client import call_gemini
 
     def _do_call() -> tuple[dict[str, Any], int]:
-        resp = call_gemini(prompt, model="gemini-2.0-flash", temperature=0.4, max_output_tokens=1024)
+        resp = call_gemini(prompt, model="gemini-2.5-flash", temperature=0.4, max_output_tokens=1024)
         text = resp.text or ""
         stripped = text.strip()
         match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped)

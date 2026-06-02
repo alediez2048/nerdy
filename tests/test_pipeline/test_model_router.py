@@ -57,7 +57,7 @@ def test_score_in_improvable_range_escalates() -> None:
         config=_make_config(),
     )
     assert decision.decision == "escalate"
-    assert decision.model_used == "gemini-2.0-pro"
+    assert decision.model_used == "gemini-2.5-pro"
 
 
 def test_boundary_lower_exact_escalates() -> None:
@@ -145,19 +145,19 @@ def test_routing_decision_logs_to_ledger(tmp_path: pytest.TempPathFactory) -> No
 def test_get_model_for_stage_first_draft() -> None:
     """First draft always uses Flash."""
     model = get_model_for_stage("first_draft")
-    assert model == "gemini-2.0-flash"
+    assert model == "gemini-2.5-flash"
 
 
 def test_get_model_for_stage_escalation() -> None:
     """Escalation stage uses Pro."""
     model = get_model_for_stage("escalation")
-    assert model == "gemini-2.0-pro"
+    assert model == "gemini-2.5-pro"
 
 
 def test_get_model_for_stage_evaluation() -> None:
     """Evaluation always uses Flash."""
     model = get_model_for_stage("evaluation")
-    assert model == "gemini-2.0-flash"
+    assert model == "gemini-2.5-flash"
 
 
 # --- Routing Stats Tests ---

@@ -25,8 +25,10 @@ logger = logging.getLogger(__name__)
 # - Fal hosted ``fal-ai/veo3`` → ``video_fal_veo3_cost_per_call_usd`` in config.yaml
 # - Other Fal/Kling endpoints → use the keys below (tune from each vendor’s Usage / pricing page)
 MODEL_COST_RATES: dict[str, float] = {
-    "gemini-2.0-flash": 0.01 / 1000,          # $0.01 per 1K tokens
-    "gemini-2.0-pro": 0.05 / 1000,            # $0.05 per 1K tokens
+    "gemini-2.0-flash": 0.01 / 1000,          # $0.01 per 1K tokens (legacy — historical ledgers)
+    "gemini-2.5-flash": 0.01 / 1000,          # $0.01 per 1K tokens (current default)
+    "gemini-2.0-pro": 0.05 / 1000,            # $0.05 per 1K tokens (legacy)
+    "gemini-2.5-pro": 0.05 / 1000,            # $0.05 per 1K tokens (current escalation tier)
     "gemini-2.0-flash-preview-image-generation": 0.13,  # ~$0.13 per image call
     "nano-banana-pro-preview": 0.13,           # Nano Banana Pro (same tier as flash image gen)
     "gemini-2.5-flash-image": 0.035,

@@ -422,7 +422,7 @@ def generate_ad(
     response, tokens_used = retry_with_backoff(_do_call)
     tokens_estimate = tokens_used or (len(prompt) + len(response)) // 4
     metadata = {
-        "model_used": "gemini-2.0-flash",
+        "model_used": "gemini-2.5-flash",
         "tokens_consumed": tokens_estimate,
         "seed": actual_seed,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -451,7 +451,7 @@ def generate_ad(
             cycle_number=cycle_number,
             action="generation",
             tokens_consumed=tokens_estimate,
-            model_used="gemini-2.0-flash",
+            model_used="gemini-2.5-flash",
             seed=str(actual_seed),
             inputs={
                 "expanded_brief_id": brief_id,

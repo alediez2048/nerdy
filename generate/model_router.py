@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 _DEFAULT_IMPROVABLE_RANGE = [5.5, 7.0]
 
 _MODEL_MAP: dict[str, str] = {
-    "first_draft": "gemini-2.0-flash",
-    "evaluation": "gemini-2.0-flash",
-    "escalation": "gemini-2.0-pro",
-    "regeneration": "gemini-2.0-pro",
+    "first_draft": "gemini-2.5-flash",
+    "evaluation": "gemini-2.5-flash",
+    "escalation": "gemini-2.5-pro",
+    "regeneration": "gemini-2.5-pro",
 }
 
 
@@ -69,7 +69,7 @@ def route_ad(
             ad_id=ad_id,
             score=aggregate_score,
             decision="discard",
-            model_used="gemini-2.0-flash",
+            model_used="gemini-2.5-flash",
             reason=f"Score {aggregate_score:.2f} below improvable range floor {lower_bound:.1f} — not worth Pro tokens",
         )
     elif aggregate_score >= upper_bound:
@@ -77,7 +77,7 @@ def route_ad(
             ad_id=ad_id,
             score=aggregate_score,
             decision="publish",
-            model_used="gemini-2.0-flash",
+            model_used="gemini-2.5-flash",
             reason=f"Score {aggregate_score:.2f} meets quality threshold {upper_bound:.1f} — publish directly",
         )
     else:
@@ -85,7 +85,7 @@ def route_ad(
             ad_id=ad_id,
             score=aggregate_score,
             decision="escalate",
-            model_used="gemini-2.0-pro",
+            model_used="gemini-2.5-pro",
             reason=f"Score {aggregate_score:.2f} in improvable range [{lower_bound:.1f}, {upper_bound:.1f}) — escalate to Pro",
         )
 
@@ -125,7 +125,7 @@ def get_model_for_stage(stage: str) -> str:
     Returns:
         Model identifier string.
     """
-    return _MODEL_MAP.get(stage, "gemini-2.0-flash")
+    return _MODEL_MAP.get(stage, "gemini-2.5-flash")
 
 
 def get_routing_stats(ledger_path: str) -> dict[str, Any]:

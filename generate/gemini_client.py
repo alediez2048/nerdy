@@ -16,7 +16,7 @@ from iterate.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "gemini-2.5-flash"
 
 
 @dataclass

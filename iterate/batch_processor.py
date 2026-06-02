@@ -160,7 +160,7 @@ def process_batch(
                 cycle_number=0,
                 action="generation",
                 tokens_consumed=ad_tokens,
-                model_used="gemini-2.0-flash",
+                model_used="gemini-2.5-flash",
                 seed=str(brief_seed),
                 inputs={"brief_id": brief_id},
                 outputs={
@@ -231,7 +231,7 @@ def process_batch(
                         cycle_number=1,
                         action="brief_adherence",
                         tokens_consumed=adherence.tokens_consumed,
-                        model_used="gemini-2.0-flash",
+                        model_used="gemini-2.5-flash",
                         seed="0",
                         outputs={
                             "scores": adherence.scores,
@@ -320,7 +320,7 @@ def _generate_and_select_image(
                 cycle_number=0,
                 action="visual-spec-extraction",
                 tokens_consumed=visual_spec.spec_extraction_tokens,
-                model_used="gemini-2.0-flash",
+                model_used="gemini-2.5-flash",
                 seed=str(brief_seed),
                 inputs={"brief_id": brief.get("brief_id", "unknown")},
                 outputs={"brief_id": brief.get("brief_id", "unknown")},

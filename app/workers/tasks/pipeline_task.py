@@ -268,7 +268,7 @@ def _run_video_pipeline(
                     cycle_number=0,
                     action="evaluation",
                     tokens_consumed=copy_eval.tokens_consumed,
-                    model_used="gemini-2.0-flash",
+                    model_used="gemini-2.5-flash",
                     seed=str(seed),
                     inputs={},
                     outputs={
@@ -297,7 +297,7 @@ def _run_video_pipeline(
                     cycle_number=0,
                     action="video-spec-extraction",
                     tokens_consumed=spec.spec_extraction_tokens,
-                    model_used="gemini-2.0-flash",
+                    model_used="gemini-2.5-flash",
                     seed=str(seed),
                     inputs={},
                     outputs={},
@@ -386,7 +386,7 @@ def _run_video_pipeline(
                         cycle_number=0,
                         action="brief_adherence",
                         tokens_consumed=adherence.tokens_consumed,
-                        model_used="gemini-2.0-flash",
+                        model_used="gemini-2.5-flash",
                         seed="0",
                         outputs={
                             "scores": adherence.scores,
