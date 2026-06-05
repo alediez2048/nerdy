@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from app.api.routes import auth, campaigns, competitive, curation, dashboard, progress, sessions, share
+from app.api.routes import auth, campaigns, competitive, curation, dashboard, progress, sessions, share, user_keys
 from app.db import init_db
 
 
@@ -57,6 +57,7 @@ app.include_router(share.shared_router, prefix="/api/shared", tags=["shared"])
 app.include_router(dashboard.competitive_router, prefix="/api/competitive", tags=["competitive"])
 app.include_router(competitive.router)
 app.include_router(dashboard.global_dashboard_router, prefix="/api/dashboard", tags=["global-dashboard"])
+app.include_router(user_keys.router, prefix="/api/user/keys", tags=["user-keys"])
 
 # Media serving — public reads (browsers can't attach Authorization to <img> tags).
 # Path-traversal guarded; URLs are non-enumerable hashed ad IDs.

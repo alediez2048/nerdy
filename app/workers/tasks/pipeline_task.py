@@ -530,6 +530,7 @@ def run_pipeline_session(self, session_id: str) -> dict:
         config = session_row.config or {}
         ledger_path = session_row.ledger_path or "data/ledger.jsonl"
         session_type = config.get("session_type", "image")
+        owner_user_id = session_row.user_id
 
         # region agent log
         _debug_log(
@@ -545,25 +546,59 @@ def run_pipeline_session(self, session_id: str) -> dict:
         )
         # endregion
 
-        if session_type == "video":
-            result = _run_video_pipeline(session_id, config, ledger_path, db)
-            summary = {
-                "videos_generated": result.get("videos_generated", 0),
-                "video_variants_generated": result.get("video_variants_generated", 0),
-                "videos_selected": result.get("videos_selected", 0),
-                "videos_blocked": result.get("videos_blocked", 0),
-                "cost_so_far": result.get("cost_so_far", 0.0),
+        # BYO API keys (strict): load the owner's keys, fail fast if any
+        # required provider is missing, then override env vars for the
+        # duration of the pipeline body so existing call sites that read
+        # os.getenv("GEMINI_API_KEY"|"FAL_KEY"|"KLING_API_KEY") use the
+        # user's credentials.
+        from app.workers.user_keys_loader import MissingKeys, loaded_keys_env
+
+        try:
+            keys_ctx = loaded_keys_env(owner_user_id, session_type, config)
+        except MissingKeys as mk:
+            missing_list = mk.missing
+            logger.warning(
+                "Session %s for user %s missing API keys: %s",
+                session_id, owner_user_id, missing_list,
+            )
+            publish_progress(session_id, {
+                "type": PIPELINE_ERROR,
+                "cycle": 0, "batch": 0,
+                "ads_generated": 0, "ads_evaluated": 0, "ads_published": 0,
+                "current_score_avg": 0.0, "cost_so_far": 0.0,
+                "error": (
+                    "Missing API keys: " + ", ".join(missing_list) +
+                    ". Add them in Settings to run this session."
+                ),
+            })
+            session_row.status = "failed"
+            session_row.results_summary = {
+                "failure_reason": "missing_api_keys",
+                "missing_providers": missing_list,
             }
-        else:
-            result = _run_image_pipeline(session_id, config, ledger_path, db)
-            summary = {
-                "ads_generated": result.get("ads_generated", 0),
-                "ads_published": result.get("ads_published", 0),
-                "ads_discarded": result.get("ads_discarded", 0),
-                "ads_regenerated": result.get("ads_regenerated", 0),
-                "avg_score": result.get("avg_score", 7.0),
-                "cost_so_far": result.get("cost_so_far", 0.0),
-            }
+            db.commit()
+            return {"status": "failed", "failure_reason": "missing_api_keys"}
+
+        with keys_ctx:
+            if session_type == "video":
+                result = _run_video_pipeline(session_id, config, ledger_path, db)
+                summary = {
+                    "videos_generated": result.get("videos_generated", 0),
+                    "video_variants_generated": result.get("video_variants_generated", 0),
+                    "videos_selected": result.get("videos_selected", 0),
+                    "videos_blocked": result.get("videos_blocked", 0),
+                    "cost_so_far": result.get("cost_so_far", 0.0),
+                }
+            else:
+                result = _run_image_pipeline(session_id, config, ledger_path, db)
+                summary = {
+                    "ads_generated": result.get("ads_generated", 0),
+                    "ads_published": result.get("ads_published", 0),
+                    "ads_discarded": result.get("ads_discarded", 0),
+                    "ads_regenerated": result.get("ads_regenerated", 0),
+                    "avg_score": result.get("avg_score", 7.0),
+                    "cost_so_far": result.get("cost_so_far", 0.0),
+                }
 
         # Display-aligned cost (video: excludes non-winning variant Fal charges when VideoSelected exists)
         try:
