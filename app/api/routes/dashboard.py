@@ -300,6 +300,18 @@ def _build_variants_v2(
             model_used = ev.get("model_used", "")
             slot["model_used"] = model_used
             slot["predicted_cost_usd"] = _IMAGE_RATE_PER_CALL.get(model_used, 0.0)
+        elif et == "VideoGenerated":
+            path = outs.get("video_path", "")
+            slot = variants_by_type.setdefault(vt, {})
+            slot["video_path"] = path or None
+            # video_path is "output/videos/session_X/<file>.mp4" → "/api/videos/session_X/<file>.mp4"
+            if path:
+                rel = path.split("output/videos/", 1)[-1]
+                slot["video_url"] = f"/api/videos/{rel}"
+            else:
+                slot["video_url"] = None
+            slot["model_used"] = ev.get("model_used", "")
+            slot["predicted_cost_usd"] = 0.0
         elif et == "MediaEvaluation":
             slot = variants_by_type.setdefault(vt, {})
             slot.update({

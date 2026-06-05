@@ -92,6 +92,19 @@ export default function SessionDetail() {
     }
   }, [session])
 
+  // Single-page layout: on initial session load, scroll the section
+  // requested by ``?tab=`` in the URL into view. Must live above the
+  // early returns to satisfy the Rules of Hooks.
+  const hasSession = session != null
+  useEffect(() => {
+    if (!hasSession) return
+    const el = document.getElementById(`section-${activeTab}`)
+    if (el) el.scrollIntoView({ block: 'start' })
+    // Run only when the session first loads — subsequent activeTab
+    // changes are handled by setTab() via smooth-scroll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSession])
+
   // PC-12: Load campaigns when move modal opens
   useEffect(() => {
     if (showMoveModal) {
@@ -141,6 +154,11 @@ export default function SessionDetail() {
 
   const setTab = (tab: TabKey) => {
     setSearchParams({ tab })
+    // Single-page layout: tabs now act as jump-links. Scroll the target
+    // section into view; ``getElementById`` works because each section
+    // wrapper sets ``id={`section-${key}`}`` below.
+    const el = document.getElementById(`section-${tab}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const handleSaveName = async () => {
@@ -382,15 +400,29 @@ export default function SessionDetail() {
           ))}
         </div>
 
-        {/* Tab content */}
+        {/* Single-page sections — all rendered stacked. The tab buttons
+            above act as jump-links via setTab/scrollIntoView. */}
         <div style={s.tabContent}>
-          {activeTab === 'overview' && <Overview sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} />}
-          {activeTab === 'brief' && (
+          <section id="section-overview" style={s.sectionWrap}>
+            <h2 style={s.sectionHeading}>Overview</h2>
+            <Overview sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} />
+          </section>
+          <section id="section-brief" style={s.sectionWrap}>
+            <h2 style={s.sectionHeading}>Expanded Brief</h2>
             <ExpandedBriefPanel sessionId={sessionId!} sessionConfig={config} />
-          )}
-          {activeTab === 'quality' && <Quality sessionId={sessionId!} />}
-          {activeTab === 'ads' && <AdLibrary sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} sessionStatus={session.status} />}
-          {activeTab === 'costs' && <TokenEconomics sessionId={sessionId!} />}
+          </section>
+          <section id="section-quality" style={s.sectionWrap}>
+            <h2 style={s.sectionHeading}>Quality</h2>
+            <Quality sessionId={sessionId!} />
+          </section>
+          <section id="section-ads" style={s.sectionWrap}>
+            <h2 style={s.sectionHeading}>Ad Library</h2>
+            <AdLibrary sessionId={sessionId!} sessionType={(config.session_type as string) || 'image'} sessionStatus={session.status} />
+          </section>
+          <section id="section-costs" style={s.sectionWrap}>
+            <h2 style={s.sectionHeading}>Token Economics</h2>
+            <TokenEconomics sessionId={sessionId!} />
+          </section>
         </div>
       </div>
     </div>
@@ -495,6 +527,21 @@ const s: Record<string, React.CSSProperties> = {
   tabBar: {
     display: 'flex', gap: '4px', marginBottom: '24px', overflowX: 'auto',
     borderBottom: `1px solid ${colors.muted}20`, paddingBottom: '0',
+    position: 'sticky', top: '64px', background: colors.ink, zIndex: 10,
+  },
+  sectionWrap: {
+    marginBottom: '40px',
+    scrollMarginTop: '120px',
+  },
+  sectionHeading: {
+    color: colors.cyan,
+    fontSize: '13px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    margin: '0 0 16px',
+    paddingBottom: '8px',
+    borderBottom: `1px solid ${colors.muted}20`,
   },
   tab: {
     padding: '10px 16px', background: 'transparent', border: 'none',

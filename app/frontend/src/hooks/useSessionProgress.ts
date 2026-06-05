@@ -47,12 +47,12 @@ export default function useSessionProgress(
   const retryCount = useRef(0)
   const sourceRef = useRef<EventSource | null>(null)
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (sourceRef.current) {
       sourceRef.current.close()
     }
 
-    const source = createProgressStream(sessionId)
+    const source = await createProgressStream(sessionId)
     sourceRef.current = source
 
     source.addEventListener('progress', (e: MessageEvent) => {

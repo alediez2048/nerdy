@@ -71,6 +71,8 @@ export interface AdVariantV2 {
   media_type: 'image' | 'video'
   image_path: string | null
   image_url: string | null
+  video_path?: string | null
+  video_url?: string | null
   model_used: string
   predicted_cost_usd: number
   composite_score: number
