@@ -15,7 +15,7 @@
                                │ JWT token
                     ┌──────────▼──────────────────────┐
                     │     Vercel (Frontend)            │
-                    │  nerdy-7oqg.vercel.app           │
+                    │  adautomationengine.vercel.app           │
                     │  React SPA (Vite build)          │
                     │  Branch: main                    │
                     │  Root: app/frontend              │
@@ -53,7 +53,7 @@
 
 | Property | Value |
 |----------|-------|
-| **URL** | `https://nerdy-7oqg.vercel.app` |
+| **URL** | `https://adautomationengine.vercel.app` |
 | **Repo** | `alediez2048/nerdy` |
 | **Branch** | `main` |
 | **Root Directory** | `app/frontend` |

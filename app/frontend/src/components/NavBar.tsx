@@ -47,6 +47,7 @@ export default function NavBar() {
     { path: '/ads', label: 'Ad Library' },
     { path: '/competitive', label: 'Competitive' },
     { path: '/curated', label: 'Curated Set' },
+    { path: '/settings', label: 'Settings' },
   ]
 
   return (

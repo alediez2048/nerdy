@@ -14,6 +14,7 @@ import CampaignDetail from './views/CampaignDetail'
 import CompetitiveIntelPage from './views/CompetitiveIntelPage'
 import CuratedSetPage from './views/CuratedSetPage'
 import GlobalAdLibrary from './views/GlobalAdLibrary'
+import Settings from './views/Settings'
 import NavBar from './components/NavBar'
 
 const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
@@ -124,6 +125,7 @@ export default function App() {
           <Route path="/ads" element={<GlobalAdLibrary />} />
           <Route path="/competitive" element={<CompetitiveIntelPage />} />
           <Route path="/curated" element={<CuratedSetPage />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </AuthGate>
     </BrowserRouter>

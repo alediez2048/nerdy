@@ -21,5 +21,9 @@ class Settings(BaseSettings):
     CLERK_ISSUER: str = ""
     DEV_MODE: bool = False
 
+    # BYO API keys — Fernet key for encrypting user-supplied provider keys at rest.
+    # Generate via: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    KEYS_ENCRYPTION_KEY: str = ""
+
 
 settings = Settings()
