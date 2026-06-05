@@ -422,7 +422,7 @@ def expand_brief(
             cycle_number=0,
             action="brief-expansion",
             tokens_consumed=tokens_actual,
-            model_used="gemini-2.0-flash",
+            model_used="gemini-2.5-flash",
             seed=str(seed),
             inputs={"brief": brief, "persona": resolved_persona},
             outputs={

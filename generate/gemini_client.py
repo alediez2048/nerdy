@@ -16,7 +16,7 @@ from iterate.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "gemini-2.5-flash"
 
 
 @dataclass
@@ -50,9 +50,12 @@ def call_gemini(
         response = client.models.generate_content(
             model=model,
             contents=prompt,
+            # thinking_budget=0 disables 2.5 Flash hidden reasoning that
+            # otherwise consumes the full output budget and returns text="".
             config=types.GenerateContentConfig(
                 temperature=temperature,
                 max_output_tokens=max_output_tokens,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
 
@@ -96,6 +99,7 @@ def call_gemini_multimodal(
             config=types.GenerateContentConfig(
                 temperature=temperature,
                 max_output_tokens=max_output_tokens,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
 

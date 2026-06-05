@@ -23,7 +23,7 @@ export const fetchDimensions = (id: string) => get<Record<string, unknown>>(`${B
 export const fetchCosts = (id: string) => get<Record<string, unknown>>(`${BASE}/${id}/costs`)
 export const fetchAds = (id: string) => get<Record<string, unknown>>(`${BASE}/${id}/ads`)
 export const fetchAdVariants = (sessionId: string, adId: string) =>
-  get<AdVariantsResponse>(`${BASE}/${sessionId}/ads/${adId}/variants`)
+  get<AnyVariantsResponse>(`${BASE}/${sessionId}/ads/${adId}/variants`)
 export const fetchSpc = (id: string) => get<Record<string, unknown>>(`${BASE}/${id}/spc`)
 
 export interface AdVariant {
@@ -47,6 +47,7 @@ export interface AdVariant {
 export interface AdVariantsResponse {
   session_id: string
   ad_id: string
+  schema_version?: 'v1'
   selection_criteria: {
     formula: string
     winner_variant_type: string
@@ -54,6 +55,62 @@ export interface AdVariantsResponse {
   }
   variants: AdVariant[]
 }
+
+// PI-08: v2 shape — per-dimension scores + winner_reason + rejection_reason.
+export interface DimensionScore {
+  score: number
+  weight: number
+  rationale: string
+}
+export interface GateEvaluation {
+  triggered: boolean
+  rationale: string
+}
+export interface AdVariantV2 {
+  variant_type: string
+  media_type: 'image' | 'video'
+  image_path: string | null
+  image_url: string | null
+  video_path?: string | null
+  video_url?: string | null
+  model_used: string
+  predicted_cost_usd: number
+  composite_score: number
+  raw_score: number
+  penalty_multiplier: number
+  dimensions: Record<string, DimensionScore>
+  penalty_gates: Record<string, GateEvaluation>
+  is_winner: boolean
+  rejection_reason?: {
+    composite_delta: number
+    worst_dimension: string
+    worst_dimension_delta: number
+    worst_dimension_rationale: string
+  }
+}
+
+export interface AdVariantsV2Response {
+  session_id: string
+  ad_id: string
+  schema_version: 'v2'
+  selection_criteria: {
+    formula: string
+    winner_variant_type: string
+    winner_composite_score: number
+  }
+  winner_reason: {
+    composite_score: number
+    distinguishing_dimensions: Array<{
+      dimension: string
+      delta_vs_mean?: number
+      absolute_score?: number
+      note?: string
+    }>
+  } | null
+  variants: AdVariantV2[]
+}
+
+export type AnyVariantsResponse = AdVariantsResponse | AdVariantsV2Response
 export const fetchCompetitive = () => get<Record<string, unknown>>('/api/competitive/summary')
 export const fetchGlobalDashboard = (timeframe: 'all' | 'day' | 'month' | 'year' = 'all') =>
   get<Record<string, unknown>>(`/api/dashboard/global?timeframe=${timeframe}`)

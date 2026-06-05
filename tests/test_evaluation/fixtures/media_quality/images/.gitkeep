@@ -1,0 +1,2 @@
+# Populate with 12 reference images named per annotations.yaml.
+# Files in this directory are gitignored (*.png); only this .gitkeep is tracked.

@@ -249,13 +249,11 @@ def get_ad_variants(
 ) -> dict[str, Any]:
     """All image variants generated for an ad, with selection rationale.
 
-    For each ad the pipeline emits 3 ``ImageGenerated`` events (anchor +
-    tone_shift + composition_shift) and 3 matching ``ImageEvaluated``
-    events. Pareto-selection picks the variant with the highest
-    ``composite_score = attribute_pass_pct * 0.4 + coherence_avg * 0.6``.
-
-    This endpoint reconstructs that decision from the ledger so the UI
-    can show why each non-winner was rejected.
+    PI-07: returns the v2 shape (per-dimension scores + winner_reason +
+    rejection_reason) when the ledger has any MediaEvaluation events;
+    falls back to the legacy v1 shape (attribute_pass_pct + coherence_avg
+    + lost_by) for historical sessions where only ImageEvaluated rows
+    were written.
     """
     init_db()
     session = _get_session(db, session_id, user["user_id"])
@@ -263,22 +261,146 @@ def get_ad_variants(
     if not ledger_path or not Path(ledger_path).exists():
         raise HTTPException(status_code=404, detail="Session ledger not found")
 
-    # Per-call image rates ($/call) — matches generate.image_model_router.
-    # Kept local to keep the route self-contained; a future ticket may
-    # unify these into config.yaml.
-    rate_per_call = {
-        "nano-banana-pro-preview": 0.13,
-        "gemini-2.5-flash-image": 0.035,
-        "gemini-2.0-flash-preview-image-generation": 0.13,
-    }
-
     from iterate.ledger_reader import read_dicts_filtered
 
     events = read_dicts_filtered(ledger_path, ad_id=ad_id)
     if not events:
         raise HTTPException(status_code=404, detail="No events for that ad")
 
-    # Index ImageEvaluated by variant_type for score lookup.
+    has_v2 = any(e.get("event_type") == "MediaEvaluation" for e in events)
+    if has_v2:
+        return _build_variants_v2(session_id, ad_id, events)
+    return _build_variants_v1(session_id, ad_id, events)
+
+
+_IMAGE_RATE_PER_CALL: dict[str, float] = {
+    "nano-banana-pro-preview": 0.13,
+    "gemini-2.5-flash-image": 0.035,
+    "gemini-2.0-flash-preview-image-generation": 0.13,
+}
+
+
+def _build_variants_v2(
+    session_id: str, ad_id: str, events: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """v2 shape: per-variant dimensions, gates, raw_score, winner_reason."""
+    variants_by_type: dict[str, dict[str, Any]] = {}
+    for ev in events:
+        et = ev.get("event_type")
+        inputs = ev.get("inputs") or {}
+        outs = ev.get("outputs") or {}
+        vt = inputs.get("variant_type") or outs.get("variant_type") or ""
+        if not vt:
+            continue
+        if et == "ImageGenerated":
+            path = outs.get("image_path", "")
+            slot = variants_by_type.setdefault(vt, {})
+            slot["image_path"] = path or None
+            slot["image_url"] = f"/api/images/{Path(path).name}" if path else None
+            model_used = ev.get("model_used", "")
+            slot["model_used"] = model_used
+            slot["predicted_cost_usd"] = _IMAGE_RATE_PER_CALL.get(model_used, 0.0)
+        elif et == "VideoGenerated":
+            path = outs.get("video_path", "")
+            slot = variants_by_type.setdefault(vt, {})
+            slot["video_path"] = path or None
+            # video_path is "output/videos/session_X/<file>.mp4" → "/api/videos/session_X/<file>.mp4"
+            if path:
+                rel = path.split("output/videos/", 1)[-1]
+                slot["video_url"] = f"/api/videos/{rel}"
+            else:
+                slot["video_url"] = None
+            slot["model_used"] = ev.get("model_used", "")
+            slot["predicted_cost_usd"] = 0.0
+        elif et == "MediaEvaluation":
+            slot = variants_by_type.setdefault(vt, {})
+            slot.update({
+                "variant_type": vt,
+                "media_type": outs.get("media_type", "image"),
+                "dimensions": outs.get("dimensions", {}),
+                "penalty_gates": outs.get("penalty_gates", {}),
+                "raw_score": float(outs.get("raw_score", 0.0)),
+                "penalty_multiplier": float(outs.get("penalty_multiplier", 1.0)),
+                "composite_score": float(outs.get("composite_score", 0.0)),
+            })
+
+    variants = list(variants_by_type.values())
+    if not variants:
+        raise HTTPException(status_code=404, detail="No image variants for that ad")
+
+    winner = max(variants, key=lambda v: v.get("composite_score", 0.0))
+    for v in variants:
+        v["is_winner"] = (v is winner)
+        v.setdefault("variant_type", "unknown")
+        v.setdefault("composite_score", 0.0)
+        v.setdefault("dimensions", {})
+
+    losers = [v for v in variants if not v["is_winner"]]
+    if losers:
+        dim_names = list(winner.get("dimensions", {}).keys())
+        deltas: dict[str, float] = {}
+        for d in dim_names:
+            w_score = float(winner["dimensions"].get(d, {}).get("score", 0))
+            loser_mean = sum(
+                float(lo.get("dimensions", {}).get(d, {}).get("score", 0))
+                for lo in losers
+            ) / max(len(losers), 1)
+            deltas[d] = w_score - loser_mean
+        top2 = sorted(deltas, key=deltas.get, reverse=True)[:2]
+        winner_reason = {
+            "composite_score": winner["composite_score"],
+            "distinguishing_dimensions": [
+                {"dimension": d, "delta_vs_mean": round(deltas[d], 2)}
+                for d in top2
+            ],
+        }
+        for lo in losers:
+            dim_deltas = {
+                d: float(lo.get("dimensions", {}).get(d, {}).get("score", 0))
+                - float(winner["dimensions"].get(d, {}).get("score", 0))
+                for d in dim_names
+            }
+            if dim_deltas:
+                worst = min(dim_deltas, key=dim_deltas.get)
+                lo["rejection_reason"] = {
+                    "composite_delta": round(
+                        lo["composite_score"] - winner["composite_score"], 2
+                    ),
+                    "worst_dimension": worst,
+                    "worst_dimension_delta": round(dim_deltas[worst], 2),
+                    "worst_dimension_rationale": lo.get("dimensions", {})
+                    .get(worst, {}).get("rationale", ""),
+                }
+            else:
+                lo["rejection_reason"] = {
+                    "composite_delta": round(
+                        lo["composite_score"] - winner["composite_score"], 2
+                    ),
+                    "worst_dimension": None,
+                    "worst_dimension_delta": 0.0,
+                    "worst_dimension_rationale": "",
+                }
+    else:
+        winner_reason = None
+
+    return {
+        "session_id": session_id,
+        "ad_id": ad_id,
+        "schema_version": "v2",
+        "selection_criteria": {
+            "formula": "composite = sum(weight * dim_score) / 10 * penalty_mult * 100",
+            "winner_variant_type": winner["variant_type"],
+            "winner_composite_score": winner["composite_score"],
+        },
+        "winner_reason": winner_reason,
+        "variants": variants,
+    }
+
+
+def _build_variants_v1(
+    session_id: str, ad_id: str, events: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Legacy v1 shape — attribute_pass_pct + coherence_avg + lost_by."""
     scores_by_variant: dict[str, dict[str, float]] = {}
     for ev in events:
         if ev.get("event_type") != "ImageEvaluated":
@@ -294,7 +416,6 @@ def get_ad_variants(
             "composite_score": float(outputs.get("composite_score", 0.0)),
         }
 
-    # Walk ImageGenerated events to enumerate variants + image paths + models.
     variants: list[dict[str, Any]] = []
     for ev in events:
         if ev.get("event_type") != "ImageGenerated":
@@ -304,7 +425,6 @@ def get_ad_variants(
         variant_type = inputs.get("variant_type", "")
         image_path = outputs.get("image_path", "")
         scores = scores_by_variant.get(variant_type, {})
-        # Convert filesystem path to the public image route.
         image_filename = Path(image_path).name if image_path else ""
         public_url = f"/api/images/{image_filename}" if image_filename else None
         model_used = ev.get("model_used", "")
@@ -313,18 +433,17 @@ def get_ad_variants(
             "image_path": image_path or None,
             "image_url": public_url,
             "model_used": model_used,
-            "predicted_cost_usd": rate_per_call.get(model_used, 0.0),
+            "predicted_cost_usd": _IMAGE_RATE_PER_CALL.get(model_used, 0.0),
             "attribute_pass_pct": scores.get("attribute_pass_pct", 0.0),
             "coherence_avg": scores.get("coherence_avg", 0.0),
             "composite_score": scores.get("composite_score", 0.0),
-            "is_winner": False,  # filled in below
-            "lost_by": None,     # filled in below
+            "is_winner": False,
+            "lost_by": None,
         })
 
     if not variants:
         raise HTTPException(status_code=404, detail="No image variants for that ad")
 
-    # Pareto winner = highest composite_score; ties go to first.
     winner = max(variants, key=lambda v: v["composite_score"])
     winner["is_winner"] = True
     winner_attr = winner["attribute_pass_pct"]
@@ -336,13 +455,9 @@ def get_ad_variants(
             continue
         attr_delta = v["attribute_pass_pct"] - winner_attr
         coh_delta = v["coherence_avg"] - winner_coh
-        # The "weighted" delta: which dimension contributed more to the loss?
-        # attribute is weighted 0.4, coherence 0.6 in the composite.
         weighted_attr_loss = attr_delta * 0.4
         weighted_coh_loss = coh_delta * 0.6
         if attr_delta >= 0 and coh_delta >= 0:
-            # Loser matches or exceeds winner on both axes — tie-break
-            # went to first variant. Mark it as "tie".
             dimension = "tie"
         elif weighted_coh_loss < weighted_attr_loss:
             dimension = "coherence"
@@ -358,6 +473,7 @@ def get_ad_variants(
     return {
         "session_id": session_id,
         "ad_id": ad_id,
+        "schema_version": "v1",
         "selection_criteria": {
             "formula": "composite_score = attribute_pass_pct * 0.4 + coherence_avg * 0.6",
             "winner_variant_type": winner["variant_type"],

@@ -129,16 +129,11 @@ def _run_video_pipeline(
     from generate_video.factory import build_video_client
     from generate_video.orchestrator import (
         generate_video_variants,
-        select_best_video,
+        score_and_select_video_variants,
         should_skip_video_ad,
     )
     from generate_video.video_spec import build_video_spec
 
-    from evaluate.video_evaluator import (
-        check_video_coherence,
-        compute_composite_score,
-        evaluate_video_attributes,
-    )
     from generate.ad_generator import generate_ad
     from generate.brief_expansion import expand_brief
     from generate.seeds import get_ad_seed
@@ -147,8 +142,6 @@ def _run_video_pipeline(
         AdPublished,
         BriefAdherenceScored,
         VideoBlocked,
-        VideoEvaluated,
-        VideoScored,
         VideoSelected,
         VideoSpecExtracted,
     )
@@ -275,7 +268,7 @@ def _run_video_pipeline(
                     cycle_number=0,
                     action="evaluation",
                     tokens_consumed=copy_eval.tokens_consumed,
-                    model_used="gemini-2.0-flash",
+                    model_used="gemini-2.5-flash",
                     seed=str(seed),
                     inputs={},
                     outputs={
@@ -304,7 +297,7 @@ def _run_video_pipeline(
                     cycle_number=0,
                     action="video-spec-extraction",
                     tokens_consumed=spec.spec_extraction_tokens,
-                    model_used="gemini-2.0-flash",
+                    model_used="gemini-2.5-flash",
                     seed=str(seed),
                     inputs={},
                     outputs={},
@@ -348,53 +341,20 @@ def _run_video_pipeline(
                 "cost_so_far": cost_so_far,
             })
 
-            eval_results = {}
-            coherence_results = {}
-            for v in variants:
-                ev = evaluate_video_attributes(
-                    v.video_path,
-                    {
-                        "duration": v.duration,
-                        "audio_mode": v.audio_mode,
-                        "aspect_ratio": v.aspect_ratio,
-                        "prompt_used": v.prompt_used,
-                    },
-                    v.ad_id,
-                    v.variant_type,
-                )
-                co = check_video_coherence(
-                    ad_copy,
-                    v.video_path,
-                    v.ad_id,
-                    v.variant_type,
-                )
-                eval_results[v.variant_type] = ev
-                coherence_results[v.variant_type] = co
-
-                LedgerWriter(ledger_path).record(VideoEvaluated(
-                    ad_id=ad_id,
-                    brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                    cycle_number=0,
-                    action=f"video_{v.variant_type}_evaluated",
-                    tokens_consumed=ev.tokens_consumed + co.tokens_consumed,
-                    model_used="gemini-2.0-flash",
-                    seed=str(v.seed),
-                    outputs={
-                        "variant_type": v.variant_type,
-                        "attributes": ev.attributes,
-                        "attribute_pass_pct": ev.attribute_pass_pct,
-                        "coherence_scores": co.dimensions,
-                        "coherence_avg": co.avg_score,
-                    },
-                ))
-
-            winner = select_best_video(variants, eval_results, coherence_results)
+            # PI-06: unified media_quality evaluator. Writes one
+            # MediaEvaluation (or MediaEvaluationFailed) per variant; missing
+            # files now produce explicit failure events instead of all-zero
+            # ghost VideoEvaluated rows.
+            winner_path = score_and_select_video_variants(
+                ad=ad,
+                variants=variants,
+                brief={"brief_id": brief.get("brief_id"), "session_config": config},
+                ledger_path=ledger_path,
+            )
+            winner = next((v for v in variants if v.video_path == winner_path), None) if winner_path else None
             logger.info("[VIDEO]   Winner selected: %s", winner.variant_type if winner else "NONE")
 
             if winner:
-                ev = eval_results[winner.variant_type]
-                co = coherence_results[winner.variant_type]
-                composite = compute_composite_score(ev, co)
                 LedgerWriter(ledger_path).record(VideoSelected(
                     ad_id=ad_id,
                     brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
@@ -407,9 +367,6 @@ def _run_video_pipeline(
                         "winner_video_path": winner.video_path,
                         "winner_remote_url": winner.remote_url,
                         "winner_variant": winner.variant_type,
-                        "composite_score": composite,
-                        "attribute_pass_pct": ev.attribute_pass_pct,
-                        "coherence_avg": co.avg_score,
                     },
                 ))
                 videos_selected += 1
@@ -429,7 +386,7 @@ def _run_video_pipeline(
                         cycle_number=0,
                         action="brief_adherence",
                         tokens_consumed=adherence.tokens_consumed,
-                        model_used="gemini-2.0-flash",
+                        model_used="gemini-2.5-flash",
                         seed="0",
                         outputs={
                             "scores": adherence.scores,
@@ -440,34 +397,9 @@ def _run_video_pipeline(
                 except Exception as e:
                     logger.warning("Brief adherence scoring failed for %s: %s", ad_id, e)
 
-                # PD-14: Video quality scoring
-                try:
-                    from evaluate.video_scorer import score_video
-                    vid_scores = score_video(
-                        video_path=winner.video_path,
-                        ad_copy=ad_copy,
-                        ad_id=ad_id,
-                        session_config=config,
-                    )
-                    LedgerWriter(ledger_path).record(VideoScored(
-                        ad_id=ad_id,
-                        brief_id=ad_id.split("_c")[0] if "_c" in ad_id else ad_id,
-                        cycle_number=0,
-                        action="video_scored",
-                        tokens_consumed=vid_scores.tokens_consumed,
-                        model_used="gemini-2.0-flash",
-                        seed="0",
-                        outputs={
-                            "video_path": winner.video_path,
-                            "video_scores": vid_scores.scores,
-                            "video_avg_score": vid_scores.avg_score,
-                            "rationales": vid_scores.rationales,
-                        },
-                    ))
-                except Exception as e:
-                    logger.warning("Video scoring failed for %s: %s", ad_id, e)
+                # PI-06: per-variant MediaEvaluation events already capture
+                # the rich winner rubric; no post-hoc VideoScored block.
 
-                # Publish the video ad — mirrors AdPublished from image pipeline
                 copy_score = copy_eval.aggregate_score if copy_eval else 0.0
                 LedgerWriter(ledger_path).record(AdPublished(
                     ad_id=ad_id,
@@ -484,7 +416,6 @@ def _run_video_pipeline(
                         "winning_video": winner.video_path,
                         "winning_video_remote_url": winner.remote_url,
                         "aggregate_score": copy_score,
-                        "composite_video_score": composite,
                     },
                 ))
             else:

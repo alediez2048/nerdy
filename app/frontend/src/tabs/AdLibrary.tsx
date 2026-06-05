@@ -2,7 +2,11 @@
 import { useEffect, useState } from 'react'
 import { colors, radii, font } from '../design/tokens'
 import useMediaQuery from '../hooks/useMediaQuery'
-import { fetchAds, fetchAdVariants, type AdVariant } from '../api/dashboard'
+import { fetchAds, fetchAdVariants, type AdVariant, type AdVariantV2 } from '../api/dashboard'
+
+type AnyVariant = AdVariant | AdVariantV2
+const isV2Variant = (v: AnyVariant): v is AdVariantV2 =>
+  'dimensions' in v && v.dimensions != null
 import { addAdToCurated } from '../api/curation'
 import Badge, { StatusBadge } from '../components/Badge'
 import VariantsPanel from '../components/VariantsPanel'
@@ -50,7 +54,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
   // selected winners. Lazy-loaded so the API isn't hit until the user
   // flips the toggle.
   const [showAllVariants, setShowAllVariants] = useState(false)
-  const [variantsByAd, setVariantsByAd] = useState<Map<string, AdVariant[]>>(new Map())
+  const [variantsByAd, setVariantsByAd] = useState<Map<string, AnyVariant[]>>(new Map())
   const [variantsLoading, setVariantsLoading] = useState(false)
   const [variantsError, setVariantsError] = useState<string | null>(null)
 
@@ -67,8 +71,8 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
     Promise.all(
       adsToFetch.map((a) =>
         fetchAdVariants(sessionId, a.ad_id)
-          .then((res) => ({ adId: a.ad_id, variants: res.variants }))
-          .catch(() => ({ adId: a.ad_id, variants: [] as AdVariant[] })),
+          .then((res) => ({ adId: a.ad_id, variants: res.variants as AnyVariant[] }))
+          .catch(() => ({ adId: a.ad_id, variants: [] as AnyVariant[] })),
       ),
     )
       .then((results) => {
@@ -148,15 +152,13 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
             </button>
           ))}
         </div>
-        {sessionType !== 'video' && (
-          <button
-            onClick={() => setShowAllVariants((v) => !v)}
-            style={showAllVariants ? s.filterActive : s.filterBtn}
-            title="Show every image variant the pipeline generated, including the ones that didn't make the cut"
-          >
-            {showAllVariants ? '✓ Showing all variants' : 'Show all variants'}
-          </button>
-        )}
+        <button
+          onClick={() => setShowAllVariants((v) => !v)}
+          style={showAllVariants ? s.filterActive : s.filterBtn}
+          title="Show every variant the pipeline generated, including the ones that didn't make the cut"
+        >
+          {showAllVariants ? '✓ Showing all variants' : 'Show all variants'}
+        </button>
       </div>
 
       {/* Variant gallery — when the "Show all variants" toggle is on. */}
@@ -286,39 +288,38 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
                           </div>
                         ))}
                       </div>
-                      {/* Image variants Pareto panel — visible on expand for non-video ads with images. */}
-                      {!isVideo && ad.image_url && (
-                        <div style={{ padding: '0 14px' }}>
-                          <VariantsPanel sessionId={sessionId} adId={ad.ad_id} />
-                        </div>
+                    </div>
+                  </div>
+                  {/* Full-width footer: variants gallery + action row */}
+                  <div style={s.expandedFooter}>
+                    {/* PI-08: VariantsPanel renders v2 (image OR video) and legacy v1. */}
+                    <VariantsPanel sessionId={sessionId} adId={ad.ad_id} />
+                    <div style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginTop: '12px' }}>
+                      {!isVideo && <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>}
+                      {hasVideo && (
+                        <a
+                          href={videoSrc}
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          style={s.downloadBtn}
+                        >
+                          Download MP4
+                        </a>
                       )}
-                      <div style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginTop: '10px', padding: '0 14px' }}>
-                        {!isVideo && <p style={{ fontSize: '12px', color: colors.muted, margin: 0 }}>Cycles: {ad.cycle_count}</p>}
-                        {hasVideo && (
-                          <a
-                            href={videoSrc}
-                            download
-                            onClick={(e) => e.stopPropagation()}
-                            style={s.downloadBtn}
-                          >
-                            Download MP4
-                          </a>
-                        )}
-                        {ad.status === 'published' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              addAdToCurated(sessionId, ad.ad_id, 0)
-                                .then(() => setCuratedIds((prev) => new Set(prev).add(ad.ad_id)))
-                                .catch(() => {})
-                            }}
-                            style={curatedIds.has(ad.ad_id) ? s.curatedBtnDone : s.curateBtn}
-                            disabled={curatedIds.has(ad.ad_id)}
-                          >
-                            {curatedIds.has(ad.ad_id) ? 'Added to Curated Set' : 'Add to Curated Set'}
-                          </button>
-                        )}
-                      </div>
+                      {ad.status === 'published' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            addAdToCurated(sessionId, ad.ad_id, 0)
+                              .then(() => setCuratedIds((prev) => new Set(prev).add(ad.ad_id)))
+                              .catch(() => {})
+                          }}
+                          style={curatedIds.has(ad.ad_id) ? s.curatedBtnDone : s.curateBtn}
+                          disabled={curatedIds.has(ad.ad_id)}
+                        >
+                          {curatedIds.has(ad.ad_id) ? 'Added to Curated Set' : 'Add to Curated Set'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -380,7 +381,7 @@ export default function AdLibrary({ sessionId, sessionType = 'image', sessionSta
 
 interface VariantGalleryProps {
   ads: Ad[]
-  variantsByAd: Map<string, AdVariant[]>
+  variantsByAd: Map<string, AnyVariant[]>
   loading: boolean
   error: string | null
   isMobile: boolean
@@ -394,7 +395,7 @@ function VariantGallery({ ads, variantsByAd, loading, error, isMobile, isTablet 
   }
 
   // Flatten into ad_id, variant_type pairs, preserving ad order.
-  const cards: Array<{ ad: Ad; variant: AdVariant }> = []
+  const cards: Array<{ ad: Ad; variant: AnyVariant }> = []
   for (const ad of ads) {
     const variants = variantsByAd.get(ad.ad_id)
     if (!variants || variants.length === 0) continue
@@ -423,13 +424,18 @@ function VariantGallery({ ads, variantsByAd, loading, error, isMobile, isTablet 
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: cols, gap: '12px' }}>
         {cards.map(({ ad, variant }) => {
+          const isV2 = isV2Variant(variant)
           const lostReason = variant.is_winner
             ? null
-            : variant.lost_by?.dimension === 'tie'
-              ? 'Tied — selection went to first variant'
-              : variant.lost_by
-                ? `Lost on ${variant.lost_by.dimension === 'attribute' ? 'attribute fit' : 'copy coherence'}: ${variant.lost_by.own_score.toFixed(2)} vs ${variant.lost_by.winner_score.toFixed(2)}`
+            : isV2
+              ? variant.rejection_reason
+                ? `Lost on ${variant.rejection_reason.worst_dimension.replace(/_/g, ' ')}: ${variant.rejection_reason.worst_dimension_rationale}`
                 : null
+              : variant.lost_by?.dimension === 'tie'
+                ? 'Tied — selection went to first variant'
+                : variant.lost_by
+                  ? `Lost on ${variant.lost_by.dimension === 'attribute' ? 'attribute fit' : 'copy coherence'}: ${variant.lost_by.own_score.toFixed(2)} vs ${variant.lost_by.winner_score.toFixed(2)}`
+                  : null
           const modelShort = variant.model_used.includes('nano-banana-pro')
             ? 'NB Pro'
             : variant.model_used.includes('flash-image') ? 'NB 2' : variant.model_used
@@ -439,7 +445,9 @@ function VariantGallery({ ads, variantsByAd, loading, error, isMobile, isTablet 
               ? 'Tone shift'
               : variant.variant_type === 'composition_shift'
                 ? 'Composition shift'
-                : variant.variant_type
+                : variant.variant_type === 'alternative'
+                  ? 'Alternative'
+                  : variant.variant_type
           return (
             <div
               key={`${ad.ad_id}-${variant.variant_type}`}
@@ -450,20 +458,37 @@ function VariantGallery({ ads, variantsByAd, loading, error, isMobile, isTablet 
                 border: variant.is_winner ? `2px solid ${colors.mint}` : `1px solid ${colors.muted}30`,
               }}
             >
-              {variant.image_url ? (
-                <img
-                  src={`/api${variant.image_url.startsWith('/api') ? variant.image_url.slice(4) : variant.image_url}`}
-                  alt={`${ad.ad_id} ${variant.variant_type}`}
-                  style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', display: 'block' }}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
-              ) : (
-                <div style={{
-                  width: '100%', aspectRatio: '1 / 1', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  background: '#000', color: colors.muted, fontSize: '12px',
-                }}>image missing</div>
-              )}
+              {(() => {
+                const v2VideoUrl = isV2 ? variant.video_url : null
+                if (v2VideoUrl) {
+                  const src = v2VideoUrl.startsWith('http') ? v2VideoUrl : v2VideoUrl
+                  return (
+                    <video
+                      src={src}
+                      controls
+                      muted
+                      style={{ width: '100%', aspectRatio: '9 / 16', objectFit: 'cover', background: '#000', display: 'block' }}
+                    />
+                  )
+                }
+                if (variant.image_url) {
+                  return (
+                    <img
+                      src={`/api${variant.image_url.startsWith('/api') ? variant.image_url.slice(4) : variant.image_url}`}
+                      alt={`${ad.ad_id} ${variant.variant_type}`}
+                      style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', display: 'block' }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  )
+                }
+                return (
+                  <div style={{
+                    width: '100%', aspectRatio: '1 / 1', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    background: '#000', color: colors.muted, fontSize: '12px',
+                  }}>media missing</div>
+                )
+              })()}
               <div style={{ padding: '8px 10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
                   <strong style={{ color: colors.white, fontSize: '13px' }}>{variantLabel}</strong>
@@ -482,7 +507,9 @@ function VariantGallery({ ads, variantsByAd, loading, error, isMobile, isTablet 
                   {ad.ad_id}
                 </p>
                 <p style={{ color: colors.muted, fontSize: '11px', margin: '2px 0 0' }}>
-                  attr {variant.attribute_pass_pct.toFixed(2)} · coh {variant.coherence_avg.toFixed(2)} · {modelShort} · ${variant.predicted_cost_usd.toFixed(3)}
+                  {isV2
+                    ? `composite ${variant.composite_score.toFixed(2)} · raw ${variant.raw_score.toFixed(2)} · ${modelShort} · $${variant.predicted_cost_usd.toFixed(3)}`
+                    : `attr ${variant.attribute_pass_pct.toFixed(2)} · coh ${variant.coherence_avg.toFixed(2)} · ${modelShort} · $${variant.predicted_cost_usd.toFixed(3)}`}
                 </p>
                 {lostReason && (
                   <p style={{ color: colors.muted, fontSize: '11px', margin: '6px 0 0', fontStyle: 'italic', lineHeight: 1.4 }}>
@@ -538,7 +565,11 @@ const s: Record<string, React.CSSProperties> = {
     width: '100%', objectFit: 'cover' as const, display: 'block',
   },
   expandedLayout: {
-    display: 'flex', gap: '0',
+    display: 'flex', gap: '0', alignItems: 'flex-start',
+  },
+  expandedFooter: {
+    padding: '14px',
+    borderTop: `1px solid ${colors.muted}20`,
   },
   adImageExpanded: {
     width: '280px', minWidth: '280px', maxHeight: '400px',

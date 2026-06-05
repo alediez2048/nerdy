@@ -162,7 +162,7 @@ def run_backfill(dry_run: bool = False) -> None:
                 cycle_number=0,
                 action="brief_adherence_backfill",
                 tokens_consumed=result.tokens_consumed,
-                model_used="gemini-2.0-flash",
+                model_used="gemini-2.5-flash",
                 seed="0",
                 outputs={
                     "scores": result.scores,

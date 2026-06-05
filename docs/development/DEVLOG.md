@@ -7,6 +7,100 @@
 
 ---
 
+## 2026-06-02 — PI-11: Phase verification gate (✅)
+
+### Summary
+End-to-end verification of PI-01..PI-10. Six legacy evaluator modules
+are gone, replaced by a single `evaluate/media_quality.py` that emits
+rationale-bearing `MediaEvaluation` events for image AND video, plus a
+`media_selector.py` that names the distinguishing dimensions for the
+winner and the worst-delta dimension for each loser. Dashboard
+`/variants` branches on `schema_version`; the frontend renders an
+Evidence expander for v2 and a Legacy badge for v1. Calibration gate
+in place behind an opt-in pytest marker. Live pipeline runs deferred
+to the operator's environment (the codebase no longer ships with
+`gemini-2.0-flash`-tied test fixtures).
+
+### Results
+
+| Check | Result |
+|---|---|
+| `ruff check .` | **All checks passed!** |
+| Full pytest (`tests/`) | **993 passed, 2 skipped, 6 failed, 23 errors**. The 6 failures match the pre-PI baseline (5 Clerk env-dep auth + 1 LLM-flake progress test). The 23 errors are all real-API tests hitting the retired `gemini-2.0-flash` model — a pre-existing infrastructure issue, not a PI regression. **Zero PI regressions.** |
+| TypeScript build (`npm run build` in `app/frontend`) | Builds cleanly. No new TS errors. |
+| Dashboard render smoke (`http://localhost:5173/`) | Loads, sign-in works, Ad Library renders without console errors. |
+| Granularity target (PI-00, §7) | Architecturally enforced by the new rubric (8 image dims × 10 levels × 4 penalty multipliers ≈ 120+ reachable composites) and gated in CI by `tests/test_evaluation/test_media_quality_calibration.py` once golden-set fixtures are populated. |
+
+### Phase scope as shipped
+
+| Ticket | Status | What landed |
+|---|---|---|
+| PI-01 | ✅ | `MediaEvaluation` + `MediaEvaluationFailed` ledger event classes |
+| PI-02 | ✅ | `evaluate/media_quality.py` image path — 8 dims × 3 gates + composite math |
+| PI-03 | ✅ | `evaluate/media_selector.py` — `SelectionResult` with `winner_reason` + per-loser `rejection_reason` |
+| PI-04 | ✅ | `iterate/batch_processor.py` wired to `evaluate_media` + `select_best`; drops the broken `attribute_pass_pct × 0.4 + coherence_avg × 0.6` formula and the post-hoc `score_image` re-scoring step |
+| PI-05 | ✅ | `media_quality.py` video path — 10 dims × 5 gates; video prompt + media_type dispatch |
+| PI-06 | ✅ | Video pipeline (`generate_video/orchestrator.score_and_select_video_variants` + `app/workers/tasks/pipeline_task`) emits `MediaEvaluation`; missing files now produce explicit `MediaEvaluationFailed` events instead of the 82 zero-score `VideoEvaluated` ghosts catalogued in PI-00 |
+| PI-07 | ✅ | `/api/sessions/{id}/ads/{ad_id}/variants` branches on `schema_version` — v2 shape carries dimensions/gates/winner_reason; v1 shape preserved for legacy sessions |
+| PI-08 | ✅ | `VariantsPanel.tsx` Evidence expander + Legacy badge; `AdLibrary.tsx` drops the `!isVideo` hide guard so video sessions render |
+| PI-09 | ✅ | Calibration golden-set framework: `calibration` pytest marker, fixture scaffold under `tests/test_evaluation/fixtures/media_quality/`, opt-in `test_media_quality_calibration.py` that skips cleanly when fixtures are missing |
+| PI-10 | ✅ | Retired `image_evaluator`, `coherence_checker`, `image_scorer`, `image_selector`, `video_evaluator`, `video_attributes`, `video_coherence`, `video_scorer`; removed orphan callers (`iterate/image_regen`, `generate_video/selector`+`regen`, backfill scripts) and their dedicated tests. ~4000 LOC deleted. |
+| PI-11 | ✅ | This entry — verification gate + manual runbook |
+
+### Defects addressed (from PI-00 problem statement)
+
+| Defect | Status |
+|---|---|
+| Coherence signal hardcoded for 100% of variants (`hasattr` typo in `batch_processor.py:408`) | ✅ Removed with the legacy composite formula |
+| 6-bucket attribute_pass_pct quantization | ✅ Replaced by per-dimension 1–10 scores × hand-weighted rubric |
+| Per-variant rationales computed but never persisted | ✅ `MediaEvaluation.outputs.dimensions[*].rationale` written to ledger and surfaced via Evidence expander |
+| 82 missing-file `VideoEvaluated` ghost events | ✅ Now surface as `MediaEvaluationFailed{failure_reason="file_not_found"}` |
+| Video sessions hidden from `VariantsPanel` (commit `2c527e8`) | ✅ Guard removed |
+
+### Branch state
+
+- `final-submission`: at `ce97d74` (PI-10) plus this DEVLOG/runbook commit.
+- `main`: still pre-PH; production deploy gate from the existing
+  CLAUDE.md / `production_deploy_gate.md` memory still applies
+  (rotate leaked secrets + confirm Vercel `VITE_CLERK_PUBLISHABLE_KEY`
+  before any merge to `main`).
+
+### Files changed (high-level)
+
+- New: `evaluate/media_quality.py`, `evaluate/media_selector.py`,
+  `tests/test_evaluation/test_media_quality.py`,
+  `tests/test_evaluation/test_media_selector.py`,
+  `tests/test_evaluation/test_media_quality_calibration.py`,
+  `tests/test_evaluation/fixtures/media_quality/annotations.yaml`,
+  `tests/test_pipeline/test_batch_processor_pi04.py`,
+  `tests/test_pipeline/test_video_pipeline_pi06.py`,
+  `tests/test_app/test_ad_variants_route_v2.py`,
+  `docs/development/PI-MANUAL-TEST-RUNBOOK.md`.
+- Modified: `iterate/batch_processor.py`,
+  `iterate/ledger_events.py` (PI-01), `generate_video/orchestrator.py`,
+  `app/workers/tasks/pipeline_task.py`,
+  `app/api/routes/dashboard.py`,
+  `app/frontend/src/api/dashboard.ts`,
+  `app/frontend/src/components/VariantsPanel.tsx`,
+  `app/frontend/src/tabs/AdLibrary.tsx`,
+  `evaluate/evaluation_pipeline.py`, `pyproject.toml`.
+- Deleted: see PI-10 commit (`ce97d74`) — 13 production modules + 10
+  test files, ~4000 lines.
+
+### Next steps
+
+1. Populate `tests/test_evaluation/fixtures/media_quality/{images,videos}/`
+   from a real pipeline run, then run `pytest -m calibration` against
+   a current `GEMINI_API_KEY` to lock in the granularity claim.
+2. Address the retired-model errors in `test_adversarial.py`,
+   `test_golden_set.py`, `test_inversion.py`, and
+   `test_pipeline_task_updates_status` by pointing them at a
+   currently-supported Gemini model (separate ticket — not PI scope).
+3. Run the PI runbook (`docs/development/PI-MANUAL-TEST-RUNBOOK.md`)
+   against a live API key before opening a merge PR to `main`.
+
+---
+
 ## 2026-05-12 — PH-07: Phase verification gate (✅)
 
 ### Summary

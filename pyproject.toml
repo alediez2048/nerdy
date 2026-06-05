@@ -12,3 +12,6 @@ target-version = "py310"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "calibration: opt-in golden-set tests that hit the real Gemini API. Skipped unless GEMINI_API_KEY is set and fixtures are populated.",
+]

@@ -521,7 +521,7 @@ def evaluate_ad(
 
     tokens_actual = tokens_used or (len(prompt) + 500) // 4
     metadata = {
-        "model_used": "gemini-2.0-flash",
+        "model_used": "gemini-2.5-flash",
         "tokens_consumed": tokens_actual,
         "prompt_version": EVALUATOR_PROMPT_VERSION,
     }
@@ -556,7 +556,7 @@ def evaluate_ad(
             cycle_number=0,
             action="evaluation",
             tokens_consumed=tokens_actual,
-            model_used="gemini-2.0-flash",
+            model_used="gemini-2.5-flash",
             seed="0",
             inputs={"ad_id": ad_id, "campaign_goal": campaign_goal, "audience": audience},
             outputs=result.to_dict(),
