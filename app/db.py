@@ -12,6 +12,9 @@ import app.models.curation  # noqa: F401
 import app.models.share_token  # noqa: F401
 import app.models.campaign  # noqa: F401
 import app.models.user_api_key  # noqa: F401
+import app.models.brand_profile  # noqa: F401 (PJ-01)
+import app.models.conversation_message  # noqa: F401 (PJ-01)
+import app.models.brand_asset  # noqa: F401 (PJ-01)
 
 engine = create_engine(settings.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

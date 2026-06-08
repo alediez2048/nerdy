@@ -7,6 +7,68 @@
 
 ---
 
+## 2026-06-08 — PJ-01: DB models + migration scaffold (✅)
+
+### Summary
+
+Three new SQLAlchemy models land the schema foundation for the PJ phase:
+
+- `app/models/brand_profile.py` — per-user typed core + open `extras`
+  JSON bag. PK on Clerk `user_id`. `good_enough_at` is the session gate
+  (mirrors BYO Keys pattern).
+- `app/models/conversation_message.py` — append-only agent chat log per
+  `(user_id, touchpoint, session_id)`. Indexed for the next-turn
+  context fetch. Optional FK to `sessions.session_id`.
+- `app/models/brand_asset.py` — uploaded logo / style guide / font /
+  reference metadata. UUID PK as string for SQLite/Postgres
+  portability. `extracted_facts` JSON populated later by the PJ-03
+  vision pass.
+
+All three wired into `app/db.py` so `Base.metadata.create_all` provisions
+them at API startup. Generic SQLAlchemy `JSON` used instead of Postgres
+`JSONB` / `ARRAY` so the in-memory SQLite test pattern matching the rest
+of the suite continues to work; Postgres still stores them efficiently.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pytest tests/test_models/test_brand_profile_schema.py -v` | **9 passed** (minimal create, JSONB roundtrip, array roundtrip, gate flip, conversation append, per-touchpoint isolation, asset create, extracted_facts roundtrip, create_all idempotency) |
+| `pytest tests/test_app/test_models.py -v` | **8 passed** — no regression on existing User / Session / CuratedSet tests |
+| `ruff check app/models app/db.py tests/test_models` | All checks passed |
+| API container restart | `nerdy-api-1` started clean |
+| Postgres tables verified | `brand_profile`, `conversation_messages`, `brand_assets` all present in `nerdy-db-1` |
+
+### Files
+
+- New: `app/models/brand_profile.py`,
+  `app/models/conversation_message.py`,
+  `app/models/brand_asset.py`,
+  `tests/test_models/__init__.py`,
+  `tests/test_models/test_brand_profile_schema.py`.
+- Modified: `app/db.py` (3 new imports).
+
+### Decisions captured during build
+
+- `BigInteger` PK on `conversation_messages` swapped to `Integer` —
+  SQLite's autoincrement only works with `INTEGER PRIMARY KEY`. Postgres
+  still gets a 32-bit int, sufficient for chat logs (~2.1B rows).
+- `BrandProfile.logo_asset_id` is a plain `String(36)` reference rather
+  than a declared SQLAlchemy `ForeignKey` — avoids the `create_all`
+  ordering circularity flagged in PJ-01's Edge Cases (brand_profile →
+  brand_assets → brand_profile). Referential integrity is enforced at
+  the application layer instead.
+- Arrays (`value_props`, `tone_descriptors`, `avoid_phrases`) stored as
+  JSON lists rather than `postgresql.ARRAY(Text)` — keeps the test
+  suite portable; the pipeline reads them as Python lists either way.
+
+### What's next
+
+- PJ-02 — Brand assets API + storage on Railway volume
+- PJ-04 — Agent endpoint scaffold (uses `brand_profile` + `conversation_messages`)
+
+---
+
 ## 2026-06-02 — PI-11: Phase verification gate (✅)
 
 ### Summary
