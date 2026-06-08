@@ -7,6 +7,71 @@
 
 ---
 
+## 2026-06-08 — PJ-02: Brand assets API + storage (✅)
+
+### Summary
+
+Brand asset upload + serve endpoints on `/api/brand-assets`. Files
+land on the Railway volume under
+`output/brand_assets/<user_id>/<uuid>.<ext>`; metadata in the
+`brand_assets` Postgres table from PJ-01. Vision-pass extraction is
+NOT triggered here — PJ-03 will fill `extracted_facts` async.
+
+- `app/api/brand_asset_storage.py` — UUID filename construction;
+  `original_filename` is consulted ONLY for the extension. Defense-
+  in-depth `resolve_for_serve()` re-verifies the resolved path stays
+  inside the per-user prefix.
+- `app/api/routes/brand_assets.py` — `POST /api/brand-assets`
+  (multipart) and `GET /api/brand-assets/{asset_id}` (auth-scoped
+  file serve, 404 on miss to avoid existence leak).
+- `app/api/main.py` — router registered at `/api/brand-assets`.
+
+### Validation
+
+- Accepted extensions: `.png .jpg .jpeg .svg .pdf`.
+- Accepted MIMEs: `image/png image/jpeg image/svg+xml application/pdf`.
+- Accepted `asset_type` values: `logo style_guide font reference other`.
+- Size cap: 10 MB → 413 on excess.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pytest tests/test_api/test_brand_assets.py -v` | **8 passed** (upload roundtrip, mime reject, oversize reject, invalid asset_type reject, own-asset GET, cross-tenant GET 404, path-traversal-in-filename ignored, nonexistent 404) |
+| Existing curation + model + auth suites | **35 passed**, no regressions |
+| `ruff check` (touched files) | All checks passed |
+| API container restart | clean |
+| `curl POST /api/brand-assets` without auth | 401 (route mounted, auth gate intact) |
+
+### Decisions captured during build
+
+- `storage_path` is stored relative to `STORAGE_ROOT` (i.e.
+  `<user_id>/<uuid>.<ext>`), not relative to `output/`. Keeps the path
+  short and aligns with PJ-00 §5.3 wording. The serve helper joins it
+  back to `STORAGE_ROOT` to resolve.
+- File-then-row write ordering: write bytes first, then insert the DB
+  row. If the row insert fails the file is best-effort deleted. The
+  converse failure mode (orphaned file with no row) is benign —
+  nothing can reach it because IDs are UUIDs and aren't enumerable.
+- `GET` returns 404 (not 403) on cross-tenant miss, by design — same
+  pattern as `/api/curation` to avoid leaking the existence of another
+  user's assets.
+
+### Files
+
+- New: `app/api/brand_asset_storage.py`,
+  `app/api/routes/brand_assets.py`,
+  `tests/test_api/__init__.py`,
+  `tests/test_api/test_brand_assets.py`.
+- Modified: `app/api/main.py` (router import + include).
+
+### What's next
+
+- **PJ-03** — Celery vision-pass task that reads from the stored asset
+  and writes `extracted_facts` back to the row.
+
+---
+
 ## 2026-06-08 — PJ-01: DB models + migration scaffold (✅)
 
 ### Summary
