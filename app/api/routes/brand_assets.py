@@ -126,3 +126,57 @@ def get_asset(
         raise HTTPException(status_code=404, detail="asset file missing")
 
     return FileResponse(abs_path, media_type=row.mime_type or "application/octet-stream")
+
+
+# --- Vision pass (PJ-03) -------------------------------------------------
+
+
+@router.post("/{asset_id}/extract", status_code=202)
+def trigger_extract(
+    asset_id: str,
+    db: Annotated[SASession, Depends(get_db)],
+    user: Annotated[dict, Depends(get_current_user)],
+) -> dict:
+    """Enqueue the vision-pass Celery task for this asset.
+
+    Returns immediately with ``{task_id, status: "queued"}``. Frontend
+    polls ``GET /api/brand-assets/{id}/extract/status`` until ``ready``.
+    """
+    init_db()
+    row = (
+        db.query(BrandAsset)
+        .filter(BrandAsset.id == asset_id, BrandAsset.user_id == user["user_id"])
+        .one_or_none()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="asset not found")
+
+    # Local import keeps the route module importable when Celery isn't.
+    from app.workers.tasks.brand_asset_vision_task import run_vision_pass
+
+    task = run_vision_pass.delay(asset_id)
+    return {"task_id": task.id, "status": "queued"}
+
+
+@router.get("/{asset_id}/extract/status")
+def extract_status(
+    asset_id: str,
+    db: Annotated[SASession, Depends(get_db)],
+    user: Annotated[dict, Depends(get_current_user)],
+) -> dict:
+    """Poll endpoint. ``extracted_facts`` populated → ``ready``;
+    ``error`` key in it → ``failed``; missing → ``running``."""
+    init_db()
+    row = (
+        db.query(BrandAsset)
+        .filter(BrandAsset.id == asset_id, BrandAsset.user_id == user["user_id"])
+        .one_or_none()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="asset not found")
+
+    if row.extracted_facts is None:
+        return {"status": "running"}
+    if "error" in row.extracted_facts:
+        return {"status": "failed", "error": row.extracted_facts["error"]}
+    return {"status": "ready", "extracted_facts": row.extracted_facts}

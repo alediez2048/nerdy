@@ -10,7 +10,11 @@ celery_app = Celery(
     "nerdy",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.workers.tasks.ping", "app.workers.tasks.pipeline_task"],
+    include=[
+        "app.workers.tasks.ping",
+        "app.workers.tasks.pipeline_task",
+        "app.workers.tasks.brand_asset_vision_task",
+    ],
 )
 
 celery_app.conf.update(

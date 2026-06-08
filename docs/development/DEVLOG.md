@@ -7,6 +7,87 @@
 
 ---
 
+## 2026-06-08 — PJ-03: Vision pass module + async Celery task (✅)
+
+### Summary
+
+Async vision pass for uploaded brand assets per PJ-00 §3 decision 14
+(GRILL Q4 — chat stays sync, slow work runs in Celery).
+
+- `app/api/vision.py` — four Gemini 2.5 Flash multimodal probes:
+  `probe_logo`, `probe_style_guide`, `probe_reference`, `probe_font`.
+  Each returns structured JSON for the agent to interpret. Markdown
+  fences in the model output are stripped; non-JSON output is preserved
+  under `raw` rather than discarded.
+- `app/workers/tasks/brand_asset_vision_task.py` — Celery task
+  `brand_asset.vision_pass` (and an inner `_run_vision(asset_id)` so
+  tests don't need a broker). Reads the asset's bytes from the
+  per-user prefix on the Railway volume, dispatches to the right
+  probe, writes the result into `brand_assets.extracted_facts`.
+  Gemini failures persist as `{"error": "..."}` so the agent can
+  fall back to asking the user manually.
+- `app/api/routes/brand_assets.py` — two new endpoints:
+  `POST /api/brand-assets/{id}/extract` (enqueues, 202 + task_id)
+  and `GET /api/brand-assets/{id}/extract/status`
+  (returns `running` | `ready` + facts | `failed` + error).
+  Both per-user scoped; cross-tenant polls get 404.
+
+### New env var (PJ-00 §3 decision 11 / GRILL Q1)
+
+`AGENT_GEMINI_API_KEY` — host-side key for the onboarding agent and
+the vision pass. Distinct from the BYO pipeline key so brand-new users
+can chat / upload assets before they've entered their own credentials.
+Falls back to `GEMINI_API_KEY` if empty (local dev convenience). PJ-12
+folds this into `ENVIRONMENT.md` and the Railway deploy notes.
+
+Added to `app/config.py` and `.env.example`. Already set on Railway
+during the BYO-keys rollout? **No** — needs to be set as part of the
+PJ deploy gate. Currently uses the existing `GEMINI_API_KEY` fallback
+in local Docker.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pytest tests/test_api/test_vision_pass.py -v` | **14 passed** (5 probe tests including JSON-fence stripping + filename fallback, 3 task tests including error capture, 6 endpoint tests including cross-tenant 404) |
+| Full no-regression run across model + API + curation suites | **49 passed** |
+| `ruff check` (touched files) | All checks passed |
+| Worker registered task | `[tasks] ... brand_asset.vision_pass` visible in Celery startup banner |
+| API container | restart clean |
+
+### Decisions captured during build
+
+- The Celery task body was factored into a plain `_run_vision(asset_id)`
+  function. The `@celery_app.task` wrapper just calls it. This lets the
+  task tests invoke the logic without a broker, identically to how
+  pytest invokes `_run_image_pipeline` in the existing test pattern.
+- Probes use `thinking_config=ThinkingConfig(thinking_budget=0)` — same
+  workaround we shipped during the 2.5 Flash regression fix. Without
+  it, the model burns the entire 1024-token budget on hidden reasoning
+  and returns empty text.
+- `app/api/vision.py` reads `AGENT_GEMINI_API_KEY` from `os.getenv()`
+  directly rather than going through `app.config.settings`. This keeps
+  the module importable in test contexts where the settings cache is
+  patched and lets the env override work the same way `GEMINI_API_KEY`
+  fallback does today.
+
+### Files
+
+- New: `app/api/vision.py`,
+  `app/workers/tasks/brand_asset_vision_task.py`,
+  `tests/test_api/test_vision_pass.py`.
+- Modified: `app/api/routes/brand_assets.py` (two endpoints appended),
+  `app/workers/celery_app.py` (include list), `app/config.py` (env
+  setting), `.env.example` (documented placeholder).
+
+### What's next
+
+- **PJ-04** — Agent endpoint scaffold (`POST /api/agent/converse`),
+  closure-bound `user_id` ToolBox per GRILL Q2.
+- **PJ-05** — `ingest_asset` tool reads `extracted_facts` produced here.
+
+---
+
 ## 2026-06-08 — PJ-02: Brand assets API + storage (✅)
 
 ### Summary
