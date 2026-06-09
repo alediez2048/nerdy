@@ -43,8 +43,11 @@ export interface ChatProps {
   sessionId?: string
   sessionSummary?: Record<string, unknown>
   sessionType?: string
-  /** Called when the assistant emits a terminal `finish_touchpoint`
-      or returns `good_enough_now=true`. */
+  /** Called when the assistant emits a terminal `finish_touchpoint`.
+      Note: `good_enough_now` is a profile status flag (already-good-
+      enough), not a "stop the chat" signal — the agent may flip it
+      mid-conversation and keep going. Consumers that want to react to
+      gate transitions should use `onPhaseChange` + their own state. */
   onCompleted?: (snap: ConverseResponse) => void
   /** Optional override for the empty-state opening message. If unset,
       we POST an empty /converse turn and let the agent greet itself. */
@@ -96,7 +99,12 @@ export default function Chat({
           { role: 'assistant', content: res.assistant_message },
         ])
         if (onPhaseChange) onPhaseChange(res.phase)
-        if (res.good_enough_now || res.phase === 'complete' || res.exit_reason === 'finish_touchpoint') {
+        // Only treat an explicit `finish_touchpoint` as terminal.
+        // `good_enough_now` is a profile-state flag the agent may set
+        // mid-turn and continue talking; reacting to it here causes
+        // single-turn refine sessions to close immediately the first
+        // time we see a profile that's already good_enough_now.
+        if (res.exit_reason === 'finish_touchpoint') {
           onCompleted?.(res)
         }
       } catch (e) {

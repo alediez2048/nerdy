@@ -9,6 +9,7 @@ import { colors, font, radii } from '../design/tokens'
 import { deleteKey, listKeys, saveKey } from '../api/userKeys'
 import type { Provider, UserKey } from '../types/userKey'
 import useMediaQuery from '../hooks/useMediaQuery'
+import BrandProfileCard from '../components/BrandProfileCard'
 
 interface ProviderMeta {
   id: Provider
@@ -79,27 +80,38 @@ export default function Settings() {
     <div style={s.pageBg}>
       <div style={{ ...s.pageInner, padding: isMobile ? '88px 16px 24px' : s.pageInner.padding }}>
         <h1 style={s.title}>Settings</h1>
-        <p style={s.subtitle}>
-          Bring your own API keys. Your keys are encrypted at rest and used only when
-          you run sessions. We never log or share them.
-        </p>
-        {topError && (
-          <div style={s.errorBanner}>{topError}</div>
-        )}
-        {loading ? (
-          <p style={{ color: colors.muted }}>Loading…</p>
-        ) : (
-          <div style={s.providers}>
-            {PROVIDERS.map((meta) => (
-              <ProviderCard
-                key={meta.id}
-                meta={meta}
-                existing={byProvider.get(meta.id) || null}
-                onChanged={load}
-              />
-            ))}
-          </div>
-        )}
+
+        {/* PJ-08: Brand profile — sits above the BYO Keys section so
+            users see "this is what AdEngine knows about you" first. */}
+        <section style={{ marginBottom: '32px' }}>
+          <h2 style={s.sectionHeading}>Brand</h2>
+          <BrandProfileCard />
+        </section>
+
+        <section>
+          <h2 style={s.sectionHeading}>API Keys</h2>
+          <p style={s.subtitle}>
+            Bring your own API keys. Your keys are encrypted at rest and used only when
+            you run sessions. We never log or share them.
+          </p>
+          {topError && (
+            <div style={s.errorBanner}>{topError}</div>
+          )}
+          {loading ? (
+            <p style={{ color: colors.muted }}>Loading…</p>
+          ) : (
+            <div style={s.providers}>
+              {PROVIDERS.map((meta) => (
+                <ProviderCard
+                  key={meta.id}
+                  meta={meta}
+                  existing={byProvider.get(meta.id) || null}
+                  onChanged={load}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   )
@@ -208,8 +220,18 @@ function ProviderCard({
 const s: Record<string, React.CSSProperties> = {
   pageBg: { minHeight: '100vh', width: '100%', background: colors.ink, fontFamily: font.family },
   pageInner: { maxWidth: '900px', margin: '0 auto', padding: '96px 20px 32px' },
-  title: { color: colors.white, fontSize: '28px', fontWeight: 700, margin: '0 0 8px' },
-  subtitle: { color: colors.muted, fontSize: '14px', margin: '0 0 24px', lineHeight: 1.5 },
+  title: { color: colors.white, fontSize: '28px', fontWeight: 700, margin: '0 0 24px' },
+  subtitle: { color: colors.muted, fontSize: '14px', margin: '0 0 16px', lineHeight: 1.5 },
+  sectionHeading: {
+    color: colors.cyan,
+    fontSize: '13px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    margin: '0 0 12px',
+    paddingBottom: '6px',
+    borderBottom: `1px solid ${colors.muted}20`,
+  },
   errorBanner: {
     padding: '10px 14px',
     borderRadius: radii.card,

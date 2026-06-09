@@ -4,8 +4,9 @@
 // bar and the redirect-on-completion behavior. Sits at /onboarding;
 // App.tsx routes here whenever the user's brand_profile isn't yet
 // `good_enough`.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { fetchProfileStatus } from '../api/agent'
 import Chat from '../components/Chat'
 import PhaseProgress from '../components/PhaseProgress'
 import { colors, font } from '../design/tokens'
@@ -16,6 +17,23 @@ export default function Onboarding() {
   const isMobile = useMediaQuery('(max-width: 767px)')
   const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>('identify')
+  // The Chat component reports phase transitions; we poll profile
+  // status on each one (cheap GET) and redirect the user out of the
+  // wizard the first time `good_enough_now` flips true.
+  const redirectedRef = useRef(false)
+
+  useEffect(() => {
+    if (redirectedRef.current) return
+    if (phase !== 'good_enough' && phase !== 'complete') return
+    fetchProfileStatus()
+      .then((status) => {
+        if (status.good_enough_now && !redirectedRef.current) {
+          redirectedRef.current = true
+          navigate('/sessions', { replace: true })
+        }
+      })
+      .catch(() => {})
+  }, [phase, navigate])
 
   return (
     <div style={s.pageBg}>
@@ -38,9 +56,13 @@ export default function Onboarding() {
           touchpoint="onboarding"
           onPhaseChange={setPhase}
           onCompleted={() => {
-            // Brand profile is good_enough — let the user out of the
-            // wizard. Sessions become creatable on the next page load.
-            navigate('/sessions', { replace: true })
+            // Agent emitted `finish_touchpoint`. Belt-and-suspenders
+            // navigate even though the phase effect above usually
+            // beats us to it.
+            if (!redirectedRef.current) {
+              redirectedRef.current = true
+              navigate('/sessions', { replace: true })
+            }
           }}
         />
       </div>

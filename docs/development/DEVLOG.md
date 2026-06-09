@@ -7,6 +7,113 @@
 
 ---
 
+## 2026-06-09 — PJ-08: Settings brand profile section + refine modal (✅)
+
+### Summary
+
+Brand Profile card added to the Settings page above the BYO Keys
+section. First reuse of PJ-07's `<Chat />` outside `/onboarding` —
+mounted inside a `RefineModal` wrapping
+`<Chat touchpoint="refine" />`. Validates the component contract:
+the same component drives a different conversation by changing
+just the `touchpoint` prop.
+
+### What landed
+
+Backend:
+- `GET /api/me/brand-profile` (new module `app/api/routes/me.py`)
+  returns the full BrandProfile row for the authenticated user.
+  404 when no row exists. URL takes NO path param — the user is
+  resolved from the Clerk JWT, so cross-tenant reads are impossible.
+
+Frontend:
+- `src/api/brandProfile.ts` — typed `getBrandProfile()` client
+- `src/components/PhaseProgress.tsx` — added optional `onDotClick`
+  prop so phase dots can be clickable shortcuts into a refine modal
+  (PJ-00 §7.6)
+- `src/components/RefineModal.tsx` — backdrop + modal shell wrapping
+  `<Chat touchpoint="refine" />`. Closes on backdrop click, X button,
+  ESC key, or assistant `finish_touchpoint`. Locks body scroll while
+  mounted.
+- `src/components/BrandProfileCard.tsx` — the centerpiece. Renders
+  business_name + industry badge, 5-dot PhaseProgress (clickable),
+  Refine your brand CTA, typed-field grid (audience / mission /
+  value props as chips / tone chips / avoid phrases as red chips),
+  do/don't columns with mint + red accents, palette swatches +
+  logo thumbnail, collapsible Extras viewer with key/value
+  rendering. Re-fetches the profile on modal close so any
+  agent-persisted changes appear immediately.
+- `src/views/Settings.tsx` — mounts BrandProfileCard above the BYO
+  Keys card. Section headings added ("Brand" / "API Keys").
+- `src/views/Onboarding.tsx` — refactored to watch `phase` via
+  `onPhaseChange` and poll `fetchProfileStatus()` on `good_enough`
+  transitions (instead of relying on Chat's onCompleted firing
+  on good_enough_now).
+
+### Bug caught + fixed during the smoke
+
+**RefineModal closed instantly the first time it was opened.** The
+test user already has `good_enough_at` set, so the agent's first
+turn returns `good_enough_now: true`. PJ-07's `<Chat>` was treating
+that as a terminal "conversation done" signal and firing
+`onCompleted` → modal closed.
+
+`good_enough_now` is a **profile-state flag** (already-good-enough),
+not a turn-terminator. The agent may flip it mid-conversation and
+keep going. Fix: `<Chat>` now fires `onCompleted` ONLY on
+`exit_reason === 'finish_touchpoint'`. Consumers that want to react
+to gate transitions use `onPhaseChange` + their own state — which
+is exactly what the Onboarding view does post-fix.
+
+### Smoke (Playwright)
+
+| Step | Result |
+|---|---|
+| Navigate to /settings with a seeded brand profile | Brand Profile card renders correctly: business_name, industry badge, 5 cyan-lit dots (Identify ... Ready), all fields, chips, do/don't, palette swatches, Extras (3) collapsed |
+| Click "Refine your brand" | Modal opens with backdrop blur, "Refine your brand" header, ×, Chat shell |
+| Agent greets in the modal | "Hi there! We can refine any part of your brand today. What would you like to revisit?" |
+| Modal stays open | Confirmed — no immediate close from the good_enough_now bug |
+| Click × | Closes cleanly; body scroll restored |
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pytest tests/test_api/test_me_brand_profile.py -v` | **5 passed** (404, full serialization, cross-tenant scoping, logo_asset_url derivation, null arrays → empty) |
+| Full no-regression run | **98 passed** across all suites |
+| `ruff check` (touched files) | clean |
+| `npx tsc --noEmit` in `app/frontend` | clean |
+| Live Playwright smoke | end-to-end working |
+
+### Files
+
+- New: `app/api/routes/me.py`,
+  `app/frontend/src/api/brandProfile.ts`,
+  `app/frontend/src/components/RefineModal.tsx`,
+  `app/frontend/src/components/BrandProfileCard.tsx`,
+  `tests/test_api/test_me_brand_profile.py`.
+- Modified: `app/api/main.py` (mount the me router),
+  `app/frontend/src/components/PhaseProgress.tsx` (optional
+  onDotClick), `app/frontend/src/components/Chat.tsx` (only
+  finish_touchpoint is terminal), `app/frontend/src/views/Onboarding.tsx`
+  (phase-driven redirect via fetchProfileStatus poll),
+  `app/frontend/src/views/Settings.tsx` (mount the card + section
+  headings).
+
+### What's next
+
+- **PJ-09** — Pipeline rewire (highest-risk ticket: brief_expansion
+  starts reading brand_profile, brand_knowledge.json gets deleted,
+  POST /api/sessions gets the good_enough gate, existing users get
+  one-shot backfilled per GRILL Q3).
+- **PJ-10** — Post-session reflection modal reuses `<Chat
+  touchpoint="post_session" />`.
+- **PJ-11** — Pre-session prep modal reuses `<Chat
+  touchpoint="pre_session_prep" />` and the `proposed_brief`
+  response payload to pre-fill NewSessionForm.
+
+---
+
 ## 2026-06-09 — PJ-07: Onboarding chat UI + reusable <Chat /> component (✅)
 
 ### Summary

@@ -4,6 +4,11 @@ import type { Phase } from '../types/agent'
 
 interface Props {
   phase: Phase
+  /** Optional click handler for dots. When supplied, dots render as
+      buttons and clicks invoke the handler with the clicked phase —
+      used by Settings (PJ-08 §7.6) to open the refine modal scoped to
+      a specific phase. */
+  onDotClick?: (phase: Phase) => void
 }
 
 const STEPS: { key: Phase; label: string }[] = [
@@ -21,8 +26,9 @@ function indexFor(phase: Phase): number {
   return i < 0 ? 0 : i
 }
 
-export default function PhaseProgress({ phase }: Props) {
+export default function PhaseProgress({ phase, onDotClick }: Props) {
   const currentIdx = indexFor(phase)
+  const interactive = typeof onDotClick === 'function'
 
   return (
     <div style={s.wrap}>
@@ -30,17 +36,32 @@ export default function PhaseProgress({ phase }: Props) {
         {STEPS.map((step, i) => {
           const reached = i <= currentIdx
           const isCurrent = i === currentIdx && phase !== 'complete'
+          const dotEl = (
+            <div
+              style={{
+                ...s.dot,
+                background: reached ? colors.cyan : `${colors.muted}40`,
+                boxShadow: isCurrent ? `0 0 12px ${colors.cyan}80` : 'none',
+                transform: isCurrent ? 'scale(1.25)' : 'scale(1)',
+                cursor: interactive ? 'pointer' : 'default',
+              }}
+              aria-current={isCurrent ? 'step' : undefined}
+            />
+          )
           return (
             <div key={step.key} style={s.stepWrap}>
-              <div
-                style={{
-                  ...s.dot,
-                  background: reached ? colors.cyan : `${colors.muted}40`,
-                  boxShadow: isCurrent ? `0 0 12px ${colors.cyan}80` : 'none',
-                  transform: isCurrent ? 'scale(1.25)' : 'scale(1)',
-                }}
-                aria-current={isCurrent ? 'step' : undefined}
-              />
+              {interactive ? (
+                <button
+                  type="button"
+                  onClick={() => onDotClick?.(step.key)}
+                  style={s.dotBtn}
+                  aria-label={`Refine ${step.label}`}
+                >
+                  {dotEl}
+                </button>
+              ) : (
+                dotEl
+              )}
               <span
                 style={{
                   ...s.label,
@@ -89,6 +110,15 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: '50%',
     flexShrink: 0,
     transition: 'transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease',
+  },
+  dotBtn: {
+    background: 'transparent',
+    border: 'none',
+    padding: '4px',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
     fontSize: '12px',
