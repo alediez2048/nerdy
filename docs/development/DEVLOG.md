@@ -7,6 +7,99 @@
 
 ---
 
+## 2026-06-09 — PJ-06: Phase-aware onboarding prompt + industry hints (✅)
+
+### Summary
+
+Replaces PJ-04's stub system prompt with a phase-aware composer that
+assembles a real onboarding prompt for each of the five onboarding
+phases plus dedicated builders for the other three touchpoints
+(post_session, pre_session_prep, refine).
+
+- `app/api/agent/prompts.py` — central prompt module.
+  - `IDENTITY` preamble — constant voice + tool-use discipline rules.
+  - `ONBOARDING_PHASES` dict — one block per phase (identify, core,
+    extras, assets, good_enough, complete) telling the LLM what to
+    collect, which tool to call, and when to advance.
+  - `INDUSTRY_HINTS` dict — Phase 3 hints for tutoring, restaurant,
+    saas, fitness, professional_services. **Adding a new industry =
+    edit 5-10 lines in this dict; no migration, no JSON, no schema
+    change** (PJ-00 §3 decision 9).
+  - `INDUSTRY_FALLBACK` — generic Phase 3 hint when industry isn't
+    in the preset list.
+  - `_profile_snapshot` — appended to every prompt; lists filled
+    typed fields + first 10 extras keys so the LLM doesn't re-ask.
+  - `_whitelist_hint` — "Tools available right now: ..." line that
+    mirrors the per-phase whitelist from PJ-05 so the LLM doesn't
+    hallucinate tools.
+  - Per-touchpoint builders: `build_onboarding_prompt`,
+    `build_post_session_prompt`, `build_pre_session_prep_prompt`,
+    `build_refine_prompt`, plus a `build_prompt_for(touchpoint, ...)`
+    dispatcher the route calls.
+- `app/api/routes/agent.py` — replaced the `_stub_system_prompt`
+  helper with a call to `build_prompt_for(touchpoint, profile, ...)`.
+  Forwards `session_summary` (post_session) and `session_type`
+  (pre_session_prep) from the request body when present. Appends the
+  uploaded-asset extraction context to the system prompt rather than
+  passing it as a separate channel.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pytest tests/test_api/test_agent_prompts.py -v` | **25 passed** (phase blocks, industry hints incl. 5-way parametrized, fallback paths, snapshot content, whitelist hint scoping, dispatcher coverage, behavioral diff between two industries' Phase 3) |
+| Full no-regression run | **110 passed** across all touched suites |
+| `ruff check` (touched files) | All checks passed |
+| API container restart | clean |
+
+### Why this design matters
+
+The success criterion in PJ-00 §15.2 — "two different industries
+produce materially different Phase 3 conversations" — is met by the
+prompt diff alone: `test_two_industries_produce_different_extras_prompts`
+asserts tutoring's prompt contains `subjects_taught` and not
+`cuisine_style`; restaurant's prompt contains the opposite.
+
+The "add a new industry = one prompt edit" mantra is the operational
+payoff. PJ-12 will reuse this pattern in the docs refresh: every doc
+describing "tutoring-specific" defaults gets updated to point at this
+module instead.
+
+### Decisions captured during build
+
+- The snapshot caps extras at 10 keys (`MAX_EXTRAS_KEYS_IN_SNAPSHOT`)
+  to keep the prompt within Gemini's reasonable context budget. A
+  user with 30 extras keys still has them all in the DB; the prompt
+  shows the top 10 by insertion order.
+- The whitelist hint is rendered at the bottom of the prompt rather
+  than the top. Gemini's instruction-following on tool selection is
+  better when the prompt body sets the goal first and the tool list
+  appears just before the model decides what to call.
+- The `_stub_system_prompt` helper was deleted (rather than left as
+  dead code) so future tickets can't accidentally import it. The
+  dispatcher in `prompts.py` is now the only path.
+- Asset extractions are appended to the system prompt as a labeled
+  section ("### Uploaded asset extractions") rather than threaded
+  through the user message — keeps user message turns clean.
+
+### Files
+
+- New: `app/api/agent/prompts.py`,
+  `tests/test_api/test_agent_prompts.py`.
+- Modified: `app/api/routes/agent.py` (build_prompt_for wired in,
+  stub helper deleted).
+
+### What's next
+
+- **PJ-07** — Frontend `<Chat />` component POSTs to
+  `/api/agent/converse`. With PJ-04..PJ-06 done, the backend is
+  feature-complete for onboarding; PJ-07 is the first ticket that
+  makes the agent visible to a user.
+- **PJ-10** / **PJ-11** — reuse the post_session and
+  pre_session_prep builders from this ticket.
+
+---
+
 ## 2026-06-09 — PJ-05: Agent tools + per-phase whitelist + validators (✅)
 
 ### Summary

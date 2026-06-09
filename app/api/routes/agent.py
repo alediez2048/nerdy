@@ -22,6 +22,7 @@ from app.api.agent.messages import (
     load_history,
 )
 from app.api.agent.profile_loader import load_or_create_profile, serialize_profile
+from app.api.agent.prompts import build_prompt_for
 from app.api.agent.toolbox import ToolBox
 from app.api.agent.whitelist import whitelist_for
 from app.api.deps import get_current_user
@@ -103,8 +104,21 @@ def converse(
     # hasn't finished yet, the LLM gets a placeholder.
     asset_extractions = _collect_asset_extractions(db, user["user_id"], uploaded_asset_ids)
 
-    # PJ-06 will replace this stub with the real phased system prompt.
-    system_prompt = _stub_system_prompt(touchpoint, profile, asset_extractions)
+    # PJ-06: phase-aware system prompt with industry hints + snapshot.
+    session_summary = (payload.get("session_summary") or {}) if isinstance(payload, dict) else {}
+    session_type = (payload.get("session_type") or "image") if isinstance(payload, dict) else "image"
+    system_prompt = build_prompt_for(
+        touchpoint,
+        profile,
+        session_summary=session_summary,
+        session_type=session_type,
+    )
+    if asset_extractions:
+        system_prompt += (
+            "\n\n### Uploaded asset extractions\n"
+            f"{asset_extractions}\n"
+            "Confirm these with the user before persisting via ingest_asset."
+        )
 
     toolbox = ToolBox(
         user_id=user["user_id"],
@@ -162,18 +176,3 @@ def _collect_asset_extractions(
     return out
 
 
-def _stub_system_prompt(touchpoint: str, profile: BrandProfile, assets: dict) -> str:
-    """Minimal system prompt for the PJ-04 scaffold. PJ-06 replaces this
-    with the phased onboarding policy + per-touchpoint variants."""
-    lines = [
-        f"You are AdEngine's onboarding agent. Touchpoint: {touchpoint}.",
-        f"Current onboarding_phase: {profile.onboarding_phase}.",
-        "Use the available tools rather than free prose. Prefer ask_user "
-        "for follow-ups, finish_touchpoint to wrap up.",
-    ]
-    if assets:
-        lines.append(
-            "The user has uploaded assets. Extracted facts: "
-            f"{assets}. Confirm these with the user before persisting."
-        )
-    return " ".join(lines)
