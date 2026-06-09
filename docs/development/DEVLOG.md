@@ -7,6 +7,105 @@
 
 ---
 
+## 2026-06-09 — PJ-04: Agent /converse endpoint scaffold (✅)
+
+### Summary
+
+The single `POST /api/agent/converse` endpoint that all four PJ
+touchpoints (onboarding, post_session, pre_session_prep, refine) hit.
+Ships the scaffold — real prompts come in PJ-06, the full tool roster
+in PJ-05.
+
+- `app/api/agent/toolbox.py` — `ToolBox` dataclass. Captures `user_id`,
+  `db`, `touchpoint`, `session_id` in the closure; tool methods are
+  bound methods on this instance. `dispatch(name, args)` strips any
+  `user_id` key the model emits before calling the method —
+  defense-in-depth on top of the schema-level rule that function
+  declarations don't list `user_id` as a parameter. PJ-05 expands
+  the tool roster; PJ-04 ships `ask_user`, `finish_touchpoint`, and a
+  minimal `save_field` placeholder used by the security test.
+- `app/api/agent/loop.py` — `run_conversation_turn(toolbox, history,
+  system_prompt)`. Bounded Gemini 2.5 Flash function-calling loop:
+  `MAX_TOOL_ITERATIONS = 8` exits with a fallback message instead of an
+  infinite billable loop. Uses `AGENT_GEMINI_API_KEY` (PJ-03 host key),
+  falls back to `GEMINI_API_KEY` for local dev. Function declarations
+  are returned as dicts via `build_function_declarations()` so the
+  security test can introspect them without loading the SDK.
+- `app/api/agent/profile_loader.py` — `load_or_create_profile(db, user_id)`
+  inserts an empty `brand_profile` row on first turn. `serialize_profile`
+  returns the typed-core + lifecycle snapshot the route ships in the
+  response.
+- `app/api/agent/messages.py` — `append_message` + `load_history`
+  helpers. `MAX_MESSAGES_RETURNED = 20` caps the context window —
+  newest 20 in chronological order.
+- `app/api/routes/agent.py` — `POST /api/agent/converse`. Validates
+  touchpoint, enforces the 403 gate for non-onboarding without a
+  profile, persists user + assistant turns, dispatches into the loop.
+
+### Security property locked in
+
+Two tests assert the closure-binding rule from PJ-00 §3 decision 12
+(GRILL Q2):
+
+1. `test_toolbox_user_id_not_in_function_schema` — introspects the
+   schema sent to Gemini and asserts `user_id` is not in any
+   function's parameters.
+2. `test_toolbox_dispatch_strips_user_id_from_llm_args` — simulates a
+   jailbroken model calling `save_field(user_id='bob', ...)` while
+   authed as `alice`. Asserts Alice's row is updated and Bob's row is
+   untouched. Cross-tenant writes from the LLM surface are physically
+   impossible.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pytest tests/test_api/test_agent_converse.py -v` | **8 passed** (2 closure-binding security, 4 endpoint behaviors, 1 history cap, 1 loop max-iter cap) |
+| Full no-regression run | **57 passed** across model + API + curation suites |
+| `ruff check` (touched files) | All checks passed |
+| API container restart | clean |
+| `curl POST /api/agent/converse` without auth | 401 (route mounted, auth gate intact) |
+
+### Decisions captured during build
+
+- Function declarations returned as plain dicts from
+  `build_function_declarations()` rather than `types.FunctionDeclaration`
+  instances. Lets the security test introspect them without loading
+  the genai SDK; the loop converts to SDK types at call time.
+- The `from google import genai` import stays inside
+  `run_conversation_turn`. Keeps the module importable in test
+  contexts where the SDK isn't fully wired and lets us patch
+  `google.genai.Client` in the loop-cap test.
+- Non-terminal tool results round-trip through Gemini via
+  `Part.from_function_call` + `Part.from_function_response`. The new
+  google-genai SDK requires tool results on the "user" role.
+- PJ-04 persists only `user` and `assistant` messages.
+  `conversation_messages` already has columns for `tool_calls` and
+  `tool_results` (from PJ-01) but the scaffold doesn't write them.
+  PJ-05 will, so future replays can inspect the tool chain.
+
+### Files
+
+- New: `app/api/agent/__init__.py`,
+  `app/api/agent/toolbox.py`,
+  `app/api/agent/loop.py`,
+  `app/api/agent/profile_loader.py`,
+  `app/api/agent/messages.py`,
+  `app/api/routes/agent.py`,
+  `tests/test_api/test_agent_converse.py`.
+- Modified: `app/api/main.py` (router import + include).
+
+### What's next
+
+- **PJ-05** — Real tool roster (save_field validators, update_extra,
+  ingest_asset that reads PJ-03's extracted_facts, advance_phase,
+  mark_good_enough, propose_brief). Per-phase whitelisting at dispatch
+  time.
+- **PJ-06** — Phased onboarding system prompt + industry hint block.
+- **PJ-07** — Frontend `<Chat />` component POSTs here.
+
+---
+
 ## 2026-06-08 — PJ-03: Vision pass module + async Celery task (✅)
 
 ### Summary
