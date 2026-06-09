@@ -1,6 +1,8 @@
 // App router
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { SignedIn, SignedOut, SignIn } from '@clerk/clerk-react'
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { SignedIn, SignedOut, SignIn, useAuth } from '@clerk/clerk-react'
+import { fetchProfileStatus } from './api/agent'
 import { colors, font } from './design/tokens'
 import SessionList from './views/SessionList'
 import NewSessionForm from './views/NewSessionForm'
@@ -14,6 +16,7 @@ import CampaignDetail from './views/CampaignDetail'
 import CompetitiveIntelPage from './views/CompetitiveIntelPage'
 import CuratedSetPage from './views/CuratedSetPage'
 import GlobalAdLibrary from './views/GlobalAdLibrary'
+import Onboarding from './views/Onboarding'
 import Settings from './views/Settings'
 import NavBar from './components/NavBar'
 
@@ -105,28 +108,78 @@ const authStyles: Record<string, React.CSSProperties> = {
   },
 }
 
+/**
+ * PJ-07: when the user's brand profile isn't yet `good_enough`, force
+ * them to /onboarding. Settings is allowed through so they can manage
+ * their BYO API keys; shared session links and the SignIn page also pass.
+ */
+const ONBOARDING_BYPASS_PREFIXES = ['/onboarding', '/shared/', '/settings']
+
+function OnboardingGate({ children }: { children: React.ReactNode }) {
+  const { isLoaded, isSignedIn } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [checked, setChecked] = useState(false)
+
+  useEffect(() => {
+    if (!CLERK_ENABLED || !isLoaded || !isSignedIn) {
+      setChecked(true)
+      return
+    }
+    let cancelled = false
+    fetchProfileStatus()
+      .then((status) => {
+        if (cancelled) return
+        const bypass = ONBOARDING_BYPASS_PREFIXES.some((p) =>
+          location.pathname.startsWith(p),
+        )
+        if (!status.good_enough_now && !bypass) {
+          navigate('/onboarding', { replace: true })
+        }
+      })
+      .catch(() => {
+        // Network/auth error — let the user proceed; the per-route
+        // gates will surface auth errors as they happen.
+      })
+      .finally(() => {
+        if (!cancelled) setChecked(true)
+      })
+    return () => {
+      cancelled = true
+    }
+    // We re-check on every pathname change so deep-linking through
+    // the URL bar still respects the gate.
+  }, [isLoaded, isSignedIn, location.pathname, navigate])
+
+  if (!checked) return null
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthGate>
-        <NavBar />
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/sessions" element={<SessionList />} />
-          <Route path="/sessions/new" element={<NewSessionForm />} />
-          <Route path="/sessions/:sessionId" element={<SessionDetail />} />
-          <Route path="/sessions/:sessionId/live" element={<WatchLive />} />
-          <Route path="/shared/:token" element={<SharedSession />} />
-          <Route path="/dashboard" element={<GlobalDashboard />} />
-          <Route path="/campaigns" element={<CampaignList />} />
-          <Route path="/campaigns/new" element={<NewCampaignForm />} />
-          <Route path="/campaigns/:campaignId" element={<CampaignDetail />} />
-          <Route path="/campaigns/:campaignId/sessions/new" element={<NewSessionForm />} />
-          <Route path="/ads" element={<GlobalAdLibrary />} />
-          <Route path="/competitive" element={<CompetitiveIntelPage />} />
-          <Route path="/curated" element={<CuratedSetPage />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
+        <OnboardingGate>
+          <NavBar />
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/sessions" element={<SessionList />} />
+            <Route path="/sessions/new" element={<NewSessionForm />} />
+            <Route path="/sessions/:sessionId" element={<SessionDetail />} />
+            <Route path="/sessions/:sessionId/live" element={<WatchLive />} />
+            <Route path="/shared/:token" element={<SharedSession />} />
+            <Route path="/dashboard" element={<GlobalDashboard />} />
+            <Route path="/campaigns" element={<CampaignList />} />
+            <Route path="/campaigns/new" element={<NewCampaignForm />} />
+            <Route path="/campaigns/:campaignId" element={<CampaignDetail />} />
+            <Route path="/campaigns/:campaignId/sessions/new" element={<NewSessionForm />} />
+            <Route path="/ads" element={<GlobalAdLibrary />} />
+            <Route path="/competitive" element={<CompetitiveIntelPage />} />
+            <Route path="/curated" element={<CuratedSetPage />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </OnboardingGate>
       </AuthGate>
     </BrowserRouter>
   )

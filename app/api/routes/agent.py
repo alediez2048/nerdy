@@ -36,6 +36,31 @@ router = APIRouter()
 TOUCHPOINTS = ("onboarding", "post_session", "pre_session_prep", "refine")
 
 
+@router.get("/profile-status")
+def profile_status(
+    db: Annotated[SASession, Depends(get_db)],
+    user: Annotated[dict, Depends(get_current_user)],
+) -> dict[str, Any]:
+    """Lightweight check used by the frontend's onboarding-gate redirect.
+
+    Returns ``{phase, good_enough_now}``. Defaults to phase=``'identify'``
+    and ``good_enough_now=False`` when the user has no profile row yet
+    (i.e. brand-new user, never onboarded).
+    """
+    init_db()
+    row = (
+        db.query(BrandProfile)
+        .filter_by(user_id=user["user_id"])
+        .first()
+    )
+    if row is None:
+        return {"phase": "identify", "good_enough_now": False}
+    return {
+        "phase": row.onboarding_phase or "identify",
+        "good_enough_now": row.good_enough_at is not None,
+    }
+
+
 @router.post("/converse")
 def converse(
     db: Annotated[SASession, Depends(get_db)],
@@ -98,6 +123,25 @@ def converse(
         for r in rows
         if r.role in ("user", "assistant") and r.content
     ]
+
+    # Page-refresh shortcut: if the user opened the chat with no input
+    # and no new uploads AND there's already an assistant message in
+    # history, return the latest assistant turn without re-prompting
+    # Gemini. Without this, the LLM sees its own prior greeting and
+    # often emits empty text → "(no response)" surfaces to the user.
+    if not user_message and not uploaded_asset_ids:
+        last_assistant = next(
+            (r for r in reversed(rows) if r.role == "assistant" and r.content),
+            None,
+        )
+        if last_assistant is not None:
+            return {
+                "assistant_message": last_assistant.content,
+                "phase": profile.onboarding_phase,
+                "good_enough_now": profile.good_enough_at is not None,
+                "profile_snapshot": serialize_profile(profile),
+                "exit_reason": "resumed_from_history",
+            }
 
     # Pull extracted facts for any newly-uploaded assets into the
     # system-prompt context. PJ-03 populates extracted_facts; if vision

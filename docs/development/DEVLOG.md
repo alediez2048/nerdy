@@ -7,6 +7,109 @@
 
 ---
 
+## 2026-06-09 — PJ-07: Onboarding chat UI + reusable <Chat /> component (✅)
+
+### Summary
+
+First user-visible PJ ticket. Ships the reusable `<Chat />` component
+that all four touchpoints will share (this ticket consumes it for
+onboarding; PJ-08 / PJ-10 / PJ-11 reuse it for refine / post-session /
+pre-session prep). Plus a dedicated `/onboarding` route with a 5-dot
+phase progress bar, file-drop upload + vision-pass polling, and a
+top-level redirect gate that forces new users through onboarding
+before they can reach anything else.
+
+### What landed
+
+**Backend** (small additions):
+- `GET /api/agent/profile-status` — lightweight `{phase, good_enough_now}`
+  check used by the App-level redirect gate.
+- `POST /api/agent/converse` — page-refresh shortcut: if the request
+  has no `user_message` and no uploads but conversation history
+  already exists, return the last assistant message instead of
+  re-prompting Gemini. Without this, Gemini saw its own prior
+  greeting in history and often emitted empty text → "(no response)"
+  surfaced to the user.
+
+**Frontend**:
+- `app/frontend/src/types/agent.ts` — shared types (Phase, Touchpoint,
+  ConverseRequest/Response, BrandProfileSnapshot, asset types).
+- `app/frontend/src/api/agent.ts` — `converse()`, `fetchProfileStatus()`.
+- `app/frontend/src/api/brandAssets.ts` — `uploadAsset()`,
+  `triggerExtract()`, `getExtractStatus()`, `pollUntilReady()` +
+  `inferAssetType()` heuristic.
+- `app/frontend/src/components/PhaseProgress.tsx` — 5-dot bar
+  (Identify · Core · Extras · Assets · Ready) with cyan glow on the
+  current step.
+- `app/frontend/src/components/Chat.tsx` — the centerpiece. Reusable
+  for all four touchpoints. Optimistic UX (user message renders
+  before fetch resolves), "assistant typing…" indicator, file-drop +
+  click-to-attach, upload → extract → poll lifecycle, asset
+  extraction confirmation cards with palette swatches.
+- `app/frontend/src/views/Onboarding.tsx` — `/onboarding` view
+  wrapping `<Chat touchpoint="onboarding" />` with the progress bar
+  and redirect-to-`/sessions` on completion.
+- `app/frontend/src/App.tsx` — new `OnboardingGate` component sits
+  between `AuthGate` and the route table. Calls `fetchProfileStatus`
+  on every pathname change; redirects to `/onboarding` whenever
+  `good_enough_now=false` and the current path isn't in the bypass
+  list (`/onboarding`, `/settings`, `/shared/`). Settings is on the
+  bypass list so users can still manage their BYO API keys mid-
+  onboarding.
+
+### End-to-end smoke (Playwright)
+
+| Step | Result |
+|---|---|
+| Navigate to `/onboarding` | Page renders cleanly, 0 console errors |
+| First load | Agent greets via `ask_user`, single bubble (no double-greet) |
+| Type "I run Acme Tutors, an SAT prep tutoring service for high school students." → Send | User bubble appears immediately (optimistic), "typing…" indicator, then assistant confirmation: "Just to confirm, your business is Acme Tutors and your industry is tutoring. Is that right?" |
+| DB after turn 2 | 3 conversation_messages rows (assistant/user/assistant), phase=identify, brand_profile still empty (agent correctly mirrors back before saving — matches the IDENTITY voice rule) |
+| Page refresh | The page-refresh shortcut returns the last assistant message without re-prompting Gemini; no "(no response)" surfaces |
+
+### Bugs caught + fixed during the smoke
+
+1. **Double-greet on first mount.** React 18 strict-mode invokes
+   effects twice in dev. The original `useState`-based "opened"
+   gate didn't block the second invocation because state updates
+   are asynchronous. Switched to a `useRef(false)` mutation —
+   synchronous, blocks the second pass.
+2. **"(no response)" on page refresh.** When Gemini sees its own
+   prior greeting in history but no new user message, it often
+   emits empty text. Added a backend page-refresh shortcut to
+   short-circuit this: no user input + no new uploads + history
+   exists → return the last assistant message directly.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pytest tests/test_api/ tests/test_models/` | **93 passed** |
+| `ruff check` (touched files) | clean |
+| `npx tsc --noEmit` in `app/frontend` | clean |
+| Live Playwright onboarding flow | end-to-end working |
+
+### Files
+
+- New: `app/frontend/src/types/agent.ts`,
+  `app/frontend/src/api/agent.ts`,
+  `app/frontend/src/api/brandAssets.ts`,
+  `app/frontend/src/components/PhaseProgress.tsx`,
+  `app/frontend/src/components/Chat.tsx`,
+  `app/frontend/src/views/Onboarding.tsx`.
+- Modified: `app/api/routes/agent.py` (profile-status endpoint +
+  page-refresh shortcut), `app/frontend/src/App.tsx` (OnboardingGate
+  + new route).
+
+### What's next
+
+- **PJ-08** — Settings page brand profile section + "Refine your brand"
+  modal reusing `<Chat touchpoint="refine" />`.
+- **PJ-09** — Pipeline rewire + session-creation gate per the
+  backfill migration plan from GRILL Q3.
+
+---
+
 ## 2026-06-09 — fix(PJ-06): loop seeds kickoff message on empty history (✅)
 
 ### Summary
