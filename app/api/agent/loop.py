@@ -253,6 +253,17 @@ def run_conversation_turn(
             )
         )
 
+    # The Gemini SDK rejects empty contents. On the very first turn
+    # (user opens the chat, agent should greet) we seed a kickoff
+    # user turn so the system prompt + tools can drive a greeting.
+    if not contents:
+        contents.append(
+            types.Content(
+                role="user",
+                parts=[types.Part.from_text(text="(begin conversation)")],
+            )
+        )
+
     client = genai.Client(api_key=_agent_key())
 
     for iteration in range(MAX_TOOL_ITERATIONS):

@@ -7,6 +7,61 @@
 
 ---
 
+## 2026-06-09 — fix(PJ-06): loop seeds kickoff message on empty history (✅)
+
+### Summary
+
+Caught during the PJ-06 live smoke test: the Gemini SDK rejects
+empty `contents` with `ValueError('contents are required.')`. The
+agent's first-turn path (user opens the chat, no `user_message` and
+no prior history) hit this and 500'd.
+
+Fix: `run_conversation_turn` seeds a `"(begin conversation)"` user
+turn when contents would otherwise be empty. The system prompt and
+tools drive the agent's actual greeting; the kickoff message is just
+the SDK's required priming.
+
+### Live smoke result (post-fix)
+
+```
+TURN 1 (empty profile, no user_message)
+  exit_reason: ask_user, iterations: 1
+  assistant: "Hello! I'm here to help you set up your brand in our system.
+              To start, could you please tell me a little about what your
+              business does?"
+  phase: identify
+
+TURN 2 ("I run Acme Tutors, SAT prep for HS students")
+  exit_reason: no_tool, iterations: 4
+  assistant: "Great! So, you're 'Acme Tutors,' and you're in the tutoring
+              industry. We've captured the basics, and now we can move on
+              to the core details of your brand."
+  phase: core
+  business_name: "Acme Tutors"
+  industry: "tutoring"
+```
+
+The agent extracted both fields from natural language, called
+`save_field` twice + `advance_phase('core')` in a single turn, and
+confirmed the result with the user. End-to-end works against real
+Gemini.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pytest tests/test_api/test_agent_converse.py -v` | **9 passed** (1 new: `test_empty_history_seeds_kickoff_message`) |
+| Full no-regression run | **93 passed** |
+| `ruff check` | clean |
+| Live two-turn smoke | greeting → save → advance, all correct |
+
+### Files
+
+- Modified: `app/api/agent/loop.py` (kickoff message seed),
+  `tests/test_api/test_agent_converse.py` (+1 regression test).
+
+---
+
 ## 2026-06-09 — PJ-06: Phase-aware onboarding prompt + industry hints (✅)
 
 ### Summary

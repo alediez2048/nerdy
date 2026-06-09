@@ -253,6 +253,48 @@ def test_history_loads_last_20_messages(client):
 # ---------------------------------------------------------------------------
 
 
+def test_empty_history_seeds_kickoff_message():
+    """First-turn case: empty history + no user_message. The Gemini SDK
+    rejects empty contents; the loop must seed a placeholder so the
+    agent can greet from the system prompt."""
+    # Build a fake response that calls ask_user terminally.
+    def _fake_response():
+        fake_part = SimpleNamespace(
+            function_call=SimpleNamespace(
+                name="ask_user",
+                args={"message": "Hi! What's your business?"},
+            )
+        )
+        return SimpleNamespace(
+            candidates=[SimpleNamespace(content=SimpleNamespace(parts=[fake_part]))],
+            text=None,
+        )
+
+    db = _TestSession()
+    db.add(BrandProfile(user_id="alice", onboarding_phase="identify"))
+    db.commit()
+    tb = ToolBox(user_id="alice", db=db, touchpoint="onboarding", session_id=None)
+
+    captured = {}
+
+    def _capture(**kwargs):
+        captured["contents"] = kwargs.get("contents")
+        return _fake_response()
+
+    with patch("google.genai.Client") as mock_ctor:
+        with patch("app.api.agent.loop._agent_key", return_value="fake-key"):
+            mock_client = MagicMock()
+            mock_client.models.generate_content.side_effect = _capture
+            mock_ctor.return_value = mock_client
+            out = agent_loop.run_conversation_turn(tb, history=[], system_prompt="test")
+
+    # Loop completed → SDK didn't reject with "contents required".
+    assert out["exit_reason"] == "ask_user"
+    assert captured["contents"], "loop should seed a kickoff message"
+    assert len(captured["contents"]) >= 1
+    db.close()
+
+
 def test_max_iterations_caps_loop():
     """If the model never emits a terminal tool, the loop exits after 8
     iterations with a fallback message — not an infinite billable loop.
