@@ -15,7 +15,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session as SASession
 
-from app.api.agent.loop import run_conversation_turn
+from app.api.agent.loop import build_function_declarations, run_conversation_turn
 from app.api.agent.messages import (
     MAX_MESSAGES_RETURNED,
     append_message,
@@ -23,6 +23,7 @@ from app.api.agent.messages import (
 )
 from app.api.agent.profile_loader import load_or_create_profile, serialize_profile
 from app.api.agent.toolbox import ToolBox
+from app.api.agent.whitelist import whitelist_for
 from app.api.deps import get_current_user
 from app.db import get_db, init_db
 from app.models.brand_profile import BrandProfile
@@ -112,7 +113,9 @@ def converse(
         session_id=session_id,
     )
 
-    out = run_conversation_turn(toolbox, history, system_prompt)
+    allowed = whitelist_for(touchpoint, profile.onboarding_phase or "identify")
+    function_decls = build_function_declarations(allowed)
+    out = run_conversation_turn(toolbox, history, system_prompt, function_decls)
 
     # Persist the assistant's reply.
     append_message(
@@ -135,6 +138,8 @@ def converse(
     }
     if asset_extractions:
         response["asset_extractions"] = asset_extractions
+    if "proposed_brief" in toolbox.side_effects:
+        response["proposed_brief"] = toolbox.side_effects["proposed_brief"]
     return response
 
 

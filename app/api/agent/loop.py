@@ -45,72 +45,163 @@ def _agent_key() -> str:
 # ---------------------------------------------------------------------------
 
 
-def build_function_declarations() -> list[dict[str, Any]]:
+_ALL_DECLARATIONS: dict[str, dict[str, Any]] = {
+    "ask_user": {
+        "name": "ask_user",
+        "description": (
+            "Return to the user with a question or remark. The frontend "
+            "renders the message and waits for the user's reply. Use this "
+            "to ask one focused question at a time."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "message": {
+                    "type": "STRING",
+                    "description": "The text shown to the user.",
+                },
+            },
+            "required": ["message"],
+        },
+    },
+    "finish_touchpoint": {
+        "name": "finish_touchpoint",
+        "description": (
+            "End the current conversation. For onboarding, the backend "
+            "will flip the user's onboarding_phase to 'complete'."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "summary": {
+                    "type": "STRING",
+                    "description": "One-sentence wrap-up.",
+                },
+            },
+            "required": ["summary"],
+        },
+    },
+    "save_field": {
+        "name": "save_field",
+        "description": (
+            "Write a typed-core field to the user's brand profile. Allowed "
+            "fields: business_name, industry, audience, mission, value_props, "
+            "tone_descriptors, avoid_phrases, do_dont_rules, "
+            "palette_primary_hex, palette_secondary_hex, palette_accent_hex."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "name": {"type": "STRING"},
+                "value": {"description": "Field value. Type depends on the field."},
+                "confidence": {"type": "NUMBER", "description": "0.0-1.0."},
+                "rationale": {"type": "STRING"},
+            },
+            "required": ["name", "value"],
+        },
+    },
+    "update_extra": {
+        "name": "update_extra",
+        "description": (
+            "Stash an industry-specific fact in the brand profile's open "
+            "extras bag. Use this for facts that don't fit a typed-core "
+            "column (e.g. subjects_taught, cuisine_style, icp_segment)."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "key": {"type": "STRING", "description": "Normalized to snake_case."},
+                "value": {"description": "JSON-serializable value."},
+                "confidence": {"type": "NUMBER"},
+                "rationale": {"type": "STRING"},
+            },
+            "required": ["key", "value"],
+        },
+    },
+    "ingest_asset": {
+        "name": "ingest_asset",
+        "description": (
+            "Read extracted facts (palette, fonts) from an asset the user "
+            "uploaded. Optionally also writes the palette into typed-core."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "asset_id": {"type": "STRING"},
+                "derive_palette": {"type": "BOOLEAN"},
+                "derive_fonts": {"type": "BOOLEAN"},
+            },
+            "required": ["asset_id"],
+        },
+    },
+    "advance_phase": {
+        "name": "advance_phase",
+        "description": (
+            "Move the onboarding flow forward by exactly one phase. Order: "
+            "identify -> core -> extras -> assets -> good_enough -> complete. "
+            "Skipping is rejected; same-phase calls are idempotent."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "next_phase": {"type": "STRING"},
+                "why": {"type": "STRING"},
+            },
+            "required": ["next_phase"],
+        },
+    },
+    "mark_good_enough": {
+        "name": "mark_good_enough",
+        "description": (
+            "Flip the session-creation gate. Backend will reject unless all "
+            "typed-core minimums are met (business_name, industry, audience, "
+            "mission, >=2 value_props, >=2 tone_descriptors)."
+        ),
+        "parameters": {"type": "OBJECT", "properties": {}},
+    },
+    "propose_brief": {
+        "name": "propose_brief",
+        "description": (
+            "(pre_session_prep only) Propose a session brief based on the "
+            "user's brand profile. Does NOT write to brand_profile. The "
+            "frontend pre-fills NewSessionForm with these values."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "audience": {"type": "STRING"},
+                "persona": {"type": "STRING"},
+                "campaign_goal": {"type": "STRING"},
+                "key_message": {"type": "STRING"},
+                "creative_brief": {"type": "STRING"},
+            },
+            "required": [
+                "audience", "persona", "campaign_goal",
+                "key_message", "creative_brief",
+            ],
+        },
+    },
+}
+
+
+def build_function_declarations(
+    allowed_tools: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Return the function-declaration dicts sent to Gemini.
 
-    Kept as dicts (rather than ``types.FunctionDeclaration`` instances)
-    so the security test can introspect them without needing the genai
-    SDK loaded. The route converts these into the SDK's typed form at
-    call time.
+    ``allowed_tools`` (from ``whitelist_for(touchpoint, phase)``) filters
+    to only the tools legal in the current context. The order matches the
+    input list. If ``None``, all declarations are returned (used by the
+    PJ-04 security test that introspects every declaration).
     """
-    return [
-        {
-            "name": "ask_user",
-            "description": (
-                "Return to the user with a question or remark. The frontend "
-                "renders the message and waits for the user's reply. Use this "
-                "to ask one focused question at a time."
-            ),
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "message": {
-                        "type": "STRING",
-                        "description": "The text shown to the user.",
-                    },
-                },
-                "required": ["message"],
-            },
-        },
-        {
-            "name": "finish_touchpoint",
-            "description": (
-                "End the current conversation. For onboarding, the backend "
-                "will flip the user's onboarding_phase to 'complete'."
-            ),
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "summary": {
-                        "type": "STRING",
-                        "description": "One-sentence wrap-up.",
-                    },
-                },
-                "required": ["summary"],
-            },
-        },
-        {
-            "name": "save_field",
-            "description": (
-                "Write a typed-core field to the user's brand profile. "
-                "PJ-04 scaffold accepts any field name; PJ-05 enforces a "
-                "strict allowlist."
-            ),
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "name": {
-                        "type": "STRING",
-                        "description": "Field name (e.g. business_name, industry, audience).",
-                    },
-                    "value": {
-                        "description": "Field value. Type depends on the field.",
-                    },
-                },
-                "required": ["name", "value"],
-            },
-        },
-    ]
+    if allowed_tools is None:
+        return list(_ALL_DECLARATIONS.values())
+    out: list[dict[str, Any]] = []
+    for name in allowed_tools:
+        decl = _ALL_DECLARATIONS.get(name)
+        if decl is not None:
+            out.append(decl)
+    return out
 
 
 # ---------------------------------------------------------------------------

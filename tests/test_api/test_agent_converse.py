@@ -106,7 +106,10 @@ def test_toolbox_dispatch_strips_user_id_from_llm_args():
     ``self.user_id`` (verified Clerk JWT). Cross-tenant write is impossible.
     """
     db = _TestSession()
-    # Bob exists so the test could verify a wrongful write would hit him.
+    # PJ-05 dispatch enforces the whitelist using the profile's current
+    # phase. Seed Alice in 'core' so save_field is on her whitelist.
+    db.add(BrandProfile(user_id="alice", onboarding_phase="core"))
+    # Bob exists so the test verifies a wrongful write would hit him.
     bob = BrandProfile(user_id="bob", business_name="Bob's Burgers")
     db.add(bob)
     db.commit()
@@ -117,7 +120,9 @@ def test_toolbox_dispatch_strips_user_id_from_llm_args():
         "save_field",
         {"user_id": "bob", "name": "business_name", "value": "Pwned"},
     )
-    assert "saved" in result
+    # PJ-05 contract: ok=True + stored field name on success.
+    assert result.get("ok") is True
+    assert result.get("field") == "business_name"
 
     # Alice got the write; Bob's row was NOT touched.
     db.refresh(bob)

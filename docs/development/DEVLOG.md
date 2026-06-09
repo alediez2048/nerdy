@@ -7,6 +7,114 @@
 
 ---
 
+## 2026-06-09 — PJ-05: Agent tools + per-phase whitelist + validators (✅)
+
+### Summary
+
+Fills out the real tool roster on the PJ-04 ToolBox. The LLM can now
+mutate `brand_profile` through eight tools, each server-side validated
+and per-touchpoint × per-phase whitelisted. Backend is law: out-of-
+phase or off-touchpoint calls are rejected both at declaration-build
+time (LLM never sees the tool) AND at dispatch time (defense-in-depth).
+
+- `app/api/agent/validators.py` — `TYPED_COLUMNS` allowlist + per-kind
+  validators (`hex`, `str_list`, `do_dont`, `snake_case_str`).
+  `normalize_extras_key` snake-cases extras keys. `RESERVED_EXTRAS_KEYS`
+  blocks `update_extra('audience', ...)` masquerading as a typed write.
+- `app/api/agent/whitelist.py` — `whitelist_for(touchpoint, phase)`
+  encoding the full matrix from PJ-00 §6.2 (onboarding by phase,
+  post_session, pre_session_prep read-only, refine). `can_advance_to`
+  enforces strictly-forward phase moves; `next_phase` returns the
+  canonical successor.
+- `app/api/agent/toolbox.py` — six new tools on the existing PJ-04
+  ToolBox:
+  - `save_field(name, value, confidence?, rationale?)` — typed-column
+    write through `validate(name, value)`.
+  - `update_extra(key, value, confidence?, rationale?)` — open-bag
+    write; key snake-cased, value JSON-serializability checked,
+    reserved typed-column keys rejected.
+  - `ingest_asset(asset_id, derive_palette?, derive_fonts?)` — reads
+    `brand_assets.extracted_facts` from PJ-03 for an asset the user
+    owns; optionally pins the palette into typed-core and `logo_asset_id`.
+  - `advance_phase(next_phase, why?)` — strictly forward; idempotent
+    on same-phase; rejected outside onboarding.
+  - `mark_good_enough()` — gate check per PJ-00 §7.5 (4 typed columns
+    non-null + ≥2 value_props + ≥2 tone_descriptors); idempotent.
+  - `propose_brief(audience, persona, campaign_goal, key_message,
+    creative_brief)` — pre_session_prep only; does NOT write to
+    `brand_profile`; stashes the proposal in `toolbox.side_effects`
+    for the route to surface.
+- `app/api/agent/loop.py` — `_ALL_DECLARATIONS` dict keyed by tool name;
+  `build_function_declarations(allowed_tools)` filters to the active
+  whitelist so the LLM only ever sees legal tools.
+- `app/api/routes/agent.py` — calls `whitelist_for(touchpoint, phase)`,
+  forwards the filtered declarations to the loop, surfaces
+  `proposed_brief` from `toolbox.side_effects` in the response.
+
+### Security invariants re-verified
+
+- `test_no_user_id_in_any_tool_declaration` — full 8-tool roster
+  still has no `user_id` parameter anywhere (PJ-04's GRILL Q2
+  property holds across PJ-05's expansion).
+- `test_dispatch_strips_user_id_on_save_field` — even with the new
+  whitelist and validation pipeline, the closure-binding rule still
+  filters `user_id` out of LLM-supplied args.
+- `test_dispatch_rejects_off_phase_tool` — calling `mark_good_enough`
+  during `identify` is runtime-rejected (whitelist enforcement happens
+  in both places).
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `pytest tests/test_api/test_agent_tools.py -v` | **28 passed** (5 save_field, 2 update_extra, 4 ingest_asset, 4 advance_phase, 3 mark_good_enough, 3 propose_brief, 4 whitelist, 2 dispatch+closure, 1 declarations-introspection) |
+| Full no-regression run | **85 passed** across all touched suites (model + API + curation) |
+| `ruff check` (touched files) | All checks passed |
+| API container restart | clean |
+
+### Decisions captured during build
+
+- The PJ-04 `save_field` return shape (`{"saved": name}`) was replaced
+  with the richer `{"ok": True, "field": ..., "stored": ...,
+  "_meta": {confidence, rationale}}` so the LLM can distinguish
+  "saved" from "rejected" without inferring it. PJ-04's
+  `test_toolbox_dispatch_strips_user_id_from_llm_args` was updated to
+  match.
+- `confidence` and `rationale` are accepted by `save_field` /
+  `update_extra` per the §6.2 spec but not persisted in v1 — they go
+  into the tool result's `_meta` block for the LLM to see itself. A
+  future audit-log ticket can route them into `conversation_messages`
+  if useful.
+- `ingest_asset` writes `logo_asset_id` automatically when the asset's
+  type is `logo`. Saves the agent one tool call.
+- `update_extra` wraps each value as `{value, confidence, rationale}`
+  rather than storing the raw value at the key. Gives the pipeline
+  per-fact provenance later without another migration.
+- `_profile()` upserts a `BrandProfile` row if one is missing. Defense-
+  in-depth — onboarding always creates the row via PJ-04's
+  `load_or_create_profile`, but a tool called via `refine` for a
+  malformed user shouldn't crash.
+
+### Files
+
+- New: `app/api/agent/validators.py`,
+  `app/api/agent/whitelist.py`,
+  `tests/test_api/test_agent_tools.py`.
+- Modified: `app/api/agent/toolbox.py` (six new bound methods +
+  dispatcher), `app/api/agent/loop.py` (filtered declarations),
+  `app/api/routes/agent.py` (whitelist call + proposed_brief surface),
+  `tests/test_api/test_agent_converse.py` (PJ-04 save_field shape
+  expectation updated).
+
+### What's next
+
+- **PJ-06** — Phased onboarding system prompt + industry hint block
+  for Phase 3.
+- **PJ-07** — Frontend `<Chat />` POSTs to `/api/agent/converse`,
+  shows the 5-dot progress.
+
+---
+
 ## 2026-06-09 — PJ-04: Agent /converse endpoint scaffold (✅)
 
 ### Summary
